@@ -5,11 +5,11 @@ This crate provides Rust native consumers and producers as well as low level bin
 
 
 ## Table of contents
-- [Getting started](/samsa/getting-started)
-    - [Producer](/samsa/producer)
-    - [Consumer](/samsa/consumer)
-    - [Consumer group](/samsa/consumer-group)
-- [Resources](/samsa/resources)
+- [Getting started](#getting-started)
+    - [Producer](#producer)
+    - [Consumer](#consumer)
+    - [Consumer group](#consumer-group)
+- [Resources](#resources)
 
 
 ## Getting started
