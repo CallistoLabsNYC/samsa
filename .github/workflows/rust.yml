@@ -29,6 +29,6 @@ jobs:
     - name: rustup
       run: rustup default $RUST_VERSION
     - name: build
-      run: cargo build 
+      run: cargo build --examples
     - name: test
       run: cargo test --all-targets
