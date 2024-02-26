@@ -19,23 +19,32 @@
 //! When either of these two are met, the record queue is flushed and sent to the appropriate
 //! brokers.
 //!
-//! To produce, simply provide the initial bootstrap broker and the working topics
+//! To produce, simply provide the initial bootstrap brokers and the working topics
 //! to the [`ProducerBuilder`]. This you can use to configure the producing parameters as
 //! needed.
 //! ### Example
 //! ```rust
-//! let producer_client = producer::ProducerBuilder::new(bootstrap_url, topics)
+//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+//! let topic_name = "my-topic";
+//! let partition_id = 0;
+//!
+//! let message = samsa::prelude::ProduceMessage {
+//!         topic: topic_name.to_string(),
+//!         partition_id,
+//!         key: Some(bytes::Bytes::from_static(b"Tester")),
+//!         value: Some(bytes::Bytes::from_static(b"Value")),
+//!     };
+//!
+//! let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
 //!     .await?
+//!     .batch_timeout_ms(1)
+//!     .max_batch_size(2)
+//!     .clone()
 //!     .build()
 //!     .await;
 //!
 //! producer_client
-//!     .produce(ProduceMessage {
-//!         topic: topic_name,
-//!         partition_id,
-//!         key: Some(Bytes::from_static(b"Tester")),
-//!         value: Some(Bytes::from_static(b"Value 1")),
-//!     })
+//!     .produce(message)
 //!     .await;
 //! ```
 //!
@@ -57,7 +66,8 @@
 //!     messages,
 //! ).await?;
 //! ```
-//! [protocol module]: protocol
+//! [protocol module]: prelude::protocol
+//! [ProducerBuilder]: prelude::ProducerBuilder
 use std::collections::HashMap;
 
 use bytes::Bytes;
@@ -105,18 +115,27 @@ impl ProduceParams {
 ///
 /// ### Example
 /// ```rust
-/// let producer_client = producer::ProducerBuilder::new(bootstrap_url, topics)
+/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// let topic_name = "my-topic";
+/// let partition_id = 0;
+///
+/// let message = samsa::prelude::ProduceMessage {
+///         topic: topic_name.to_string(),
+///         partition_id,
+///         key: Some(bytes::Bytes::from_static(b"Tester")),
+///         value: Some(bytes::Bytes::from_static(b"Value")),
+///     };
+///
+/// let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
 ///     .await?
+///     .batch_timeout_ms(1)
+///     .max_batch_size(2)
+///     .clone()
 ///     .build()
 ///     .await;
 ///
 /// producer_client
-///     .produce(ProduceMessage {
-///         topic: topic_name,
-///         partition_id,
-///         key: Some(Bytes::from_static(b"Tester")),
-///         value: Some(Bytes::from_static(b"Value 1")),
-///     })
+///     .produce(message)
 ///     .await;
 /// ```
 pub struct Producer {

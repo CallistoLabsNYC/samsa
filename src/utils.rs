@@ -9,10 +9,6 @@ use tokio_stream::{Stream, StreamExt};
 use tracing::instrument;
 
 /// Fetch a set of offsets for a consumer group.
-///
-/// See this [protocol spec] for more information.
-///
-/// [protocol spec]: protocol::offset_fetch
 #[instrument(level = "debug")]
 pub async fn fetch_offset(
     correlation_id: i32,
