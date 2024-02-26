@@ -3,6 +3,12 @@ Rust-native Kafka/Redpanda protocol and client implementation.
 
 This crate provides Rust native consumers and producers as well as low level bindings for the Apache Kafka protocol. Unlike crates that use librdkafka in an FFI, users of this crate actually benefit from Rust all the way down; meaning memory safety, safe concurrency, low resource usage, and of course blazing speed.
 
+# Goals
+- Easy to understand code
+- Leverage best in class libraries such as Tokio, Nom to do the heavy lifting
+- Start with a robust foundation and add more advanced features over time
+- Provide a pure rust implementation of the Kafka protocol 
+- Be a good building block for future works based around Kafka
 
 ## Table of contents
 - [Getting started](#getting-started)
@@ -23,7 +29,7 @@ This project includes Docker Compose files to help set up Redpanda and Kafka clu
 ### Producer
 A producer sends messages to the given topic and partition. 
 
-It is buffered, with both a timeout and volumn threshold that clears the buffer when reached. This is how letency and throughout can be tweaked to achieve the desired rates.
+It is buffered, with both a timeout and volume threshold that clears the buffer when reached. This is how letency and throughout can be tweaked to achieve the desired rates.
 ```rust
 let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 let topic_name = "my-topic";
