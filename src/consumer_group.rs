@@ -99,7 +99,8 @@
 //! ).await?;
 //! ```
 //!
-//! [protocol module]: protocol
+//! [protocol module]: preulde::protocol
+//! [Consumer]: prelude::Consumer
 use std::collections::HashMap;
 
 use bytes::Bytes;

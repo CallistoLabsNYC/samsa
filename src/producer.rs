@@ -66,8 +66,8 @@
 //!     messages,
 //! ).await?;
 //! ```
-//! [protocol module]: protocol
-//! [ProducerBuilder]: ProducerBuilder
+//! [protocol module]: prelude::protocol
+//! [ProducerBuilder]: prelude::ProducerBuilder
 use std::collections::HashMap;
 
 use bytes::Bytes;
