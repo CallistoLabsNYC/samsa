@@ -2,6 +2,13 @@
 name = "samsa"
 version = "0.1.0"
 edition = "2021"
+description = "Rust-native Kafka/Redpanda protocol and client implementation."
+license-file = "LICENSE"
+homepage = "https://github.com/CallistoLabsNYC/samsa"
+repository = "https://github.com/CallistoLabsNYC/samsa"
+readme = "README.md"
+keywords = ["kafka", "redpanda", "confluent"]
+categories = ["api-bindings"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
