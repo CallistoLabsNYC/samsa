@@ -25,14 +25,14 @@ const DEFAULT_CLIENT_ID: &str = "samsa";
 
 pub mod prelude {
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
-    pub use crate::consumer::{commit_offset, fetch, PartitionOffsets};
+    pub use crate::consumer::{commit_offset, fetch, Consumer, PartitionOffsets};
     pub use crate::consumer_builder::ConsumerBuilder;
     pub use crate::consumer_group::{
         find_coordinator, heartbeat, join_group, leave_group, sync_group, ConsumerGroupBuilder,
     };
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::network::BrokerConnection;
-    pub use crate::producer::{produce, ProduceMessage};
+    pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
 
     pub use bytes;
