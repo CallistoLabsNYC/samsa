@@ -31,4 +31,4 @@ jobs:
     - name: build
       run: make
     - name: test
-      run: make check
+      run: rustup component add clippy && make check

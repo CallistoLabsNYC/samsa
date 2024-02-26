@@ -5,7 +5,7 @@ build:
 
 .PHONY: check
 check:
-	cargo-clippy -- --no-deps
+	cargo clippy -- --no-deps
 	cargo test --tests -- --show-output --test-threads=1
 
 
