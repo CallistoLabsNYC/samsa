@@ -18,14 +18,14 @@ const DEFAULT_BATCH_TIMEOUT_MS: u64 = 1000;
 /// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 /// let topic_name = "my-topic";
 /// let partition_id = 0;
-/// 
+///
 /// let message = samsa::prelude::ProduceMessage {
 ///         topic: topic_name.to_string(),
 ///         partition_id,
 ///         key: Some(bytes::Bytes::from_static(b"Tester")),
 ///         value: Some(bytes::Bytes::from_static(b"Value")),
 ///     };
-/// 
+///
 /// let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
 ///     .await?
 ///     .batch_timeout_ms(1)
@@ -33,7 +33,7 @@ const DEFAULT_BATCH_TIMEOUT_MS: u64 = 1000;
 ///     .clone()
 ///     .build()
 ///     .await;
-/// 
+///
 /// producer_client
 ///     .produce(message)
 ///     .await;
