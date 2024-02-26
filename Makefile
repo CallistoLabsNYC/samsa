@@ -1,6 +1,6 @@
 .PHONY: build
 build:
-	cargo build
+	cargo build --all --examples
 
 
 .PHONY: check
