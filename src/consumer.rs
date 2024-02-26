@@ -21,20 +21,24 @@
 //! needed.
 //! ### Example
 //! ```rust
-//! let consumer = consumer::ConsumerBuilder::new(
-//!     bootstrap_url,
-//!     HashMap::from([("my-topic", vec![0, 1, 2, 3])]),
+//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+//! let partitions = vec![0];
+//! let topic_name = "my-topic";
+//! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+//!
+//! let consumer = samsa::prelude::ConsumerBuilder::new(
+//!     bootstrap_addrs,
+//!     assignment,
 //! )
 //! .await?
 //! .build();
 //!
 //! let stream = consumer.into_stream();
-//!
 //! // have to pin streams before iterating
 //! tokio::pin!(stream);
 //!
 //! // Stream will do nothing unless consumed.
-//! while let Some((batch, offsets)) = stream.next().await {
+//! while let Some(Ok((batch, offsets))) = stream.next().await {
 //!     println!("{:?}", batch);
 //! }
 //! ```
@@ -188,20 +192,24 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 ///
 /// ### Example
 /// ```rust
-/// let consumer = consumer::ConsumerBuilder::new(
-///     bootstrap_url,
-///     HashMap::from([("my-topic", vec![0, 1, 2, 3])]),
+/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// let partitions = vec![0];
+/// let topic_name = "my-topic";
+/// let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+///
+/// let consumer = samsa::prelude::ConsumerBuilder::new(
+///     bootstrap_addrs,
+///     assignment,
 /// )
 /// .await?
 /// .build();
 ///
 /// let stream = consumer.into_stream();
-///
 /// // have to pin streams before iterating
 /// tokio::pin!(stream);
 ///
 /// // Stream will do nothing unless consumed.
-/// while let Some((batch, offsets)) = stream.next().await {
+/// while let Some(Ok((batch, offsets))) = stream.next().await {
 ///     println!("{:?}", batch);
 /// }
 /// ```

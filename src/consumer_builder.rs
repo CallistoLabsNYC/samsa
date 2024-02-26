@@ -11,6 +11,30 @@ use std::collections::HashMap;
 use tracing::instrument;
 
 /// Configure a [`Consumer`].
+///
+/// ### Example
+/// ```rust
+/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// let partitions = vec![0];
+/// let topic_name = "my-topic";
+/// let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+///
+/// let consumer = samsa::prelude::ConsumerBuilder::new(
+///     bootstrap_addrs,
+///     assignment,
+/// )
+/// .await?
+/// .build();
+///
+/// let stream = consumer.into_stream();
+/// // have to pin streams before iterating
+/// tokio::pin!(stream);
+///
+/// // Stream will do nothing unless consumed.
+/// while let Some(Ok((batch, offsets))) = stream.next().await {
+///     println!("{:?}", batch);
+/// }
+/// ```
 pub struct ConsumerBuilder {
     consumer: Consumer,
 }
