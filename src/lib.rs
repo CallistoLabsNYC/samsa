@@ -25,7 +25,7 @@ const DEFAULT_CLIENT_ID: &str = "samsa";
 
 pub mod prelude {
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
-    pub use crate::consumer::{commit_offset, fetch, Consumer, PartitionOffsets};
+    pub use crate::consumer::{commit_offset, fetch, Consumer, PartitionOffsets, TopicPartitions};
     pub use crate::consumer_builder::ConsumerBuilder;
     pub use crate::consumer_group::{
         find_coordinator, heartbeat, join_group, leave_group, sync_group, ConsumerGroupBuilder,
