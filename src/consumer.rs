@@ -174,7 +174,7 @@ impl FetchParams {
 }
 
 type TopicPartitionKey = (String, i32);
-/// Used to represent topic partition assignemnts.
+/// Used to represent topic partition assignments.
 pub type TopicPartitions = HashMap<String, Vec<i32>>;
 /// Used to represent topic partition offsets.
 pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
