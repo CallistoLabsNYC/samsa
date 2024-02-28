@@ -33,10 +33,12 @@ jobs:
     - name: test
       run: rustup component add clippy && make check
 
-  crates.io:
-    stage: publish
+  publish:
     only:
       - tags
-    image: rust:$RUST_VERSION
-    script:
-      - cargo publish --token ${CARGO_REGISTRY_TOKEN}
+    steps:
+      - uses: actions/checkout@v3
+      - name: rustup
+        run: rustup default $RUST_VERSION
+      - name: publish
+        run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
