@@ -32,13 +32,3 @@ jobs:
       run: make
     - name: test
       run: rustup component add clippy && make check
-
-  publish:
-    only:
-      - tags
-    steps:
-      - uses: actions/checkout@v3
-      - name: rustup
-        run: rustup default $RUST_VERSION
-      - name: publish
-        run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
