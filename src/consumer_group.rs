@@ -1,106 +1,5 @@
 //! Consumer which cooperates with others to consume data.
-//!
-//! # Consumer Group Module
-//!
-//! We provide a Consumer Group struct that takes care of the inner details relating
-//! to all things Kafka.
-//!
-//! We also provide low level methods that allow users to interface with the
-//! Kafka API directly if they so choose. For those looking to get their hands
-//! even dirtier and handle the specific requests and responses that make up
-//! the Kafka protocol, visit the [protocol module].
-//!
-//! ## ConsumerGroup
-//! The [`ConsumerGroup`] struct is an abstraction over the typical Kafka Consumer Groups.
-//! This struct represents one member. It is used similarly to the [`Consumer`] in that it
-//! is based on streams.
-//!
-//! To use, simply provide the initial bootstrap broker, the group id, and the assignments
-//! to the [`ConsumerGroupBuilder`]. This you can use to configure the fetching parameters as needed.
-//!
-//! ### Example
-//! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
-//! let partitions = vec![0];
-//! let topic_name = "my-topic";
-//! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
-//! let group_id = "The Data Boyz".to_string();
-//!
-//! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
-//!     bootstrap_addrs,
-//!     group_id,
-//!     assignment,
-//! ).await?
-//! .build().await?;
-//!
-//! let stream = consumer_group_member.into_stream();
-//! // have to pin streams before iterating
-//! tokio::pin!(stream);
-//!
-//! // Stream will do nothing unless consumed.
-//! while let Some(batch) = stream.next().await {
-//!     println!("{:?}", batch);
-//! }
-//! ```
-//!
-//! ## Protocol functions
-//! We provide a set of protocol primitives for users to build their own clients.
-//! They are presented as the building blocks that we use to build the higher level
-//! abstractions.
-//!
-//! ### Join Group
-//! [`join_group`] Become a member of a group, creating it if there are no active members..
-//! #### Example
-//! ```rust
-//! let join_response = join_group(
-//!     correlation_id,
-//!     client_id,
-//!     group_id,
-//!     session_timeout_ms,
-//!     rebalance_timeout_ms,
-//!     member_id,
-//!     protocol_type,
-//!     protocols,
-//! ).await?;
-//! ```
-//!  ### Sync Group
-//! [`sync_group`] Synchronize state for all members of a group.
-//! #### Example
-//! ```rust
-//! let sync_response = sync_group(
-//!     correlation_id,
-//!     client_id,
-//!     group_id,
-//!     generation_id,
-//!     member_id,
-//!     assignments,
-//! ).await?;
-//! ```
-//!
-//! ### Heartbeat
-//! [`heartbeat`] Keep a member alive in the group.
-//! #### Example
-//! ```rust
-//! let heartbeat_response = heartbeat(
-//!     correlation_id,
-//!     client_id,
-//!     group_id,
-//!     generation_id,
-//!     member_id,
-//! ).await?;
-//! ```
-//!
-//! ### Leave Group
-//! [`leave_group`] Directly depart a group.
-//! #### Example
-//! ```rust
-//! let leave_response = leave_group(
-//!     correlation_id, client_id, group_id, member_id
-//! ).await?;
-//! ```
-//!
-//! [protocol module]: preulde::protocol
-//! [Consumer]: prelude::Consumer
+
 use std::collections::HashMap;
 
 use bytes::Bytes;
@@ -155,7 +54,7 @@ pub struct ConsumerGroup {
 }
 
 impl<'a> ConsumerGroupBuilder {
-    /// Start a consumer group builder. To complete, use the [`build`] method.
+    /// Start a consumer group builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
         bootstrap_addrs: Vec<String>,
         group_id: String,

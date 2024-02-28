@@ -1,9 +1,5 @@
 //! Encoding and creation for Fetch requests.
 //!
-//! ### Example
-//! ```rust
-//! ```
-//!
 //! ### Protocol Def
 //! ```text
 //! Fetch Request (Version: 4) => replica_id max_wait_ms min_bytes max_bytes isolation_level [topics]
