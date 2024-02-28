@@ -18,5 +18,5 @@ jobs:
           run: rustup default $RUST_VERSION
         - name: publish
           env:
-            SUPER_SECRET: ${{ secrets.SuperSecret }}
+            CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           run: cargo publish --token ${CARGO_REGISTRY_TOKEN}
