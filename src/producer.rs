@@ -1,73 +1,5 @@
 //! Client that sends records to a cluster.
-//!
-//! # Producer Module
-//!
-//! We provide a Producer struct that takes care of the inner details
-//! relating to all things Kafka.
-//!
-//! We also provide low level methods that allow users to interface with
-//!  the Kafka API directly if they so choose. For those looking to get
-//! their hands even dirtier and handle the specific requests and
-//! responses that make up the Kafka protocol, visit the [protocol module].
-//!
-//! ## Producer
-//! The [`Producer`] struct is useful for easily sending messages to brokers.
-//! The producer is represented as a background worker containing a queue of messages to be
-//! sent upon meeting either of two conditions:
-//! - The maximum number of messages is filled
-//! - The wait time has ran out
-//! When either of these two are met, the record queue is flushed and sent to the appropriate
-//! brokers.
-//!
-//! To produce, simply provide the initial bootstrap brokers and the working topics
-//! to the [`ProducerBuilder`]. This you can use to configure the producing parameters as
-//! needed.
-//! ### Example
-//! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
-//! let topic_name = "my-topic";
-//! let partition_id = 0;
-//!
-//! let message = samsa::prelude::ProduceMessage {
-//!         topic: topic_name.to_string(),
-//!         partition_id,
-//!         key: Some(bytes::Bytes::from_static(b"Tester")),
-//!         value: Some(bytes::Bytes::from_static(b"Value")),
-//!     };
-//!
-//! let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
-//!     .await?
-//!     .batch_timeout_ms(1)
-//!     .max_batch_size(2)
-//!     .clone()
-//!     .build()
-//!     .await;
-//!
-//! producer_client
-//!     .produce(message)
-//!     .await;
-//! ```
-//!
-//! ## Protocol functions
-//! We provide a set of protocol primitives for users to build their own clients.
-//! They are presented as the building blocks that we use to build the higher level
-//! abstractions.
-//!
-//! ### Produce
-//! [`produce`] sends messages to a broker.
-//! #### Example
-//! ```rust
-//! produce(
-//!     broker_conn,
-//!     correlation_id,
-//!     client_id,
-//!     required_acks,
-//!     timeout_ms,
-//!     messages,
-//! ).await?;
-//! ```
-//! [protocol module]: prelude::protocol
-//! [ProducerBuilder]: prelude::ProducerBuilder
+
 use std::collections::HashMap;
 
 use bytes::Bytes;
@@ -111,7 +43,7 @@ impl ProduceParams {
 /// collect incoming messages in a queue. When the queue fills up,
 /// the messages are flushed. If the queue takes longer than a given
 /// time to fill up, the messages are flushed. These two configurable
-/// parameters found in the [`ProducerBuilder`] help dial in latency and throughput.
+/// parameters found in the [`ProducerBuilder`](crate::prelude::ProducerBuilder) help dial in latency and throughput.
 ///
 /// ### Example
 /// ```rust
@@ -212,9 +144,7 @@ pub(crate) async fn flush_producer(
 
 /// Produce messages to a broker.
 ///
-/// See this [protocol spec] for more information.
-///
-/// [protocol spec]: protocol::produce
+/// See this [protocol spec](crate::prelude::protocol::produce) for more information.
 pub async fn produce(
     broker_conn: BrokerConnection,
     correlation_id: i32,

@@ -142,7 +142,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     // Test offset fetch
     //
     let topic_partitions = HashMap::from([(topic, vec![PARTITION_ID])]);
-    let offset_fetch_response = samsa::prelude::utils::fetch_offset(
+    let offset_fetch_response = samsa::prelude::fetch_offset(
         CORRELATION_ID,
         CLIENT_ID,
         GROUP_ID,

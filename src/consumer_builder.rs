@@ -1,5 +1,4 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
-use crate::utils::fetch_offset;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
@@ -40,7 +39,7 @@ pub struct ConsumerBuilder {
 }
 
 impl<'a> ConsumerBuilder {
-    /// Start a consumer builder. To complete, use the [`build`] method.
+    /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
         bootstrap_addrs: Vec<String>,
         assigned_topic_partitions: TopicPartitions,
@@ -80,7 +79,7 @@ impl<'a> ConsumerBuilder {
         self.consumer.offsets = HashMap::new();
 
         // TODO: Make these all calls run async
-        // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html#examples
+        // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let offsets_list = list_offsets(
                 broker_conn,
@@ -247,15 +246,39 @@ impl<'a> ConsumerBuilder {
     }
 }
 
+/// Fetch a set of offsets for a consumer group.
+#[instrument(level = "debug")]
+pub async fn fetch_offset(
+    correlation_id: i32,
+    client_id: &str,
+    group_id: &str,
+    coordinator_conn: BrokerConnection,
+    topic_partitions: &TopicPartitions,
+) -> Result<protocol::OffsetFetchResponse> {
+    tracing::debug!(
+        "Fetching offset for group {} for {:?}",
+        group_id,
+        topic_partitions
+    );
+    let mut offset_request = protocol::OffsetFetchRequest::new(correlation_id, client_id, group_id);
+    for (topic_name, partitions) in topic_partitions.iter() {
+        for partition_index in partitions.iter() {
+            offset_request.add(topic_name, *partition_index);
+        }
+    }
+    coordinator_conn.send_request(&offset_request).await?;
+
+    let offset_response = coordinator_conn.receive_response().await?;
+    protocol::OffsetFetchResponse::try_from(offset_response.freeze())
+}
+
 /// Get information about the available offsets for a given topic partition.
 ///
 /// Used to ask for all messages before a certain time (ms). There are two special values. Specify -1 to receive the latest offset (i.e. the offset of the next coming message) and -2 to receive the earliest available offset. This applies to all versions of the API. Note that because offsets are pulled in descending order, asking for the earliest offset will always return you a single element.
 ///
-/// See this [protocol spec] for more information.
-///
-/// [protocol spec]: protocol::list_offsets
+/// See this [protocol spec](crate::prelude::protocol::list_offsets) for more information.
 #[instrument(level = "debug")]
-async fn list_offsets(
+pub async fn list_offsets(
     broker_conn: &BrokerConnection,
     correlation_id: i32,
     client_id: &str,

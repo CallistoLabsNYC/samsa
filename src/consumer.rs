@@ -1,114 +1,4 @@
 //! Client that consumes records from a cluster.
-//!
-//! # Consumer Module
-//!
-//! We provide a Consumer struct that takes care of the inner details relating
-//! to all things Kafka.
-//!
-//! We also provide low level methods that allow users to interface with the
-//! Kafka API directly if they so choose. For those looking to get their hands
-//! even dirtier and handle the specific requests and responses that make up
-//! the Kafka protocol, visit the [protocol module].
-//!
-//! ## Consumer
-//! The [`Consumer`] struct is useful to easily fetch messages from a broker. We use
-//! Asynchonous Iterators a.k.a. [`Streams`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html) to represent the repeated fetching of
-//! records from topic partitions. The streams have a plethora of functions that
-//! allow for very powerful stream processing.
-//!
-//! To consume, simply provide the initial bootstrap broker and the assignments
-//! to the [`ConsumerBuilder`]. This you can use to configure the fetching parameters as
-//! needed.
-//! ### Example
-//! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
-//! let partitions = vec![0];
-//! let topic_name = "my-topic";
-//! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
-//!
-//! let consumer = samsa::prelude::ConsumerBuilder::new(
-//!     bootstrap_addrs,
-//!     assignment,
-//! )
-//! .await?
-//! .build();
-//!
-//! let stream = consumer.into_stream();
-//! // have to pin streams before iterating
-//! tokio::pin!(stream);
-//!
-//! // Stream will do nothing unless consumed.
-//! while let Some(Ok((batch, offsets))) = stream.next().await {
-//!     println!("{:?}", batch);
-//! }
-//! ```
-//!
-//! ## Protocol functions
-//! We provide a set of protocol primitives for users to build their own clients.
-//! They are presented as the building blocks that we use to build the higher level
-//! abstractions.
-//!
-//! ### List Offsets
-//! [`list_offsets`] finds the offsets given a timestamp.
-//! #### Example
-//! ```rust
-//! let topic_partitions = HashMap::from([("my-topic", vec![0, 1, 2, 3])]);
-//! let offset_response = list_offsets(
-//!     conn,
-//!     correlation_id,
-//!     client_id,
-//!     topic_partitions,
-//!     -1
-//! ).await?;
-//! ```
-//!
-//! ### Fetch
-//! [`fetch`] fetches a batch of messages.
-//! #### Example
-//! ```rust
-//! let fetch_response = fetch(
-//!     broker_conn,
-//!     correlation_id,
-//!     client_id,
-//!     max_wait_ms,
-//!     min_bytes,
-//!     max_bytes,
-//!     max_partition_bytes,
-//!     isolation_level,
-//!     &topic_partitions,
-//!     offsets,
-//! ).await?;
-//! ```
-//!
-//! ### Fetch Offset
-//! [`fetch_offset`] gets the offsets of a consumer group.
-//! #### Example
-//! ```rust
-//! let offset_fetch_response = fetch_offset(
-//!     correlation_id,
-//!     client_id,
-//!     group_id,
-//!     coordinator_conn,
-//!     topic_partitions
-//! ).await?;
-//! ```
-//! ### Commit Offset
-//! [`commit_offset`] commits a set of offsets for a group.
-//! #### Example
-//! ```rust
-//! let offset_commit_response = commit_offset(
-//!     correlation_id,
-//!     client_id,
-//!     group_id,
-//!     coordinator_conn,
-//!     generation_id,
-//!     member_id,
-//!     offsets,
-//!     retention_time_ms,
-//! ).await?;
-//! ```
-//!
-//! [protocol module]: protocol
 
 use std::collections::HashMap;
 
@@ -187,6 +77,10 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 /// Represented as various types of [`Streams`](https://docs.rs/futures/latest/futures/stream/trait.Stream.html).
 /// These can be transformed, aggregated, and composed into newer streams
 /// to enable flexible stream processing.
+///
+/// To consume, simply provide the initial bootstrap broker and the assignments
+/// to the [`ConsumerBuilder`](crate::prelude::ConsumerBuilder). This you can use to configure the fetching parameters as
+/// needed.
 ///
 /// *Note:* The streams are lazy, so without anything to execute them, they will do nothing.
 ///
@@ -391,38 +285,6 @@ pub fn into_flat_stream(
             .map(|(batch, _)| batch),
         futures::stream::iter,
     )
-}
-
-/// Get information about the available offsets for a given topic partition.
-///
-/// Used to ask for all messages before a certain time (ms). There are two special values. Specify -1 to receive the latest offset (i.e. the offset of the next coming message) and -2 to receive the earliest available offset. This applies to all versions of the API. Note that because offsets are pulled in descending order, asking for the earliest offset will always return you a single element.
-///
-/// See this [protocol spec] for more information.
-///
-/// [protocol spec]: protocol::list_offsets
-#[instrument(level = "debug")]
-pub async fn list_offsets(
-    broker_conn: &BrokerConnection,
-    correlation_id: i32,
-    client_id: &str,
-    topic_partitions: &TopicPartitions,
-    timestamp: i64,
-) -> Result<protocol::ListOffsetsResponse> {
-    tracing::debug!(
-        "Listing offset for time {} for {:?}",
-        timestamp,
-        topic_partitions
-    );
-    let mut list_offsets_request = protocol::ListOffsetsRequest::new(correlation_id, client_id, -1);
-    for (topic_name, partitions) in topic_partitions.iter() {
-        for partition_index in partitions.iter() {
-            list_offsets_request.add(topic_name, *partition_index, timestamp);
-        }
-    }
-
-    broker_conn.send_request(&list_offsets_request).await?;
-    let list_offsets_response = broker_conn.receive_response().await?;
-    protocol::ListOffsetsResponse::try_from(list_offsets_response.freeze())
 }
 
 /// Commit a set of offsets for a consumer group.

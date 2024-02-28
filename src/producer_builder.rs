@@ -47,7 +47,7 @@ pub struct ProducerBuilder {
 }
 
 impl<'a> ProducerBuilder {
-    /// Start a producer builder. To complete, use the [`build`] method.
+    /// Start a producer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(bootstrap_addrs: Vec<String>, topics: Vec<String>) -> Result<Self> {
         let cluster_metadata =
             ClusterMetadata::new(bootstrap_addrs, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
@@ -63,7 +63,7 @@ impl<'a> ProducerBuilder {
     /// The max number of messages that will sit in queue to be produced.
     ///
     /// When the queue size surpasses this number, the queue will be flushed and
-    /// all records produced. Unless the [`batch_timeout_ms`] has passed, then the
+    /// all records produced. Unless the [`batch_timeout_ms`](Self::batch_timeout_ms) has passed, then the
     /// queue will be flushed regardless of its size.
     ///
     /// Increasing this number will increase latency, but also increase throughput.
@@ -75,7 +75,7 @@ impl<'a> ProducerBuilder {
     /// The maximum time a message will sit in the queue to be produced.
     ///
     /// Each batch will wait a maximum of this time, and then be flushed.
-    /// If the batch fills up with [`max_batch_size`] then it will be flushed
+    /// If the batch fills up with [`max_batch_size`](Self::max_batch_size) then it will be flushed
     /// before this time runs out.
     ///
     /// Decreasing this number will lower latency, but also lower throughput.
