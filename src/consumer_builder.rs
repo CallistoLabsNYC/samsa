@@ -1,4 +1,5 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
+use crate::metadata::ClusterMetadata;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
@@ -34,8 +35,16 @@ use tracing::instrument;
 ///     println!("{:?}", batch);
 /// }
 /// ```
+#[derive(Clone)]
 pub struct ConsumerBuilder {
-    consumer: Consumer,
+    /// Keeps track of the brokers and the topic partition info for the cluster.
+    pub(crate) cluster_metadata: ClusterMetadata,
+    /// Parameters for fetching.
+    pub(crate) fetch_params: FetchParams,
+    /// Assignment of topic partitions.
+    pub(crate) assigned_topic_partitions: TopicPartitions,
+    /// Offsets to read from for each assigned topic partition.
+    pub(crate) offsets: PartitionOffsets,
 }
 
 impl<'a> ConsumerBuilder {
@@ -54,12 +63,10 @@ impl<'a> ConsumerBuilder {
                 .await?;
 
         Ok(Self {
-            consumer: Consumer {
-                cluster_metadata,
-                assigned_topic_partitions,
-                fetch_params: FetchParams::new(),
-                offsets: HashMap::new(),
-            },
+            cluster_metadata,
+            fetch_params: FetchParams::new(),
+            assigned_topic_partitions,
+            offsets: HashMap::new(),
         })
     }
 
@@ -73,18 +80,17 @@ impl<'a> ConsumerBuilder {
         tracing::debug!("Seeking offsets to timestamp {}", timestamp);
         // TODO: Push this into the metadata
         let brokers_and_their_topic_partitions = self
-            .consumer
             .cluster_metadata
-            .get_connections_for_topic_partitions(&self.consumer.assigned_topic_partitions)?;
-        self.consumer.offsets = HashMap::new();
+            .get_connections_for_topic_partitions(&self.assigned_topic_partitions)?;
+        self.offsets = HashMap::new();
 
         // TODO: Make these all calls run async
         // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let offsets_list = list_offsets(
                 broker_conn,
-                self.consumer.fetch_params.correlation_id,
-                &self.consumer.fetch_params.client_id,
+                self.fetch_params.correlation_id,
+                &self.fetch_params.client_id,
                 &topic_partitions,
                 timestamp,
             )
@@ -103,20 +109,19 @@ impl<'a> ConsumerBuilder {
 
                 // this is a sneaky way to use data that we own :)
                 let topic_name = self
-                    .consumer
                     .cluster_metadata
                     .topic_names
                     .iter()
                     .find(|my_topic| **my_topic == topic_name)
                     .unwrap();
 
-                self.consumer.offsets.insert(
+                self.offsets.insert(
                     (topic_name.to_owned(), partition.partition_index),
                     partition.offset,
                 );
             }
         }
-        tracing::trace!("Offsets set to {:?}", self.consumer.offsets);
+        tracing::trace!("Offsets set to {:?}", self.offsets);
 
         Ok(self)
     }
@@ -134,14 +139,14 @@ impl<'a> ConsumerBuilder {
         group_id: &str,
     ) -> Result<Self> {
         tracing::debug!("Seeking offsets to group {}", group_id);
-        let fetch_params = &self.consumer.fetch_params;
+        let fetch_params = &self.fetch_params;
 
         let offset_response = fetch_offset(
             fetch_params.correlation_id,
             &fetch_params.client_id,
             group_id,
             coordinator_conn,
-            &self.consumer.assigned_topic_partitions,
+            &self.assigned_topic_partitions,
         )
         .await?;
 
@@ -162,7 +167,6 @@ impl<'a> ConsumerBuilder {
             })?;
 
             let topic_name = self
-                .consumer
                 .cluster_metadata
                 .topic_names
                 .iter()
@@ -181,11 +185,10 @@ impl<'a> ConsumerBuilder {
                 partition.committed_offset
             };
 
-            self.consumer
-                .offsets
+            self.offsets
                 .insert((topic_name.to_owned(), partition.partition_index), offset);
         }
-        tracing::trace!("Offsets set to {:?}", self.consumer.offsets);
+        tracing::trace!("Offsets set to {:?}", self.offsets);
 
         Ok(self)
     }
@@ -195,54 +198,59 @@ impl<'a> ConsumerBuilder {
     /// Overwrites the current offsets with the given offsets.
     pub fn seek(mut self, offsets: &PartitionOffsets) -> Self {
         tracing::debug!("Seeking offsets to given values");
-        self.consumer.offsets = offsets.clone();
-        tracing::trace!("Offsets set to {:?}", self.consumer.offsets);
+        self.offsets = offsets.clone();
+        tracing::trace!("Offsets set to {:?}", self.offsets);
 
         self
     }
 
     pub fn correlation_id(mut self, correlation_id: i32) -> Self {
-        self.consumer.fetch_params.correlation_id = correlation_id;
+        self.fetch_params.correlation_id = correlation_id;
         self
     }
 
     pub fn client_id(mut self, client_id: String) -> Self {
-        self.consumer.fetch_params.client_id = client_id;
+        self.fetch_params.client_id = client_id;
         self
     }
 
     /// The maximum time in milliseconds to wait for the response.
     pub fn max_wait_ms(mut self, max_wait_ms: i32) -> Self {
-        self.consumer.fetch_params.max_wait_ms = max_wait_ms;
+        self.fetch_params.max_wait_ms = max_wait_ms;
         self
     }
 
     /// The minimum bytes to accumulate in the response.
     pub fn min_bytes(mut self, min_bytes: i32) -> Self {
-        self.consumer.fetch_params.min_bytes = min_bytes;
+        self.fetch_params.min_bytes = min_bytes;
         self
     }
 
     /// The maximum bytes to fetch. See KIP-74 for cases where this limit may not be honored.
     pub fn max_bytes(mut self, max_bytes: i32) -> Self {
-        self.consumer.fetch_params.max_bytes = max_bytes;
+        self.fetch_params.max_bytes = max_bytes;
         self
     }
 
     /// The maximum bytes to fetch from the partitions. See KIP-74 for cases where this limit may not be honored.
     pub fn max_partition_bytes(mut self, max_partition_bytes: i32) -> Self {
-        self.consumer.fetch_params.max_partition_bytes = max_partition_bytes;
+        self.fetch_params.max_partition_bytes = max_partition_bytes;
         self
     }
 
     /// This setting controls the visibility of transactional records. Using READ_UNCOMMITTED (isolation_level = 0) makes all records visible. With READ_COMMITTED (isolation_level = 1), non-transactional and COMMITTED transactional records are visible. To be more concrete, READ_COMMITTED returns all data from offsets smaller than the current LSO (last stable offset), and enables the inclusion of the list of aborted transactions in the result, which allows consumers to discard ABORTED transactional records
     pub fn isolation_level(mut self, isolation_level: i8) -> Self {
-        self.consumer.fetch_params.isolation_level = isolation_level;
+        self.fetch_params.isolation_level = isolation_level;
         self
     }
 
     pub fn build(self) -> Consumer {
-        self.consumer
+        Consumer {
+            cluster_metadata: self.cluster_metadata,
+            fetch_params: self.fetch_params,
+            assigned_topic_partitions: self.assigned_topic_partitions,
+            offsets: self.offsets,
+        }
     }
 }
 
