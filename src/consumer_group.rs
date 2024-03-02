@@ -8,7 +8,7 @@ use tokio_stream::{Stream, StreamExt};
 
 use crate::{
     assignor::{assign, ROUND_ROBIN_PROTOCOL},
-    consumer::{FetchParams, StreamMessage, TopicPartitions},
+    consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
     error::{Error, KafkaCode, Result},
     network::BrokerConnection,
@@ -159,7 +159,7 @@ impl<'a> ConsumerGroupBuilder {
 }
 
 impl ConsumerGroup {
-    pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<StreamMessage>>> {
+    pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> {
         async_stream::stream! {
             loop {
                 tracing::info!(
