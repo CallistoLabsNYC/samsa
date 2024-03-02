@@ -4,7 +4,7 @@ use samsa::prelude::{ConsumerBuilder, Error, TopicPartitions};
 
 #[tokio::test]
 async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
-    let (skip, brokers, _topic) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }
@@ -15,7 +15,7 @@ async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
 
 #[tokio::test]
 async fn it_can_build_with_ref_to_builder() -> Result<(), Box<Error>> {
-    let (skip, brokers, _topic) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }

@@ -2,6 +2,7 @@ use samsa::prelude::{BrokerConnection, Error};
 use std::env;
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
+#[allow(dead_code)]
 const KAFKA_TOPIC: &str = "KAFKA_TOPIC";
 
 #[allow(dead_code)]
@@ -30,6 +31,7 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
     Ok((false, brokers))
 }
 
+#[allow(dead_code)]
 pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
     let (skip, brokers) = get_brokers()?;
     if skip {
