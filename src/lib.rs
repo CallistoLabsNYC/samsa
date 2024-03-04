@@ -435,3 +435,52 @@ pub mod prelude {
         pub use crate::protocol::*;
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{encode::ToByte, parser::take_varint};
+    use nombytes::NomBytes;
+
+    #[test]
+    fn varint_simple() {
+        let mut buf = vec![];
+        let orig: usize = 11;
+
+        orig.encode(&mut buf).unwrap();
+        assert_eq!(buf, [22]);
+
+        assert_eq!(
+            take_varint::<()>(NomBytes::from(buf.as_slice())),
+            Ok((NomBytes::from(b"" as &[u8]), orig))
+        );
+    }
+
+    #[test]
+    fn varint_twobyte() {
+        let mut buf = vec![];
+        let orig: usize = 260;
+
+        orig.encode(&mut buf).unwrap();
+        assert_eq!(buf, [136, 4]);
+
+        assert_eq!(
+            take_varint::<()>(NomBytes::from(buf.as_slice())),
+            Ok((NomBytes::from(b"" as &[u8]), orig))
+        );
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn varlong() {
+        let mut buf = vec![];
+        let orig: usize = 9223372036854775807;
+
+        orig.encode(&mut buf).unwrap();
+        assert_eq!(buf, [254, 255, 255, 255, 255, 255, 255, 255, 255, 1]);
+
+        assert_eq!(
+            take_varint::<()>(NomBytes::from(buf.as_slice())),
+            Ok((NomBytes::from(b"" as &[u8]), orig))
+        );
+    }
+}

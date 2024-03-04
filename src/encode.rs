@@ -66,6 +66,26 @@ impl ToByte for i64 {
     }
 }
 
+fn zigzag_encode(from: usize) -> u64 {
+    ((from << 1) ^ (from >> 63)) as u64
+}
+
+pub const MSB: u8 = 0b1000_0000;
+impl<'a> ToByte for usize {
+    fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
+        let mut n: u64 = zigzag_encode(*self);
+
+        while n >= 0x80 {
+            buffer.put_u8(MSB | (n as u8));
+            n >>= 7;
+        }
+
+        buffer.put_u8(n as u8);
+
+        Ok(())
+    }
+}
+
 impl ToByte for str {
     fn encode<T: BufMut>(&self, buffer: &mut T) -> Result<()> {
         let l = try_usize_to_int!(self.len(), i16);
@@ -218,6 +238,34 @@ fn codec_i64() {
     // Encode into buffer
     orig.encode(&mut buf).unwrap();
     assert_eq!(buf, [0, 0, 0, 0, 0, 0, 0, 5]);
+}
+
+#[test]
+fn codec_varint_simple() {
+    let mut buf = vec![];
+    let orig: usize = 11;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [22]);
+}
+
+#[test]
+fn codec_varint_twobyte() {
+    let mut buf = vec![];
+    let orig: usize = 260;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [136, 4]);
+}
+
+#[cfg(target_pointer_width = "64")]
+#[test]
+fn codec_varlong() {
+    let mut buf = vec![];
+    let orig: usize = 9223372036854775807;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [254, 255, 255, 255, 255, 255, 255, 255, 255, 1]);
 }
 
 #[test]
