@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use samsa::prelude::{ProduceMessage, ProducerBuilder};
+use samsa::prelude::{protocol::{Header, Message}, ProduceMessage, ProducerBuilder};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -34,24 +34,33 @@ async fn main() -> Result<(), ()> {
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value 1")),
+                message: Message {
+                    key: Some(Bytes::from_static(b"Tester")),
+                    value: Some(Bytes::from_static(b"Value 1")),
+                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
+                },
             })
             .await;
         producer_client
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value 2")),
+                message: Message {
+                    key: Some(Bytes::from_static(b"Tester")),
+                    value: Some(Bytes::from_static(b"Value 2")),
+                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
+                },
             })
             .await;
         producer_client
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value 3")),
+                message: Message {
+                    key: Some(Bytes::from_static(b"Tester")),
+                    value: Some(Bytes::from_static(b"Value 1")),
+                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
+                },
             })
             .await;
     }

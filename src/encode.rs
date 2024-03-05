@@ -59,6 +59,13 @@ impl ToByte for i32 {
     }
 }
 
+impl ToByte for u32 {
+    fn encode<T: BufMut>(&self, buffer: &mut T) -> Result<()> {
+        buffer.put_u32(*self);
+        Ok(())
+    }
+}
+
 impl ToByte for i64 {
     fn encode<T: BufMut>(&self, buffer: &mut T) -> Result<()> {
         buffer.put_i64(*self);
@@ -66,21 +73,19 @@ impl ToByte for i64 {
     }
 }
 
-fn zigzag_encode(from: usize) -> u64 {
-    ((from << 1) ^ (from >> 63)) as u64
-}
 
-pub const MSB: u8 = 0b1000_0000;
 impl<'a> ToByte for usize {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
-        let mut n: u64 = zigzag_encode(*self);
-
-        while n >= 0x80 {
-            buffer.put_u8(MSB | (n as u8));
-            n >>= 7;
+        let mut n = *self;
+        loop {
+            if n < 0x80 {
+                buffer.put_u8(n as u8);
+                break;
+            } else {
+                buffer.put_u8(((n & 0x7F) | 0x80) as u8);
+                n >>= 7;
+            }
         }
-
-        buffer.put_u8(n as u8);
 
         Ok(())
     }
@@ -191,11 +196,21 @@ impl ToByte for Option<Bytes> {
     }
 }
 
+// why is this using i32 when strings need i16?
 impl<'a> ToByte for Option<&'a str> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         match *self {
             Some(xs) => xs.encode(buffer),
             None => (-1i32).encode(buffer),
+        }
+    }
+}
+
+impl<'a> ToByte for Option<String> {
+    fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
+        match self {
+            Some(xs) => xs.encode(buffer),
+            None => (-1i16).encode(buffer),
         }
     }
 }

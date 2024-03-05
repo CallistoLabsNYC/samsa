@@ -185,6 +185,7 @@ impl BrokerConnection {
         size.encode(&mut &mut buffer[..])?;
 
         tracing::trace!("Sending bytes {}", buffer.len());
+        println!("{:?}", buffer);
         self.write(&buffer).await?;
 
         Ok(())

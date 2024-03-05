@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 
-use bytes::Bytes;
 use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
@@ -10,7 +9,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol::{ProduceRequest, ProduceResponse},
+    protocol::{Message, ProduceRequest, ProduceResponse},
     DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -80,8 +79,7 @@ pub struct ProducerSink;
 /// Common produce message format.
 #[derive(Clone)]
 pub struct ProduceMessage {
-    pub key: Option<Bytes>,
-    pub value: Option<Bytes>,
+    pub message: Message,
     pub topic: String,
     pub partition_id: i32,
 }
@@ -112,15 +110,7 @@ pub(crate) async fn flush_producer(
 
         match brokers_and_messages.get_mut(&broker_id) {
             None => {
-                brokers_and_messages.insert(
-                    broker_id,
-                    vec![ProduceMessage {
-                        key: message.key,
-                        value: message.value,
-                        topic: message.topic,
-                        partition_id: message.partition_id,
-                    }],
-                );
+                brokers_and_messages.insert(broker_id, vec![message]);
             }
             Some(messages) => messages.push(message),
         };
@@ -162,8 +152,7 @@ pub async fn produce(
         produce_request.add(
             &message.topic,
             message.partition_id,
-            message.key.clone(),
-            message.value.clone(),
+            message.message.clone(),
         );
     }
 
