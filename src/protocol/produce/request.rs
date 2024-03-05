@@ -155,7 +155,7 @@ impl ToByte for Partition {
         tracing::trace!("Encoding Partition {:?}", self);
         self.partition.encode(out)?;
 
-        // hack to encode the record batches as a bytestring
+        // encode the record batches as a bytestring not array
         let mut buf = Vec::with_capacity(4);
         for msg in &self.batches {
             msg._encode_to_buf(&mut buf)?;
@@ -210,8 +210,6 @@ impl Message {
 struct RecordBatch {
     /// Denotes the first offset in the RecordBatch. The 'offsetDelta' of each Record in the batch would be be computed relative to this FirstOffset. In particular, the offset of each Record in the Batch is its 'OffsetDelta' + 'FirstOffset'.
     base_offset: i64,
-
-    batch_length: i32,
     /// Introduced with KIP-101, this is set by the broker upon receipt of a produce request and is used to ensure no loss of data when there are leader changes with log truncation. Client developers do not need to worry about setting this value.
     partition_leader_epoch: i32,
     /// This is a version id used to allow backwards compatible evolution of the message binary format.
@@ -238,17 +236,16 @@ impl RecordBatch {
     pub fn new() -> Self {
         Self {
             base_offset: 0,
-            batch_length: 0,
-            partition_leader_epoch: 0,
+            partition_leader_epoch: -1,
             magic: MESSAGE_MAGIC_BYTE,
             crc: 0,
             attributes: 0,
-            last_offset_delta: 0,
+            last_offset_delta: -1,
             base_timestamp: now(),
             max_timestamp: 0,
-            producer_id: 0,
-            producer_epoch: 0,
-            base_sequence: 0,
+            producer_id: -1,
+            producer_epoch: -1,
+            base_sequence: -1,
             records: Vec::new(),
         }
     }
@@ -258,39 +255,42 @@ impl RecordBatch {
         self.last_offset_delta += 1;
         self.max_timestamp = now();
 
-        // find out our deltas
+        // calculate our deltas
         let timestamp_delta = self.max_timestamp - self.base_timestamp;
         let offset_delta = self.last_offset_delta;
 
         let record = Record::new(message, timestamp_delta as usize, offset_delta as usize);
         self.records.push(record);
-
-        self.batch_length = self.batch_length + 1;
     }
 
     pub fn _encode_to_buf(&self, out: &mut Vec<u8>) -> Result<()> {
         self.base_offset.encode(out)?;
-        self.batch_length.encode(out)?;
-        self.partition_leader_epoch.encode(out)?;
-        self.magic.encode(out)?;
-        // counted up the bytes of data used so far
-        // 8 + 4 + 4 + 1
-        let crc_pos = 17;
-        self.crc.encode(out)?;
 
-        self.attributes.encode(out)?;
-        self.last_offset_delta.encode(out)?;
-        self.base_timestamp.encode(out)?;
-        self.max_timestamp.encode(out)?;
-        self.producer_id.encode(out)?;
-        self.producer_epoch.encode(out)?;
-        self.base_sequence.encode(out)?;
-        for record in &self.records {
-            record.encode(out)?;
-        }
+        // delaying record length calculation
 
-        let crc = to_crc(&out[(crc_pos + 4)..]) as i32;
-        crc.encode(&mut &mut out[crc_pos..crc_pos + 4])?;
+        let mut buf = Vec::with_capacity(4);
+        self.partition_leader_epoch.encode(&mut buf)?;
+        self.magic.encode(&mut buf)?;
+
+        // will replace crc once we can calculate it
+        let crc_pos = 5;
+        self.crc.encode(&mut buf)?;
+
+        self.attributes.encode(&mut buf)?;
+        self.last_offset_delta.encode(&mut buf)?;
+        self.base_timestamp.encode(&mut buf)?;
+        self.max_timestamp.encode(&mut buf)?;
+        self.producer_id.encode(&mut buf)?;
+        self.producer_epoch.encode(&mut buf)?;
+        self.base_sequence.encode(&mut buf)?;
+        self.records.encode(&mut buf)?;
+
+        let crc = to_crc(&buf[(crc_pos + 4)..]);
+        println!("{}", crc);
+        crc.encode(&mut &mut buf[crc_pos..crc_pos + 4])?;
+
+        // encode the record as bytes with the length in front
+        buf.encode(out)?;
 
         Ok(())
     }
@@ -339,26 +339,35 @@ impl Record {
     }
 
     pub fn _encode_to_buf(&self, out: &mut Vec<u8>) -> Result<()> {
-        // self.length.encode(out)?;
         self.attributes.encode(out)?;
         self.timestamp_delta.encode(out)?;
         self.offset_delta.encode(out)?;
+
+        // the key is a varint length followed by bytes
         self.key_length.encode(out)?;
         out.put(self.key.clone().unwrap_or(Bytes::from("")));
+
+        // the value is a varint length followed by bytes
         self.value_length.encode(out)?;
         out.put(self.value.clone().unwrap_or(Bytes::from("")));
-        self.headers.encode(out)?;
+
+        // we will hold off on headers for now
+        let header_length: usize = 0;
+        header_length.encode(out)?;
+        // self.headers.encode(out)?;
+
         Ok(())
     }
 }
 
 impl ToByte for Record {
     fn encode<W: BufMut>(&self, out: &mut W) -> Result<()> {
+
         let mut buf = Vec::with_capacity(4);
         self._encode_to_buf(&mut buf)?;
         let length = buf.len();
-        println!("{} length", length);
-        println!("{:?} buf", buf);
+        
+        // the record is a varint length followed by bytes
         length.encode(out)?;
         out.put(buf.as_ref());
 
@@ -400,36 +409,3 @@ impl ToByte for Header {
         Ok(())
     }
 }
-
-/*
-
-[0, 0, 0, 176, // len
-0, 0, // api key
-0, 3, // api version
-0, 0, 0, 1, // correlation id
- 0, 41, 112, 114, 111, 100, 117, 99, 101, 32, 38, 32, 102, 101, 116, 99, 104, 32, 112, 114, 111, 116, 111, 99, 111, 108, 32, 105, 110, 116, 101, 103, 114, 97, 116, 105, 111, 110, 32, 116, 101, 115, 116, 
-255, 255, // transactional id 
-0, 1, // acks
-0, 0, 3, 232, // timeout
-0, 0, 0, 1, // topic count
-0, 6, 116, 101, 115, 116, 101, 114, // topic name
-0, 0, 0, 1, // partition count
-0, 0, 0, 0, // partition index
-
-0, 0, 0, 93, // batch bytecount
-0, 0, 0, 0, 0, 0, 0, 0, // batch offset
-0, 0, 0, 1, // count of records
-0, 0, 0, 0, // partition leader epoch
-2, // magic number
-42, 1, 145, 34, // crc
-0, 0, // attributes
-0, 0, 0, 1, // lastOffsetDelta
-0, 0, 1, 142, 14, 253, 61, 75, // base timestamp
-0, 0, 1, 142, 14, 253, 61, 75, // max timestamp
-0, 0, 0, 0, 0, 0, 0, 0, // producer_id
-0, 0, // producer epoch
-0, 0, 0, 0, // base seq
-0, 0, 0, 1, // length of records?
-62, 0, 0, 2, 36, 116, 101, 115, 116, 105, 110, 103, 32, 116, 101, 115, 116, 105, 110, 103, 46, 46, 46, 8, 49, 50, 51, 33, 0, 0, 0, 0]
-
-*/
