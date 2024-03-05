@@ -174,16 +174,12 @@ impl ToByte for Partition {
 pub struct Message {
     pub key: Option<Bytes>,
     pub value: Option<Bytes>,
-    pub headers: Vec<Header>,
+    // pub headers: Vec<Header>,
 }
 
 impl Message {
-    pub fn new(key: Option<Bytes>, value: Option<Bytes>, headers: Vec<Header>) -> Message {
-        Message {
-            key,
-            value,
-            headers,
-        }
+    pub fn new(key: Option<Bytes>, value: Option<Bytes>) -> Message {
+        Message { key, value }
     }
 }
 
@@ -338,7 +334,7 @@ impl Record {
                 None => 0,
             },
             value: message.value,
-            headers: message.headers,
+            headers: vec![],
         }
     }
 

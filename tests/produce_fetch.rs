@@ -29,7 +29,6 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
         protocol::Message {
             key: Some(key.clone()),
             value: Some(value.clone()),
-            headers: vec![],
         },
     );
 
@@ -97,7 +96,6 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         message: protocol::Message {
             key: Some(key.clone()),
             value: Some(value.clone()),
-            headers: vec![],
         },
         topic: topic.clone(),
         partition_id: PARTITION_ID,

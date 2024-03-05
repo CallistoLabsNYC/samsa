@@ -40,7 +40,6 @@ async fn main() -> Result<(), ()> {
                 message: Message {
                     key: Some(Bytes::from_static(b"Tester")),
                     value: Some(Bytes::from_static(b"Value 1")),
-                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
                 },
             })
             .await;
@@ -51,7 +50,6 @@ async fn main() -> Result<(), ()> {
                 message: Message {
                     key: Some(Bytes::from_static(b"Tester")),
                     value: Some(Bytes::from_static(b"Value 2")),
-                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
                 },
             })
             .await;
@@ -62,7 +60,6 @@ async fn main() -> Result<(), ()> {
                 message: Message {
                     key: Some(Bytes::from_static(b"Tester")),
                     value: Some(Bytes::from_static(b"Value 1")),
-                    headers: vec![Header::new(String::from("header"), Bytes::from("value"))],
                 },
             })
             .await;

@@ -59,7 +59,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 1")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -68,7 +67,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 2")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -77,7 +75,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 1")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -86,7 +83,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -95,7 +91,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -104,7 +99,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -113,7 +107,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -122,7 +115,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -131,7 +123,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -140,7 +131,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -149,7 +139,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -158,7 +147,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -167,7 +155,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -176,7 +163,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -185,7 +171,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -194,7 +179,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -203,7 +187,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -212,7 +195,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -221,7 +203,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -230,7 +211,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -239,7 +219,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -248,7 +227,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         produce_req.add(
@@ -257,7 +235,6 @@ mod test {
             protocol::Message {
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![],
             },
         );
         let mut buffer = Vec::with_capacity(4);
