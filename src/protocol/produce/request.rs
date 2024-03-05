@@ -286,7 +286,6 @@ impl RecordBatch {
         self.records.encode(&mut buf)?;
 
         let crc = to_crc(&buf[(crc_pos + 4)..]);
-        println!("{}", crc);
         crc.encode(&mut &mut buf[crc_pos..crc_pos + 4])?;
 
         // encode the record as bytes with the length in front

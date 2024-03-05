@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<Error>> {
 
     conn.send_request(&produce_request).await?;
     let bytess = conn.receive_response().await?.freeze();
-
+    println!("{:?}", bytess);
     let produce_response = protocol::ProduceResponse::try_from(bytess)?;
     println!("produce response {:?}", produce_response);
 

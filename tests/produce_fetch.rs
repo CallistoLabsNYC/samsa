@@ -32,7 +32,6 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
             headers: vec![],
         },
     );
-    println!("{:?}", produce_request);
 
     conn.send_request(&produce_request).await?;
     let bytess = conn.receive_response().await?.freeze();
