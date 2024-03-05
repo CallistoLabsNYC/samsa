@@ -73,19 +73,21 @@ impl ToByte for i64 {
     }
 }
 
+fn zigzag_encode(from: usize) -> u64 {
+    ((from << 1) ^ (from >> 63)) as u64
+}
 
+pub const MSB: u8 = 0b1000_0000;
 impl<'a> ToByte for usize {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
-        let mut n = *self;
-        loop {
-            if n < 0x80 {
-                buffer.put_u8(n as u8);
-                break;
-            } else {
-                buffer.put_u8(((n & 0x7F) | 0x80) as u8);
-                n >>= 7;
-            }
+        let mut n: u64 = zigzag_encode(*self);
+
+        while n >= 0x80 {
+            buffer.put_u8(MSB | (n as u8));
+            n >>= 7;
         }
+
+        buffer.put_u8(n as u8);
 
         Ok(())
     }
