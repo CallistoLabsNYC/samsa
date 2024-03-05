@@ -78,7 +78,7 @@ fn zigzag_encode(from: usize) -> u64 {
 }
 
 pub const MSB: u8 = 0b1000_0000;
-impl<'a> ToByte for usize {
+impl ToByte for usize {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         let mut n: u64 = zigzag_encode(*self);
 
@@ -208,7 +208,7 @@ impl<'a> ToByte for Option<&'a str> {
     }
 }
 
-impl<'a> ToByte for Option<String> {
+impl ToByte for Option<String> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         match self {
             Some(xs) => xs.encode(buffer),

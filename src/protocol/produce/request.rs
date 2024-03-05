@@ -147,7 +147,7 @@ impl Partition {
 
     // all records go into one batch, we have to find out how to
     pub fn add(&mut self, message: Message) {
-        if self.batches.len() == 0 {
+        if self.batches.is_empty() {
             self.batches.push(RecordBatch::new());
         }
 
@@ -315,6 +315,7 @@ struct Record {
     key: Option<Bytes>,
     value_length: usize,
     value: Option<Bytes>,
+    #[allow(dead_code)]
     headers: Vec<Header>,
 }
 

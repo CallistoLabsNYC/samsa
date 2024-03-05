@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use samsa::prelude::{
-    protocol::{Header, Message},
+    protocol::Message,
     ProduceMessage, ProducerBuilder,
 };
 
