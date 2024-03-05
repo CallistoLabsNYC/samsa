@@ -151,7 +151,7 @@ impl<'a> Consumer {
         Ok(responses)
     }
 
-    async fn next_batch(&mut self) -> Result<(Vec<StreamMessage>, PartitionOffsets)> {
+    pub async fn next_batch(&mut self) -> Result<(Vec<StreamMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
         let mut records = vec![];
 
