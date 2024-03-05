@@ -415,7 +415,7 @@ pub mod prelude {
     //!
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
     pub use crate::consumer::{
-        commit_offset, fetch, Consumer, PartitionOffsets, StreamMessage, TopicPartitions,
+        commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions,
     };
     pub use crate::consumer_builder::{fetch_offset, list_offsets, ConsumerBuilder};
     pub use crate::consumer_group::{

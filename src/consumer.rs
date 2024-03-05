@@ -21,9 +21,9 @@ const DEFAULT_MAX_BYTES: i32 = 30000;
 const DEFAULT_MAX_PARTITION_BYTES: i32 = 20000;
 const DEFAULT_ISOLATION_LEVEL: i8 = 0;
 
-/// Common stream message format.
+/// Common consumed message format.
 #[derive(Clone, Debug, PartialEq)]
-pub struct StreamMessage {
+pub struct ConsumeMessage {
     pub key: Bytes,
     pub value: Bytes,
     pub offset: usize,
@@ -151,7 +151,7 @@ impl<'a> Consumer {
         Ok(responses)
     }
 
-    pub async fn next_batch(&mut self) -> Result<(Vec<StreamMessage>, PartitionOffsets)> {
+    pub async fn next_batch(&mut self) -> Result<(Vec<ConsumeMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
         let mut records = vec![];
 
@@ -194,7 +194,7 @@ impl<'a> Consumer {
                                 record.offset_delta as i64 + base_offset + 1,
                             );
 
-                            records.push(StreamMessage {
+                            records.push(ConsumeMessage {
                                 key: record.key,
                                 value: record.value,
                                 offset: new_offset,
@@ -228,7 +228,7 @@ impl<'a> Consumer {
     #[must_use = "stream does nothingby itself"]
     pub fn into_stream(
         mut self,
-    ) -> impl Stream<Item = Result<(Vec<StreamMessage>, PartitionOffsets)>> {
+    ) -> impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>> {
         async_stream::stream! {
             loop {
                 yield self.next_batch().await;
@@ -249,7 +249,7 @@ impl<'a> Consumer {
         generation_id: i32,
         member_id: Bytes,
         retention_time_ms: i64,
-    ) -> impl Stream<Item = Result<Vec<StreamMessage>>> + 'a {
+    ) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
             for await stream_message in self.into_stream() {
@@ -270,14 +270,14 @@ impl<'a> Consumer {
     }
 
     /// Break the batched messages into individual elements.
-    pub fn into_flat_stream(self) -> impl Stream<Item = StreamMessage> {
+    pub fn into_flat_stream(self) -> impl Stream<Item = ConsumeMessage> {
         into_flat_stream(self.into_stream())
     }
 }
 
 pub fn into_flat_stream(
-    stream: impl Stream<Item = Result<(Vec<StreamMessage>, PartitionOffsets)>>,
-) -> impl Stream<Item = StreamMessage> {
+    stream: impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>>,
+) -> impl Stream<Item = ConsumeMessage> {
     futures::StreamExt::flat_map(
         stream
             .filter(|batch| batch.is_ok())
