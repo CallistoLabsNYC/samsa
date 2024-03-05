@@ -16,13 +16,11 @@ use num_traits::FromPrimitive;
 use crate::error::KafkaCode;
 
 pub fn parse_kafka_code(s: NomBytes) -> IResult<NomBytes, KafkaCode> {
-    map(be_i16, |n| {
-        match FromPrimitive::from_i16(n) {
-            Some(e) => e,
-            None => {
-                tracing::error!("Unhandled Kakfa code :: {}", n);
-                KafkaCode::Unknown
-            }
+    map(be_i16, |n| match FromPrimitive::from_i16(n) {
+        Some(e) => e,
+        None => {
+            tracing::error!("Unhandled Kakfa code :: {}", n);
+            KafkaCode::Unknown
         }
     })(s)
 }

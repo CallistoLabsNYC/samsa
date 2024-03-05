@@ -2,7 +2,12 @@
 
 use bytes::{BufMut, Bytes};
 
-use crate::{encode::ToByte, error::Result, protocol::HeaderRequest, utils::{now, to_crc}};
+use crate::{
+    encode::ToByte,
+    error::Result,
+    protocol::HeaderRequest,
+    utils::{now, to_crc},
+};
 
 const API_KEY_PRODUCE: i16 = 0;
 const API_VERSION: i16 = 3;
@@ -11,13 +16,13 @@ const API_VERSION: i16 = 3;
 const MESSAGE_MAGIC_BYTE: i8 = 2;
 
 /*
-Produce Request (Version: 3) => transactional_id acks timeout [topic_data] 
+Produce Request (Version: 3) => transactional_id acks timeout [topic_data]
   transactional_id => NULLABLE_STRING
   acks => INT16
   timeout => INT32
-  topic_data => topic [data] 
+  topic_data => topic [data]
     topic => STRING
-    data => partition record_set 
+    data => partition record_set
       partition => INT32
       record_set => RECORDS
 */
@@ -325,12 +330,12 @@ impl Record {
             offset_delta,
             key_length: match &message.key {
                 Some(key) => key.len(),
-                None => 0
+                None => 0,
             },
             key: message.key,
             value_length: match &message.value {
                 Some(value) => value.len(),
-                None => 0
+                None => 0,
             },
             value: message.value,
             headers: message.headers,
@@ -361,19 +366,16 @@ impl Record {
 
 impl ToByte for Record {
     fn encode<W: BufMut>(&self, out: &mut W) -> Result<()> {
-
         let mut buf = Vec::with_capacity(4);
         self._encode_to_buf(&mut buf)?;
         let length = buf.len();
-        
+
         // the record is a varint length followed by bytes
         length.encode(out)?;
         out.put(buf.as_ref());
 
         Ok(())
     }
-
-
 }
 
 // headerKeyLength: varint

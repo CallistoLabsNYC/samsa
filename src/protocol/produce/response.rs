@@ -8,10 +8,10 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! Produce Response (Version: 3) => [responses] throttle_time_ms 
-//!   responses => topic [partition_responses] 
+//! Produce Response (Version: 3) => [responses] throttle_time_ms
+//!   responses => topic [partition_responses]
 //!     topic => STRING
-//!     partition_responses => partition error_code base_offset log_append_time 
+//!     partition_responses => partition error_code base_offset log_append_time
 //!       partition => INT32
 //!       error_code => INT16
 //!       base_offset => INT64
@@ -67,7 +67,7 @@ pub struct PartitionResponse {
     /// The base offset.
     pub base_offset: i64,
     /// The timestamp returned by broker after appending the messages. If CreateTime is used for the topic, the timestamp will be -1. If LogAppendTime is used for the topic, the timestamp will be the broker local time when the messages are appended.
-    pub log_append_time: i64
+    pub log_append_time: i64,
 }
 
 impl TryFrom<Bytes> for ProduceResponse {
@@ -118,7 +118,7 @@ pub fn parse_partition_response(s: NomBytes) -> IResult<NomBytes, PartitionRespo
             index,
             error_code,
             base_offset,
-            log_append_time
+            log_append_time,
         },
     ))
 }
