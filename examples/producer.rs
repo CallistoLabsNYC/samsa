@@ -1,8 +1,5 @@
 use bytes::Bytes;
-use samsa::prelude::{
-    protocol::Message,
-    ProduceMessage, ProducerBuilder,
-};
+use samsa::prelude::{protocol::Message, ProduceMessage, ProducerBuilder};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
