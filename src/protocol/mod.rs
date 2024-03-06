@@ -38,7 +38,7 @@ pub use self::{
     metadata::{request::MetadataRequest, response::MetadataResponse},
     offset_fetch::{request::OffsetFetchRequest, response::OffsetFetchResponse},
     produce::{
-        request::{Header, Message, ProduceRequest},
+        request::{Header, ProduceRequest},
         response::ProduceResponse,
     },
     sync_group::{

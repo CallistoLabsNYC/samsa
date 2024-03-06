@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use bytes::Bytes;
 use tokio::sync::mpsc::Sender;
 use tracing::instrument;
 
@@ -9,7 +10,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol::{Message, ProduceRequest, ProduceResponse},
+    protocol::{ProduceRequest, ProduceResponse},
     DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -79,7 +80,8 @@ pub struct ProducerSink;
 /// Common produce message format.
 #[derive(Clone)]
 pub struct ProduceMessage {
-    pub message: Message,
+    pub key: Option<Bytes>,
+    pub value: Option<Bytes>,
     pub topic: String,
     pub partition_id: i32,
 }
@@ -152,7 +154,8 @@ pub async fn produce(
         produce_request.add(
             &message.topic,
             message.partition_id,
-            message.message.clone(),
+            message.key.clone(),
+            message.value.clone(),
         );
     }
 

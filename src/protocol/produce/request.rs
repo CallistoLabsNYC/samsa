@@ -56,7 +56,14 @@ impl<'a> ProduceRequest<'a> {
         }
     }
 
-    pub fn add(&mut self, topic: &'a str, partition: i32, message: Message) {
+    pub fn add(
+        &mut self,
+        topic: &'a str,
+        partition: i32,
+        key: Option<Bytes>,
+        value: Option<Bytes>,
+    ) {
+        let message = Message::new(key, value);
         match self
             .topic_partitions
             .iter_mut()
@@ -171,7 +178,7 @@ impl ToByte for Partition {
 }
 
 #[derive(Clone, Debug)]
-pub struct Message {
+struct Message {
     pub key: Option<Bytes>,
     pub value: Option<Bytes>,
     // pub headers: Vec<Header>,

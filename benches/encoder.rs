@@ -12,186 +12,140 @@ fn criterion_benchmark(c: &mut Criterion) {
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 1")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 1")),
     );
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 2")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 2")),
     );
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
-        protocol::Message {
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value 3")),
-        },
+        Some(Bytes::from_static(b"Tester")),
+        Some(Bytes::from_static(b"Value 3")),
     );
     let mut buffer = Vec::with_capacity(4);
     produce_req.encode(&mut buffer).unwrap();

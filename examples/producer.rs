@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use samsa::prelude::{protocol::Message, ProduceMessage, ProducerBuilder};
+use samsa::prelude::{ProduceMessage, ProducerBuilder};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -34,30 +34,24 @@ async fn main() -> Result<(), ()> {
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                message: Message {
-                    key: Some(Bytes::from_static(b"Tester")),
-                    value: Some(Bytes::from_static(b"Value 1")),
-                },
+                key: Some(Bytes::from_static(b"Tester")),
+                value: Some(Bytes::from_static(b"Value 1")),
             })
             .await;
         producer_client
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                message: Message {
-                    key: Some(Bytes::from_static(b"Tester")),
-                    value: Some(Bytes::from_static(b"Value 2")),
-                },
+                key: Some(Bytes::from_static(b"Tester")),
+                value: Some(Bytes::from_static(b"Value 2")),
             })
             .await;
         producer_client
             .produce(ProduceMessage {
                 topic: topic_name.to_string(),
                 partition_id,
-                message: Message {
-                    key: Some(Bytes::from_static(b"Tester")),
-                    value: Some(Bytes::from_static(b"Value 1")),
-                },
+                key: Some(Bytes::from_static(b"Tester")),
+                value: Some(Bytes::from_static(b"Value 1")),
             })
             .await;
     }

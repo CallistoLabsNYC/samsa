@@ -23,14 +23,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     // Test producing
     //
     let mut produce_request = protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID);
-    produce_request.add(
-        &topic,
-        PARTITION_ID,
-        protocol::Message {
-            key: Some(key.clone()),
-            value: Some(value.clone()),
-        },
-    );
+    produce_request.add(&topic, PARTITION_ID, Some(key.clone()), Some(value.clone()));
 
     conn.send_request(&produce_request).await?;
     let bytess = conn.receive_response().await?.freeze();
@@ -93,10 +86,9 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     // Test producing
     //
     let produce_message = samsa::prelude::ProduceMessage {
-        message: protocol::Message {
-            key: Some(key.clone()),
-            value: Some(value.clone()),
-        },
+        key: Some(key.clone()),
+        value: Some(value.clone()),
+
         topic: topic.clone(),
         partition_id: PARTITION_ID,
     };
