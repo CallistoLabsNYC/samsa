@@ -112,15 +112,7 @@ pub(crate) async fn flush_producer(
 
         match brokers_and_messages.get_mut(&broker_id) {
             None => {
-                brokers_and_messages.insert(
-                    broker_id,
-                    vec![ProduceMessage {
-                        key: message.key,
-                        value: message.value,
-                        topic: message.topic,
-                        partition_id: message.partition_id,
-                    }],
-                );
+                brokers_and_messages.insert(broker_id, vec![message]);
             }
             Some(messages) => messages.push(message),
         };

@@ -59,9 +59,36 @@ impl ToByte for i32 {
     }
 }
 
+impl ToByte for u32 {
+    fn encode<T: BufMut>(&self, buffer: &mut T) -> Result<()> {
+        buffer.put_u32(*self);
+        Ok(())
+    }
+}
+
 impl ToByte for i64 {
     fn encode<T: BufMut>(&self, buffer: &mut T) -> Result<()> {
         buffer.put_i64(*self);
+        Ok(())
+    }
+}
+
+fn zigzag_encode(from: usize) -> u64 {
+    ((from << 1) ^ (from >> 63)) as u64
+}
+
+pub const MSB: u8 = 0b1000_0000;
+impl ToByte for usize {
+    fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
+        let mut n: u64 = zigzag_encode(*self);
+
+        while n >= 0x80 {
+            buffer.put_u8(MSB | (n as u8));
+            n >>= 7;
+        }
+
+        buffer.put_u8(n as u8);
+
         Ok(())
     }
 }
@@ -171,11 +198,21 @@ impl ToByte for Option<Bytes> {
     }
 }
 
+// why is this using i32 when strings need i16?
 impl<'a> ToByte for Option<&'a str> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         match *self {
             Some(xs) => xs.encode(buffer),
             None => (-1i32).encode(buffer),
+        }
+    }
+}
+
+impl ToByte for Option<String> {
+    fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
+        match self {
+            Some(xs) => xs.encode(buffer),
+            None => (-1i16).encode(buffer),
         }
     }
 }
@@ -218,6 +255,34 @@ fn codec_i64() {
     // Encode into buffer
     orig.encode(&mut buf).unwrap();
     assert_eq!(buf, [0, 0, 0, 0, 0, 0, 0, 5]);
+}
+
+#[test]
+fn codec_varint_simple() {
+    let mut buf = vec![];
+    let orig: usize = 11;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [22]);
+}
+
+#[test]
+fn codec_varint_twobyte() {
+    let mut buf = vec![];
+    let orig: usize = 260;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [136, 4]);
+}
+
+#[cfg(target_pointer_width = "64")]
+#[test]
+fn codec_varlong() {
+    let mut buf = vec![];
+    let orig: usize = 9223372036854775807;
+
+    orig.encode(&mut buf).unwrap();
+    assert_eq!(buf, [254, 255, 255, 255, 255, 255, 255, 255, 255, 1]);
 }
 
 #[test]

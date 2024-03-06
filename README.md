@@ -3,6 +3,8 @@ Rust-native Kafka/Redpanda protocol and client implementation.
 
 This crate provides Rust native consumers and producers as well as low level bindings for the Apache Kafka protocol. Unlike crates that use librdkafka in an FFI, users of this crate actually benefit from Rust all the way down; meaning memory safety, safe concurrency, low resource usage, and of course blazing speed.
 
+[Documentation](https://docs.rs/samsa/latest/samsa/)
+
 # Goals
 - Easy to understand code
 - Leverage best in class libraries such as Tokio, Nom to do the heavy lifting
