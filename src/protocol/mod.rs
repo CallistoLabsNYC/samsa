@@ -37,10 +37,7 @@ pub use self::{
     list_offsets::{request::ListOffsetsRequest, response::ListOffsetsResponse},
     metadata::{request::MetadataRequest, response::MetadataResponse},
     offset_fetch::{request::OffsetFetchRequest, response::OffsetFetchResponse},
-    produce::{
-        request::{Header, ProduceRequest},
-        response::ProduceResponse,
-    },
+    produce::{request::ProduceRequest, response::ProduceResponse},
     sync_group::{
         request::{Assignment, MemberAssignment, PartitionAssignment, SyncGroupRequest},
         response::SyncGroupResponse,

@@ -88,7 +88,6 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     let produce_message = samsa::prelude::ProduceMessage {
         key: Some(key.clone()),
         value: Some(value.clone()),
-
         topic: topic.clone(),
         partition_id: PARTITION_ID,
     };

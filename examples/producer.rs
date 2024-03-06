@@ -51,7 +51,7 @@ async fn main() -> Result<(), ()> {
                 topic: topic_name.to_string(),
                 partition_id,
                 key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value 1")),
+                value: Some(Bytes::from_static(b"Value 3")),
             })
             .await;
     }
