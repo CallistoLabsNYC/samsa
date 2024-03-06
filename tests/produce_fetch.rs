@@ -23,6 +23,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     // Test producing
     //
     let mut produce_request = protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID);
+
     produce_request.add(&topic, PARTITION_ID, Some(key.clone()), Some(value.clone()));
 
     conn.send_request(&produce_request).await?;
