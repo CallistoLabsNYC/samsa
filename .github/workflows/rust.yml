@@ -29,6 +29,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: adambirds/docker-compose-action@v1.3.0
+      with:
+        compose-file: "./docker-compose.yaml"
     - name: rustup
       run: rustup default $RUST_VERSION
     - name: build
