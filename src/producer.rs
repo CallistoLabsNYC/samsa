@@ -158,7 +158,7 @@ pub async fn produce(
             message.partition_id,
             message.key.clone(),
             message.value.clone(),
-            message.headers.clone()
+            message.headers.clone(),
         );
     }
 

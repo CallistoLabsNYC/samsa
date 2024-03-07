@@ -23,8 +23,17 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     // Test producing
     //
     let mut produce_request = protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID);
-    let header = protocol::Header::new(String::from("Header key"), bytes::Bytes::from("Header value"));
-    produce_request.add(&topic, PARTITION_ID, Some(key.clone()), Some(value.clone()), vec![header]);
+    let header = protocol::Header::new(
+        String::from("Header key"),
+        bytes::Bytes::from("Header value"),
+    );
+    produce_request.add(
+        &topic,
+        PARTITION_ID,
+        Some(key.clone()),
+        Some(value.clone()),
+        vec![header],
+    );
 
     conn.send_request(&produce_request).await?;
     let bytess = conn.receive_response().await?.freeze();
@@ -82,7 +91,10 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
-    let header = protocol::Header::new(String::from("Header key"), bytes::Bytes::from("Header value"));
+    let header = protocol::Header::new(
+        String::from("Header key"),
+        bytes::Bytes::from("Header value"),
+    );
 
     //
     // Test producing
@@ -92,7 +104,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         value: Some(value.clone()),
         topic: topic.clone(),
         partition_id: PARTITION_ID,
-        headers: vec![header]
+        headers: vec![header],
     };
     samsa::prelude::produce(
         conn.clone(),

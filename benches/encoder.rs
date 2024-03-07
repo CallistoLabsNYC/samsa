@@ -14,161 +14,161 @@ fn criterion_benchmark(c: &mut Criterion) {
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 1")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 2")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     produce_req.add(
         topic_name,
         partition_id + 1,
         Some(Bytes::from_static(b"Tester")),
         Some(Bytes::from_static(b"Value 3")),
-        vec![]
+        vec![],
     );
     let mut buffer = Vec::with_capacity(4);
     produce_req.encode(&mut buffer).unwrap();

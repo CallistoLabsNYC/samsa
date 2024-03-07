@@ -62,7 +62,7 @@ impl<'a> ProduceRequest<'a> {
         partition: i32,
         key: Option<Bytes>,
         value: Option<Bytes>,
-        headers: Vec<Header>
+        headers: Vec<Header>,
     ) {
         let message = Message::new(key, value, headers);
         match self
@@ -187,7 +187,11 @@ struct Message {
 
 impl Message {
     pub fn new(key: Option<Bytes>, value: Option<Bytes>, headers: Vec<Header>) -> Message {
-        Message { key, value, headers }
+        Message {
+            key,
+            value,
+            headers,
+        }
     }
 }
 

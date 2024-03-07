@@ -36,7 +36,7 @@ async fn main() -> Result<(), ()> {
                 partition_id,
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 1")),
-                headers: vec![]
+                headers: vec![],
             })
             .await;
         producer_client
@@ -45,7 +45,7 @@ async fn main() -> Result<(), ()> {
                 partition_id,
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 2")),
-                headers: vec![]
+                headers: vec![],
             })
             .await;
         producer_client
@@ -54,7 +54,7 @@ async fn main() -> Result<(), ()> {
                 partition_id,
                 key: Some(Bytes::from_static(b"Tester")),
                 value: Some(Bytes::from_static(b"Value 3")),
-                headers: vec![]
+                headers: vec![],
             })
             .await;
     }
