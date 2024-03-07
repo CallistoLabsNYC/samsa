@@ -91,7 +91,7 @@ where
         if length == 0 {
             return Ok((i, vec![]));
         }
-        many_m_n(length, length, f)(i)
+        many_m_n(length / 2, length / 2, f)(i)
     }
 }
 

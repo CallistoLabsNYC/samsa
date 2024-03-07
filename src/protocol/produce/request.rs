@@ -411,9 +411,9 @@ impl Header {
 impl ToByte for Header {
     fn encode<W: BufMut>(&self, out: &mut W) -> Result<()> {
         self.header_key_length.encode(out)?;
-        self.header_key.encode(out)?;
+        out.put(self.header_key.as_bytes());
         self.header_value_length.encode(out)?;
-        self.value.encode(out)?;
+        out.put(self.value.as_ref());
         Ok(())
     }
 }
