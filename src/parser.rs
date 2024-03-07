@@ -25,6 +25,8 @@ pub fn parse_kafka_code(s: NomBytes) -> IResult<NomBytes, KafkaCode> {
     })(s)
 }
 
+// NOTE:: Redpanda sends us values that are 2* the correct value... so make sure to
+// divide your values by 2 when you go to use them
 pub fn take_varint<E>(i: NomBytes) -> nom::IResult<NomBytes, usize, E>
 where
     E: ParseError<NomBytes>,
@@ -75,6 +77,21 @@ where
             return Ok((i, vec![]));
         }
         many_m_n(length as usize, length as usize, f)(i)
+    }
+}
+
+pub fn parse_varint_array<O, E, F>(f: F) -> impl FnMut(NomBytes) -> IResult<NomBytes, Vec<O>, E>
+where
+    F: nom::Parser<NomBytes, O, E> + Copy,
+    E: nom::error::ParseError<NomBytes>,
+{
+    move |input: NomBytes| {
+        let i = input.clone();
+        let (i, length) = take_varint(i)?;
+        if length == 0 {
+            return Ok((i, vec![]));
+        }
+        many_m_n(length, length, f)(i)
     }
 }
 

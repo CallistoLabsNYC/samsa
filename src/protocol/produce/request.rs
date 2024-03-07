@@ -62,8 +62,9 @@ impl<'a> ProduceRequest<'a> {
         partition: i32,
         key: Option<Bytes>,
         value: Option<Bytes>,
+        headers: Vec<Header>
     ) {
-        let message = Message::new(key, value);
+        let message = Message::new(key, value, headers);
         match self
             .topic_partitions
             .iter_mut()
@@ -181,12 +182,12 @@ impl ToByte for Partition {
 struct Message {
     pub key: Option<Bytes>,
     pub value: Option<Bytes>,
-    // pub headers: Vec<Header>,
+    pub headers: Vec<Header>,
 }
 
 impl Message {
-    pub fn new(key: Option<Bytes>, value: Option<Bytes>) -> Message {
-        Message { key, value }
+    pub fn new(key: Option<Bytes>, value: Option<Bytes>, headers: Vec<Header>) -> Message {
+        Message { key, value, headers }
     }
 }
 
@@ -342,7 +343,7 @@ impl Record {
                 None => 0,
             },
             value: message.value,
-            headers: vec![],
+            headers: message.headers,
         }
     }
 
@@ -359,10 +360,12 @@ impl Record {
         self.value_length.encode(out)?;
         out.put(self.value.clone().unwrap_or(Bytes::from("")));
 
-        // we will hold off on headers for now
-        let header_length: usize = 0;
+        // headers are a varint length followed by the array
+        let header_length = self.headers.len();
         header_length.encode(out)?;
-        // self.headers.encode(out)?;
+        for header in &self.headers {
+            header.encode(out)?;
+        }
 
         Ok(())
     }

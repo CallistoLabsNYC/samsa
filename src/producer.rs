@@ -10,7 +10,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol::{ProduceRequest, ProduceResponse},
+    protocol::{Header, ProduceRequest, ProduceResponse},
     DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -82,6 +82,7 @@ pub struct ProducerSink;
 pub struct ProduceMessage {
     pub key: Option<Bytes>,
     pub value: Option<Bytes>,
+    pub headers: Vec<Header>,
     pub topic: String,
     pub partition_id: i32,
 }
@@ -156,6 +157,7 @@ pub async fn produce(
             message.partition_id,
             message.key.clone(),
             message.value.clone(),
+            message.headers.clone()
         );
     }
 
