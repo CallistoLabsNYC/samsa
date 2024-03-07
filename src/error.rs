@@ -151,5 +151,4 @@ pub enum KafkaCode {
     IllegalSaslState = 34,
     /// The version of API is not supported.
     UnsupportedVersion = 35,
-    // CAUTION! When adding to this list, KafkaCode::from_protocol must be updated. If there's a better way, please open an issue for it!
 }

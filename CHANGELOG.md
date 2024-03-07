@@ -8,6 +8,7 @@
 - [#26](https://github.com/CallistoLabsNYC/samsa/issues/26) StreamMessage struct should be named ConsumeMessage
 - [#25](https://github.com/CallistoLabsNYC/samsa/issues/25) Offer a way to read from a Consumer without streaming
 - [#22](https://github.com/CallistoLabsNYC/samsa/issues/22)Include docker-compose stack in the CICD
+- [#14](https://github.com/CallistoLabsNYC/samsa/issues/14) Implement headers in fetch and produce
 
 ## [0.1.1] - 2024-03-02
 ### Fixed

@@ -283,8 +283,7 @@ fn parse_record(s: NomBytes) -> IResult<NomBytes, Record> {
     let (s, value_len) = parser::take_varint(s)?;
     let (s, value) = take(value_len / 2)(s)?;
 
-    // let (s, headers) = parser::parse_array(parse_header)(s)?;
-    let (s, _) = parser::take_varint(s)?;
+    let (s, headers) = parser::parse_varint_array(parse_header)(s)?;
 
     Ok((
         s,
@@ -297,7 +296,24 @@ fn parse_record(s: NomBytes) -> IResult<NomBytes, Record> {
             key: key.into_bytes(),
             value_len,
             value: value.into_bytes(),
-            headers: vec![],
+            headers,
+        },
+    ))
+}
+
+fn parse_header(s: NomBytes) -> IResult<NomBytes, Header> {
+    let (s, header_key_length) = parser::take_varint(s)?;
+    let (s, header_key) = take(header_key_length / 2)(s)?;
+    let (s, header_value_length) = parser::take_varint(s)?;
+    let (s, value) = take(header_value_length / 2)(s)?;
+
+    Ok((
+        s,
+        Header {
+            header_key_length,
+            header_key: header_key.to_bytes(),
+            header_value_length,
+            value: value.to_bytes(),
         },
     ))
 }
