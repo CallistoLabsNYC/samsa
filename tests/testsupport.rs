@@ -25,7 +25,6 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
         Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_BROKERS);
-            println!("Skipping test because no envs set! try adding 'KAFKA_BROKERS=127.0.0.1:9092 KAFKA_TOPIC=tester' to the front of your command...");
             return Ok((true, vec![]));
         }
     };
