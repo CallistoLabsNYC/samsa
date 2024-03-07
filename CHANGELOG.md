@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 ### Changed
+- [#22](https://github.com/CallistoLabsNYC/samsa/issues/22)Include docker-compose stack in the CICD
+- [#19](https://github.com/CallistoLabsNYC/samsa/issues/19)Fix busted integration tests
 - [#26](https://github.com/CallistoLabsNYC/samsa/issues/26) StreamMessage struct should be named ConsumeMessage
 - [#25](https://github.com/CallistoLabsNYC/samsa/issues/25) Offer a way to read from a Consumer without streaming
 
