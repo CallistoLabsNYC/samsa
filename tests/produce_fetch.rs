@@ -13,8 +13,14 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers).await?;
+    let conn = BrokerConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+
+    let cluster_metadata =
+        samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
+            .await?;
+    let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
+    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -86,8 +92,14 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers).await?;
+    let conn = BrokerConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+
+    let cluster_metadata =
+        samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
+            .await?;
+    let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
+    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -106,21 +118,33 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         partition_id: PARTITION_ID,
         headers: vec![header],
     };
-    samsa::prelude::produce(
+    let produce_response = samsa::prelude::produce(
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        0,
+        1,
         1000,
         &vec![produce_message],
     )
-    .await?;
+    .await?
+    .unwrap();
+
+    assert_eq!(produce_response.responses.len(), 1);
+    assert_eq!(
+        produce_response.responses[0].name,
+        bytes::Bytes::from(topic.clone())
+    );
+    assert_eq!(produce_response.responses[0].partition_responses.len(), 1);
+    assert_eq!(
+        produce_response.responses[0].partition_responses[0].error_code,
+        KafkaCode::None
+    );
 
     //
     // Test fetch
     //
     let fetch_response = samsa::prelude::fetch(
-        conn,
+        conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
         10000,

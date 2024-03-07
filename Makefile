@@ -6,7 +6,7 @@ build:
 .PHONY: check
 check:
 	cargo clippy -- --no-deps
-	cargo test --tests -- --show-output --test-threads=1
+	KAFKA_BROKERS=127.0.0.1:9092 KAFKA_TOPIC=tester cargo test --tests -- --show-output --test-threads=1
 
 
 .PHONY: bench
