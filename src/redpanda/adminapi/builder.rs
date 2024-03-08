@@ -15,7 +15,10 @@ impl Builder {
         let client = reqwest::Client::builder()
             .build()
             .map_err(|err| Error::ArgError(err.to_string()))?;
-        Ok(AdminAPI { client })
+        Ok(AdminAPI {
+            client,
+            urls: self.urls,
+        })
     }
 
     pub fn urls(&mut self, urls: Vec<String>) -> Self {

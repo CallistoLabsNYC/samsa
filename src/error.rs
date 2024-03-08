@@ -160,6 +160,10 @@ impl From<reqwest::Error> for Error {
     fn from(err: reqwest::Error) -> Self {
         if err.is_timeout() {
             Error::KafkaError(KafkaCode::RequestTimedOut)
+        } else if err.is_connect() {
+            Error::KafkaError(KafkaCode::BrokerNotAvailable)
+        } else if err.is_decode() {
+            Error::KafkaError(KafkaCode::CorruptMessage)
         } else {
             Error::KafkaError(KafkaCode::Unknown)
         }

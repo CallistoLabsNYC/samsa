@@ -3,6 +3,8 @@ use std::env;
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
+const KAFKA_BROKER_URLS: &str = "KAFKA_BROKER_URLS";
+#[allow(dead_code)]
 const KAFKA_TOPIC: &str = "KAFKA_TOPIC";
 
 #[allow(dead_code)]
@@ -29,6 +31,18 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
         }
     };
     Ok((false, brokers))
+}
+
+#[allow(dead_code)]
+pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
+    let urls: Vec<String> = match env::var(KAFKA_BROKER_URLS) {
+        Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
+        Err(_) => {
+            tracing::warn!("Skipping test because no {} is set", KAFKA_BROKER_URLS);
+            return Ok((true, vec![]));
+        }
+    };
+    Ok((false, urls))
 }
 
 #[allow(dead_code)]
