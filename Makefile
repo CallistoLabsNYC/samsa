@@ -3,7 +3,7 @@ KAFKA_TOPIC ?= "tester"
 
 .PHONY: build
 build:
-	cargo build --all --examples
+	cargo build --all --examples --all-features
 
 
 .PHONY: check

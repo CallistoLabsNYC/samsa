@@ -15,6 +15,8 @@ pub enum Error {
     NoLeaderForTopicPartition(String, i32),
     /// We could not encode the data into a bytestream correctly.
     EncodingError,
+    /// An argument validation error.
+    ArgError(String),
     /// An error in the network.
     IoError(io::ErrorKind),
     /// Error code provided by the kafka broker.
@@ -151,4 +153,15 @@ pub enum KafkaCode {
     IllegalSaslState = 34,
     /// The version of API is not supported.
     UnsupportedVersion = 35,
+}
+
+#[cfg(feature = "redpanda")]
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Self {
+        if err.is_timeout() {
+            Error::KafkaError(KafkaCode::RequestTimedOut)
+        } else {
+            Error::KafkaError(KafkaCode::Unknown)
+        }
+    }
 }
