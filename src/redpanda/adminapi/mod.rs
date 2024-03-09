@@ -5,6 +5,7 @@ use crate::error::Error::KafkaError;
 use crate::error::{KafkaCode, Result};
 use crate::redpanda::adminapi::builder::Builder;
 pub use partition::Partition;
+use serde::Deserialize;
 
 #[derive(Default)]
 pub struct AdminAPI {
@@ -15,6 +16,15 @@ pub struct AdminAPI {
 impl AdminAPI {
     pub fn builder() -> Builder {
         Builder::default()
+    }
+
+    async fn get_any<T>(self, path: &str) -> Result<T>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        let req = self.client.get(format!("{}/{}", self.urls[0], path));
+        let res = req.send().await?.json().await?;
+        Ok(res)
     }
 
     pub async fn get_leader_id(self) -> Result<i32> {
@@ -31,11 +41,10 @@ impl AdminAPI {
         topic: &str,
         partition: i32,
     ) -> Result<Partition> {
-        let req = self.client.get(format!(
-            "{}/v1/partitions/{}/{}/{}",
-            self.urls[0], namespace, topic, partition
-        ));
-        let pa: Partition = req.send().await?.json().await?;
-        Ok(pa)
+        self.get_any(&format!(
+            "/v1/partitions/{}/{}/{}",
+            namespace, topic, partition
+        ))
+        .await
     }
 }
