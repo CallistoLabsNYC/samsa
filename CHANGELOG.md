@@ -1,14 +1,16 @@
 # Samsa Changelog
 
-## [Unreleased]
-### Fixed
-- [#19](https://github.com/CallistoLabsNYC/samsa/issues/19)Fix busted integration tests
+## [0.1.2] - 2024-03-09
+### Added
+- [#25](https://github.com/CallistoLabsNYC/samsa/issues/25) Offer a way to read from a Consumer without streaming
+- [#14](https://github.com/CallistoLabsNYC/samsa/issues/14) Implement headers in fetch and produce
 
 ### Changed
 - [#26](https://github.com/CallistoLabsNYC/samsa/issues/26) StreamMessage struct should be named ConsumeMessage
-- [#25](https://github.com/CallistoLabsNYC/samsa/issues/25) Offer a way to read from a Consumer without streaming
-- [#22](https://github.com/CallistoLabsNYC/samsa/issues/22)Include docker-compose stack in the CICD
-- [#14](https://github.com/CallistoLabsNYC/samsa/issues/14) Implement headers in fetch and produce
+- [#22](https://github.com/CallistoLabsNYC/samsa/issues/22) Include docker-compose stack in the CICD
+
+### Fixed
+- [#19](https://github.com/CallistoLabsNYC/samsa/issues/19) Fix busted integration tests
 
 ## [0.1.1] - 2024-03-02
 ### Fixed
