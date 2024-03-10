@@ -2,10 +2,10 @@ mod builder;
 mod partition;
 
 use crate::error::Error::KafkaError;
-use crate::error::{KafkaCode, Result};
+use crate::error::{Error, KafkaCode, Result};
 use crate::redpanda::adminapi::builder::Builder;
 pub use partition::Partition;
-use reqwest::Method;
+use reqwest::{Body, Method};
 use serde::Deserialize;
 
 #[derive(Default)]
@@ -47,6 +47,31 @@ impl AdminAPI {
         let req = self
             .client
             .request(method, format!("{}/{}", self.urls[0], path));
+        let res = req.send().await?.json().await?;
+        Ok(res)
+    }
+
+    async fn send_one<B: Into<Body>, T>(
+        self,
+        method: Method,
+        path: &str,
+        body: Option<B>,
+        _retryable: bool,
+    ) -> Result<Option<T>>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        if self.urls.len() != 1 {
+            return Err(Error::ArgError(format!(
+                "unable to issue a single-admin-endpoint request to {} admin endpoints",
+                self.urls.len()
+            )))?;
+        }
+        let url = format!("{}/{}", self.urls[0], path);
+        let mut req = self.client.request(method, url);
+        if let Some(body) = body {
+            req = req.body(body);
+        }
         let res = req.send().await?.json().await?;
         Ok(res)
     }
