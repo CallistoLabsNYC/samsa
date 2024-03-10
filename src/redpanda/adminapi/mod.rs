@@ -51,7 +51,7 @@ impl AdminAPI {
         Ok(res)
     }
 
-    async fn send_one<B: Into<Body>, T>(
+    async fn _send_one<B: Into<Body>, T>(
         self,
         method: Method,
         path: &str,

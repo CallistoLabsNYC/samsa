@@ -7,8 +7,8 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub async fn new() -> Result<Self> {
-        Ok(Self::default())
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn build(self) -> Result<AdminAPI> {
