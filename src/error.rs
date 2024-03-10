@@ -28,6 +28,7 @@ pub enum Error {
     MissingData(String),
     MetadataNeedsSync,
     AssignmentStrategyNotSupported(String),
+    LockError(String),
 }
 
 impl fmt::Display for Error {
