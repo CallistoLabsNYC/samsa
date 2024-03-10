@@ -1,9 +1,11 @@
 mod builder;
+mod node_config;
 mod partition;
 
 use crate::error::Error::KafkaError;
 use crate::error::{Error, KafkaCode, Result};
 use crate::redpanda::adminapi::builder::Builder;
+pub use node_config::NodeConfig;
 pub use partition::Partition;
 use reqwest::{Body, Method};
 use serde::Deserialize;
@@ -25,6 +27,14 @@ impl AdminAPI {
             return Err(KafkaError(KafkaCode::LeaderNotAvailable));
         };
         Ok(pa.leader_id)
+    }
+
+    pub async fn get_node_config(self) -> Result<NodeConfig> {
+        let node_config = self
+            .send_one(Method::GET, "/v1/node_config", false)
+            .await?
+            .unwrap();
+        Ok(node_config)
     }
 
     pub async fn get_partition(
@@ -51,11 +61,27 @@ impl AdminAPI {
         Ok(res)
     }
 
-    async fn _send_one<B: Into<Body>, T>(
+    async fn send_one<T>(self, method: Method, path: &str, _retryable: bool) -> Result<Option<T>>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        if self.urls.len() != 1 {
+            return Err(Error::ArgError(format!(
+                "unable to issue a single-admin-endpoint request to {} admin endpoints",
+                self.urls.len()
+            )))?;
+        }
+        let url = format!("{}/{}", self.urls[0], path);
+        let req = self.client.request(method, url);
+        let res = req.send().await?.json().await?;
+        Ok(res)
+    }
+
+    async fn _send_one_with_body<B: Into<Body>, T>(
         self,
         method: Method,
         path: &str,
-        body: Option<B>,
+        body: B,
         _retryable: bool,
     ) -> Result<Option<T>>
     where
@@ -68,10 +94,7 @@ impl AdminAPI {
             )))?;
         }
         let url = format!("{}/{}", self.urls[0], path);
-        let mut req = self.client.request(method, url);
-        if let Some(body) = body {
-            req = req.body(body);
-        }
+        let req = self.client.request(method, url).body(body);
         let res = req.send().await?.json().await?;
         Ok(res)
     }
