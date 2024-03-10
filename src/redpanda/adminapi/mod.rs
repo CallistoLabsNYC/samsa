@@ -1,18 +1,25 @@
 #![allow(dead_code)] // TODO remove
 
 mod builder;
+mod environment_variable;
 mod node_config;
 mod partition;
+mod partition_transform_status;
+mod transform_metadata;
 
 use crate::error::Error::KafkaError;
 use crate::error::{Error, KafkaCode, Result};
 use crate::redpanda::adminapi::builder::Builder;
+pub use environment_variable::EnvironmentVariable;
 pub use node_config::NodeConfig;
 pub use partition::Partition;
+pub use partition_transform_status::PartitionTransformStatus;
+use reqwest::Response;
 use reqwest::{Body, Method};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+pub use transform_metadata::TransformMetadata;
 
 #[derive(Clone, Default)]
 pub struct AdminAPI {
@@ -34,6 +41,12 @@ impl AdminAPI {
         self.get_url_from_broker_id(broker_id)
     }
 
+    async fn delete_any(self, path: &str) -> Result<Response> {
+        let req = self.client.delete(format!("{}/{}", self.urls[0], path));
+        let res = req.send().await?;
+        Ok(res)
+    }
+
     pub async fn each_broker<F>(self, f: impl Fn(AdminAPI) -> Result<()>) -> Result<()> {
         for url in self.urls {
             let url = url.clone();
@@ -41,6 +54,19 @@ impl AdminAPI {
             f(aa)?;
         }
         Ok(())
+    }
+
+    pub async fn delete_wasm_transform(self, _name: &str) -> Result<()> {
+        Ok(()) // TODO
+    }
+
+    async fn get_any<T>(self, path: &str) -> Result<T>
+    where
+        T: for<'a> Deserialize<'a>,
+    {
+        let req = self.client.get(format!("{}/{}", self.urls[0], path));
+        let res = req.send().await?.json().await?;
+        Ok(res)
     }
 
     pub async fn get_leader_id(self) -> Result<i32> {
@@ -81,6 +107,10 @@ impl AdminAPI {
             return Ok(url.clone());
         }
         Err(KafkaError(KafkaCode::BrokerNotAvailable))
+    }
+
+    pub async fn list_wasm_transforms(self) -> Result<Vec<TransformMetadata>> {
+        self.get_any("/v1/transform/").await
     }
 
     async fn map_broker_ids_to_urls(self) -> Result<()> {
