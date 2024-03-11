@@ -1,13 +1,12 @@
 //! Crate & protocol level errors.
 //!
-use std::{fmt, io, result};
-
 use bytes::Bytes;
 use num_derive::FromPrimitive;
+use std::{fmt, io, result};
 
 pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Error {
     /// The broker exists in the metadata, but we have no open TCP connection.
     NoConnectionForBroker(i32),
@@ -29,6 +28,7 @@ pub enum Error {
     MetadataNeedsSync,
     AssignmentStrategyNotSupported(String),
     LockError(String),
+    NotFound,
 }
 
 impl fmt::Display for Error {
@@ -165,6 +165,12 @@ impl From<reqwest::Error> for Error {
             Error::KafkaError(KafkaCode::BrokerNotAvailable)
         } else if err.is_decode() {
             Error::KafkaError(KafkaCode::CorruptMessage)
+        } else if let Some(code) = err.status() {
+            if code.as_u16() == 404 {
+                Error::NotFound
+            } else {
+                Error::KafkaError(KafkaCode::Unknown)
+            }
         } else {
             Error::KafkaError(KafkaCode::Unknown)
         }

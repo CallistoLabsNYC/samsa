@@ -16,7 +16,6 @@ pub use partition::Partition;
 pub use partition_transform_status::PartitionTransformStatus;
 use reqwest::Response;
 use reqwest::{Body, Method};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use transform_metadata::TransformMetadata;
@@ -42,9 +41,15 @@ impl AdminAPI {
     }
 
     async fn delete_any(self, path: &str) -> Result<Response> {
-        let req = self.client.delete(format!("{}/{}", self.urls[0], path));
+        let req = self.client.delete(format!("{}{}", self.urls[0], path));
         let res = req.send().await?;
         Ok(res)
+    }
+
+    pub async fn delete_wasm_transform(self, name: &str) -> Result<()> {
+        let path = format!("/v1/transform/{}", name);
+        self.send_to_leader(Method::DELETE, &path).await?;
+        Ok(())
     }
 
     pub async fn each_broker<F>(self, f: impl Fn(AdminAPI) -> Result<()>) -> Result<()> {
@@ -56,16 +61,9 @@ impl AdminAPI {
         Ok(())
     }
 
-    pub async fn delete_wasm_transform(self, _name: &str) -> Result<()> {
-        Ok(()) // TODO
-    }
-
-    async fn get_any<T>(self, path: &str) -> Result<T>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
-        let req = self.client.get(format!("{}/{}", self.urls[0], path));
-        let res = req.send().await?.json().await?;
+    async fn get_any(self, path: &str) -> Result<Response> {
+        let req = self.client.get(format!("{}{}", self.urls[0], path));
+        let res = req.send().await?;
         Ok(res)
     }
 
@@ -92,11 +90,15 @@ impl AdminAPI {
         topic: &str,
         partition: i32,
     ) -> Result<Partition> {
-        self.send_any(
-            Method::GET,
-            &format!("/v1/partitions/{}/{}/{}", namespace, topic, partition),
-        )
-        .await
+        let partition: Partition = self
+            .send_any(
+                Method::GET,
+                &format!("/v1/partitions/{}/{}/{}", namespace, topic, partition),
+            )
+            .await?
+            .json()
+            .await?;
+        Ok(partition)
     }
 
     fn get_url_from_broker_id(self, broker_id: i32) -> Result<String> {
@@ -111,7 +113,9 @@ impl AdminAPI {
     }
 
     pub async fn list_wasm_transforms(self) -> Result<Vec<TransformMetadata>> {
-        self.get_any("/v1/transform/").await
+        let transforms: Vec<TransformMetadata> =
+            self.get_any("/v1/transform/").await?.json().await?;
+        Ok(transforms)
     }
 
     async fn map_broker_ids_to_urls(self) -> Result<()> {
@@ -128,14 +132,11 @@ impl AdminAPI {
         Ok(())
     }
 
-    async fn send_any<T>(self, method: Method, path: &str) -> Result<T>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
+    async fn send_any(self, method: Method, path: &str) -> Result<Response> {
         let req = self
             .client
-            .request(method, format!("{}/{}", self.urls[0], path));
-        let res = req.send().await?.json().await?;
+            .request(method, format!("{}{}", self.urls[0], path));
+        let res = req.send().await?;
         Ok(res)
     }
 
@@ -146,9 +147,10 @@ impl AdminAPI {
                 self.urls.len()
             )))?;
         }
-        let url = format!("{}/{}", self.urls[0], path);
+        let url = format!("{}{}", self.urls[0], path);
         let req = self.client.request(method, url);
         let res = req.send().await?;
+        res.error_for_status_ref()?;
         Ok(res)
     }
 
@@ -165,13 +167,14 @@ impl AdminAPI {
                 self.urls.len()
             )))?;
         }
-        let url = format!("{}/{}", self.urls[0], path);
+        let url = format!("{}{}", self.urls[0], path);
         let req = self.client.request(method, url).body(body);
         let res = req.send().await?;
+        res.error_for_status_ref()?;
         Ok(res)
     }
 
-    async fn send_to_leader(self, method: Method, path: &str) -> Result<reqwest::Response> {
+    async fn send_to_leader(self, method: Method, path: &str) -> Result<Response> {
         // If there's only one broker, let's just send the request to it
         if self.urls.len() == 1 {
             return self.send_one(method, path, true).await;
@@ -222,7 +225,7 @@ impl AdminAPI {
         method: Method,
         path: &str,
         body: B,
-    ) -> Result<reqwest::Response> {
+    ) -> Result<Response> {
         // If there's only one broker, let's just send the request to it
         if self.urls.len() == 1 {
             return self.send_one_with_body(method, path, body, true).await;
