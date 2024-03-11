@@ -81,7 +81,8 @@ impl AdminAPI {
         let node_config = self
             .send_one(Method::GET, "/v1/node_config", false)
             .await?
-            .unwrap();
+            .json::<NodeConfig>()
+            .await?;
         Ok(node_config)
     }
 
@@ -138,10 +139,7 @@ impl AdminAPI {
         Ok(res)
     }
 
-    async fn send_one<T>(self, method: Method, path: &str, _retryable: bool) -> Result<Option<T>>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
+    async fn send_one(self, method: Method, path: &str, _retryable: bool) -> Result<Response> {
         if self.urls.len() != 1 {
             return Err(Error::ArgError(format!(
                 "unable to issue a single-admin-endpoint request to {} admin endpoints",
@@ -150,20 +148,17 @@ impl AdminAPI {
         }
         let url = format!("{}/{}", self.urls[0], path);
         let req = self.client.request(method, url);
-        let res = req.send().await?.json().await?;
+        let res = req.send().await?;
         Ok(res)
     }
 
-    async fn send_one_with_body<B: Into<Body>, T>(
+    async fn send_one_with_body<B: Into<Body>>(
         self,
         method: Method,
         path: &str,
         body: B,
         _retryable: bool,
-    ) -> Result<Option<T>>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
+    ) -> Result<Response> {
         if self.urls.len() != 1 {
             return Err(Error::ArgError(format!(
                 "unable to issue a single-admin-endpoint request to {} admin endpoints",
@@ -172,14 +167,11 @@ impl AdminAPI {
         }
         let url = format!("{}/{}", self.urls[0], path);
         let req = self.client.request(method, url).body(body);
-        let res = req.send().await?.json().await?;
+        let res = req.send().await?;
         Ok(res)
     }
 
-    async fn send_to_leader<T>(self, method: Method, path: &str) -> Result<Option<T>>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
+    async fn send_to_leader(self, method: Method, path: &str) -> Result<reqwest::Response> {
         // If there's only one broker, let's just send the request to it
         if self.urls.len() == 1 {
             return self.send_one(method, path, true).await;
@@ -225,15 +217,12 @@ impl AdminAPI {
         aa.send_one(method, path, true).await
     }
 
-    async fn send_to_leader_with_body<B: Into<Body>, T>(
+    async fn send_to_leader_with_body<B: Into<Body>>(
         self,
         method: Method,
         path: &str,
         body: B,
-    ) -> Result<Option<T>>
-    where
-        T: for<'a> Deserialize<'a>,
-    {
+    ) -> Result<reqwest::Response> {
         // If there's only one broker, let's just send the request to it
         if self.urls.len() == 1 {
             return self.send_one_with_body(method, path, body, true).await;
