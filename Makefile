@@ -1,3 +1,6 @@
+KAFKA_BROKERS ?= "127.0.0.1:9092"
+KAFKA_TOPIC ?= "tester"
+
 .PHONY: build
 build:
 	cargo build --all --examples
@@ -6,7 +9,7 @@ build:
 .PHONY: check
 check:
 	cargo clippy -- --no-deps
-	KAFKA_BROKERS=127.0.0.1:9092 KAFKA_TOPIC=tester cargo test --tests -- --show-output --test-threads=1
+	KAFKA_BROKERS=$(KAFKA_BROKERS) KAFKA_TOPIC=$(KAFKA_TOPIC) cargo test --tests -- --show-output --test-threads=1
 
 
 .PHONY: bench
