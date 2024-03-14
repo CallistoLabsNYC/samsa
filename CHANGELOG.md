@@ -1,5 +1,9 @@
 # Samsa Changelog
 
+## [Unreleased]
+### Changed
+- [#39](https://github.com/CallistoLabsNYC/samsa/issues/39) Consumer cannot stream when caller only has a reference to a wrapper struct
+
 ## [0.1.2] - 2024-03-09
 ### Added
 - [#25](https://github.com/CallistoLabsNYC/samsa/issues/25) Offer a way to read from a Consumer without streaming
