@@ -33,7 +33,7 @@ impl AdminAPI {
     }
 
     async fn broker_id_to_url(self, broker_id: i32) -> Result<String> {
-        if let Ok(url) = self.clone().get_url_from_broker_id(broker_id.clone()) {
+        if let Ok(url) = self.clone().get_url_from_broker_id(broker_id) {
             return Ok(url);
         }
         self.clone().map_broker_ids_to_urls().await?;
@@ -186,7 +186,7 @@ impl AdminAPI {
         while leader_id.is_none() || leader_url.is_empty() {
             match self.clone().get_leader_id().await {
                 Err(KafkaError(KafkaCode::LeaderNotAvailable)) => {
-                    retries = retries - 1;
+                    retries -= 1;
                     if retries == 0 {
                         return Err(KafkaError(KafkaCode::LeaderNotAvailable));
                     }
@@ -207,7 +207,7 @@ impl AdminAPI {
                         break;
                     }
                     leader_url = res.unwrap();
-                    retries = retries - 1;
+                    retries -= 1;
                     if retries == 0 {
                         return Err(KafkaError(KafkaCode::LeaderNotAvailable));
                     }
@@ -237,7 +237,7 @@ impl AdminAPI {
         while leader_id.is_none() {
             match self.clone().get_leader_id().await {
                 Err(KafkaError(KafkaCode::LeaderNotAvailable)) => {
-                    retries = retries - 1;
+                    retries -= 1;
                     if retries == 0 {
                         return Err(KafkaError(KafkaCode::LeaderNotAvailable));
                     }
