@@ -258,7 +258,7 @@ impl AdminAPI {
                         break;
                     }
                     leader_url = res.unwrap();
-                    retries = retries - 1;
+                    retries -= 1;
                     if retries == 0 {
                         return Err(KafkaError(KafkaCode::LeaderNotAvailable));
                     }
