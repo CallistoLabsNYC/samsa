@@ -11,7 +11,7 @@ use crate::{
     protocol::{self, metadata::response::*},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata {
     pub broker_connections: HashMap<i32, BrokerConnection>,
     pub brokers: Vec<Broker>,

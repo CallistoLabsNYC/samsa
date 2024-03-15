@@ -107,7 +107,7 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 ///     println!("{:?}", batch);
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Consumer {
     /// Keeps track of the brokers and the topic partition info for the cluster.
     pub(crate) cluster_metadata: ClusterMetadata,
@@ -423,4 +423,22 @@ pub async fn fetch(
         protocol::FetchResponse::try_from(broker_conn.receive_response().await?.freeze())?;
 
     Ok(response)
+}
+
+#[cfg(test)]
+mod test {
+    use super::Consumer;
+
+    struct ConsumerWrapper {
+        consumer: Consumer,
+    }
+
+    #[tokio::test]
+    async fn it_can_stream_via_ref_to_wrapper() {
+        let consumer = Consumer {
+            ..Default::default()
+        };
+        let wrapper = &ConsumerWrapper { consumer };
+        let _stream = wrapper.consumer.clone().into_stream();
+    }
 }
