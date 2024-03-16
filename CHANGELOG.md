@@ -1,6 +1,6 @@
 # Samsa Changelog
 
-## [Unreleased]
+## [0.1.3] - 2024-03-16
 ### Added
 - [#41](https://github.com/CallistoLabsNYC/samsa/issues/41) Redpanda Admin client with support for get_leader_id(), get_node_config(), send_one(), and send_to_leader()
 
