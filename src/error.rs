@@ -1,13 +1,12 @@
 //! Crate & protocol level errors.
 //!
-use std::{fmt, io, result};
-
 use bytes::Bytes;
 use num_derive::FromPrimitive;
+use std::{fmt, io, result};
 
 pub type Result<T> = result::Result<T, Error>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Error {
     /// The broker exists in the metadata, but we have no open TCP connection.
     NoConnectionForBroker(i32),
@@ -15,6 +14,8 @@ pub enum Error {
     NoLeaderForTopicPartition(String, i32),
     /// We could not encode the data into a bytestream correctly.
     EncodingError,
+    /// An argument validation error.
+    ArgError(String),
     /// An error in the network.
     IoError(io::ErrorKind),
     /// Error code provided by the kafka broker.
@@ -26,6 +27,8 @@ pub enum Error {
     MissingData(String),
     MetadataNeedsSync,
     AssignmentStrategyNotSupported(String),
+    LockError(String),
+    NotFound,
 }
 
 impl fmt::Display for Error {
@@ -151,4 +154,25 @@ pub enum KafkaCode {
     IllegalSaslState = 34,
     /// The version of API is not supported.
     UnsupportedVersion = 35,
+}
+
+#[cfg(feature = "redpanda")]
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Self {
+        if err.is_timeout() {
+            Error::KafkaError(KafkaCode::RequestTimedOut)
+        } else if err.is_connect() {
+            Error::KafkaError(KafkaCode::BrokerNotAvailable)
+        } else if err.is_decode() {
+            Error::KafkaError(KafkaCode::CorruptMessage)
+        } else if let Some(code) = err.status() {
+            if code.as_u16() == 404 {
+                Error::NotFound
+            } else {
+                Error::KafkaError(KafkaCode::Unknown)
+            }
+        } else {
+            Error::KafkaError(KafkaCode::Unknown)
+        }
+    }
 }

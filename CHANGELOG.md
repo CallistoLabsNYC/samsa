@@ -1,6 +1,9 @@
 # Samsa Changelog
 
 ## [Unreleased]
+### Added
+- [#41](https://github.com/CallistoLabsNYC/samsa/issues/41) Redpanda Admin client with support for get_leader_id(), get_node_config(), send_one(), and send_to_leader()
+
 ### Changed
 - [#39](https://github.com/CallistoLabsNYC/samsa/issues/39) Consumer cannot stream when caller only has a reference to a wrapper struct
 

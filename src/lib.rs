@@ -129,6 +129,9 @@ mod producer_builder;
 mod protocol;
 mod utils;
 
+#[cfg(feature = "redpanda")]
+mod redpanda;
+
 const DEFAULT_CORRELATION_ID: i32 = 1;
 const DEFAULT_CLIENT_ID: &str = "samsa";
 
@@ -437,5 +440,10 @@ pub mod prelude {
 
     pub mod protocol {
         pub use crate::protocol::*;
+    }
+
+    #[cfg(feature = "redpanda")]
+    pub mod redpanda {
+        pub use crate::redpanda::*;
     }
 }
