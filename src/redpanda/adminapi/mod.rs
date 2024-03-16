@@ -5,7 +5,7 @@ mod environment_variable;
 mod node_config;
 mod partition;
 mod partition_transform_status;
-mod transform_metadata;
+mod transform;
 
 use crate::error::Error::KafkaError;
 use crate::error::{Error, KafkaCode, Result};
@@ -18,7 +18,8 @@ use reqwest::Response;
 use reqwest::{Body, Method};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-pub use transform_metadata::TransformMetadata;
+use transform::Transform;
+pub use transform::TransformMetadata;
 
 #[derive(Clone, Default)]
 pub struct AdminAPI {
@@ -49,6 +50,18 @@ impl AdminAPI {
     pub async fn delete_wasm_transform(self, name: &str) -> Result<()> {
         let path = format!("/v1/transform/{}", name);
         self.send_to_leader(Method::DELETE, &path).await?;
+        Ok(())
+    }
+
+    pub async fn deploy_wasm_transform(
+        self,
+        metadata: TransformMetadata,
+        contents: Vec<u8>,
+    ) -> Result<()> {
+        let transform = Transform { metadata, contents };
+        let res = self
+            .send_to_leader_with_body(Method::POST, "/v1/transform/deploy", transform)
+            .await?;
         Ok(())
     }
 
