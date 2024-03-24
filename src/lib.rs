@@ -263,6 +263,7 @@ pub mod prelude {
     //! [`list_offsets`] finds the offsets given a timestamp.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::list_offsets;
     //! let topic_partitions = HashMap::from([("my-topic", vec![0, 1, 2, 3])]);
     //! let offset_response = list_offsets(
     //!     conn,
@@ -277,6 +278,7 @@ pub mod prelude {
     //! [`fetch`] fetches a batch of messages.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::fetch;
     //! let fetch_response = fetch(
     //!     broker_conn,
     //!     correlation_id,
@@ -295,6 +297,7 @@ pub mod prelude {
     //! [`fetch_offset`] gets the offsets of a consumer group.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::fetch_offset;
     //! let offset_fetch_response = fetch_offset(
     //!     correlation_id,
     //!     client_id,
@@ -307,6 +310,7 @@ pub mod prelude {
     //! [`commit_offset`] commits a set of offsets for a group.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::commit_offset;
     //! let offset_commit_response = commit_offset(
     //!     correlation_id,
     //!     client_id,
@@ -338,6 +342,7 @@ pub mod prelude {
     //!
     //! ### Example
     //! ```rust
+    //! use tokio_stream::StreamExt;
     //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
     //! let partitions = vec![0];
     //! let topic_name = "my-topic";
@@ -370,6 +375,7 @@ pub mod prelude {
     //! [`join_group`] Become a member of a group, creating it if there are no active members..
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::join_group;
     //! let join_response = join_group(
     //!     correlation_id,
     //!     client_id,
@@ -385,6 +391,7 @@ pub mod prelude {
     //! [`sync_group`] Synchronize state for all members of a group.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::sync_group;
     //! let sync_response = sync_group(
     //!     correlation_id,
     //!     client_id,
@@ -399,6 +406,7 @@ pub mod prelude {
     //! [`heartbeat`] Keep a member alive in the group.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::heartbeat;
     //! let heartbeat_response = heartbeat(
     //!     correlation_id,
     //!     client_id,
@@ -412,6 +420,7 @@ pub mod prelude {
     //! [`leave_group`] Directly depart a group.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::leave_group;
     //! let leave_response = leave_group(
     //!     correlation_id, client_id, group_id, member_id
     //! ).await?;
