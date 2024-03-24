@@ -11,7 +11,7 @@ use crate::{
 
 const DEFAULT_RETENTION_TIME_MS: i64 = 100000;
 const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
-const DEFAUTL_REBALANCE_TIMEOUT_MS: i32 = 10000;
+const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
 pub struct ConsumerGroupBuilder {
     pub bootstrap_addrs: Vec<String>,
@@ -37,7 +37,7 @@ impl<'a> ConsumerGroupBuilder {
             correlation_id: DEFAULT_CORRELATION_ID,
             client_id: DEFAULT_CLIENT_ID.to_owned(),
             session_timeout_ms: DEFAULT_SESSION_TIMEOUT_MS,
-            rebalance_timeout_ms: DEFAUTL_REBALANCE_TIMEOUT_MS,
+            rebalance_timeout_ms: DEFAULT_REBALANCE_TIMEOUT_MS,
             group_id,
             retention_time_ms: DEFAULT_RETENTION_TIME_MS,
             group_topic_partitions,
