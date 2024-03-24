@@ -130,6 +130,7 @@ mod producer_builder;
 mod protocol;
 mod utils;
 
+mod consumer_group_builder;
 #[cfg(feature = "redpanda")]
 mod redpanda;
 
