@@ -119,6 +119,7 @@ mod assignor;
 mod consumer;
 mod consumer_builder;
 mod consumer_group;
+mod consumer_group_builder;
 mod encode;
 mod error;
 mod metadata;
@@ -129,7 +130,6 @@ mod producer_builder;
 mod protocol;
 mod utils;
 
-mod consumer_group_builder;
 #[cfg(feature = "redpanda")]
 mod redpanda;
 
