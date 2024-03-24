@@ -129,6 +129,7 @@ mod producer_builder;
 mod protocol;
 mod utils;
 
+mod consumer_group_builder;
 #[cfg(feature = "redpanda")]
 mod redpanda;
 
@@ -432,9 +433,9 @@ pub mod prelude {
     };
     pub use crate::consumer_builder::{fetch_offset, list_offsets, ConsumerBuilder};
     pub use crate::consumer_group::{
-        find_coordinator, heartbeat, join_group, leave_group, sync_group, ConsumerGroup,
-        ConsumerGroupBuilder,
+        heartbeat, join_group, leave_group, sync_group, ConsumerGroup,
     };
+    pub use crate::consumer_group_builder::{find_coordinator, ConsumerGroupBuilder};
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::metadata::ClusterMetadata;
     pub use crate::network::BrokerConnection;
