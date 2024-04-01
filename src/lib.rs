@@ -91,7 +91,7 @@
 //! let partitions = vec![0];
 //! let topic_name = "my-topic";
 //! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
-//! let group_id = "The Data Boyz".to_string();
+//! let group_id = "The Data team".to_string();
 //!
 //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
 //!     bootstrap_addrs,
