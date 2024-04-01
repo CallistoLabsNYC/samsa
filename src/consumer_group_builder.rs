@@ -13,6 +13,7 @@ const DEFAULT_RETENTION_TIME_MS: i64 = 100000;
 const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
 const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
+#[derive(Clone)]
 pub struct ConsumerGroupBuilder {
     pub bootstrap_addrs: Vec<String>,
     pub correlation_id: i32,
