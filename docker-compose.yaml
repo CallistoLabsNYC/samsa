@@ -37,7 +37,7 @@ services:
       - --advertise-kafka-addr PLAINTEXT://redpanda-2:29093,OUTSIDE://localhost:9093
       - --pandaproxy-addr PLAINTEXT://0.0.0.0:28083,OUTSIDE://0.0.0.0:8083
       - --advertise-pandaproxy-addr PLAINTEXT://redpanda-2:28083,OUTSIDE://localhost:8083
-      - --rpc-addrv0.0.0.0:33146
+      - --rpc-addr 0.0.0.0:33146
       - --advertise-rpc-addr redpanda-2:33146
     ports:
       - 8083:8083
