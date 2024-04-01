@@ -2,7 +2,7 @@ version: '3.7'
 services:
   # Redpanda cluster
   redpanda-1:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.1.1
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.10
     container_name: redpanda-1
     command:
       - redpanda
@@ -36,7 +36,7 @@ services:
 
   # Want a two node Redpanda cluster? Uncomment this block :)
   redpanda-2:
-    image: docker.redpanda.com/redpandadata/redpanda:v23.1.1
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.10
     container_name: redpanda-2
     command:
       - redpanda
@@ -67,7 +67,7 @@ services:
       - 9093:9093
 
   redpanda-console:
-    image: docker.redpanda.com/redpandadata/console:v2.2.2
+    image: docker.redpanda.com/redpandadata/console:v2.4.5
     container_name: redpanda-console
     entrypoint: /bin/sh
     command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
