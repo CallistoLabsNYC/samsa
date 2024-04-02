@@ -154,6 +154,10 @@ pub enum KafkaCode {
     IllegalSaslState = 34,
     /// The version of API is not supported.
     UnsupportedVersion = 35,
+    /// Topic with this name already exists.
+    TopicAlreadyExists = 36,
+    /// This is not the correct controller for this cluster.
+    NotController = 41,
 }
 
 #[cfg(feature = "redpanda")]
