@@ -1,6 +1,5 @@
 mod testsupport;
 
-use nom::AsBytes;
 use samsa::prelude::{self, protocol, BrokerConnection, Error, KafkaCode};
 use std::collections::HashMap;
 

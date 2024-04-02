@@ -14,7 +14,7 @@ pub async fn ensure_topic_creation(
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
-    let create_topic_response = create_topics(
+    create_topics(
         conn.clone(),
         correlation_id,
         client_id,
