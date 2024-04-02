@@ -3,7 +3,7 @@ use std::{collections::HashMap, env};
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
-const KAFKA_BROKER_URLS: &str = "KAFKA_BROKER_URLS";
+const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
 #[allow(dead_code)]
 const KAFKA_TOPIC: &str = "KAFKA_TOPIC";
 
@@ -50,11 +50,11 @@ pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
-    let urls: Vec<String> = match env::var(KAFKA_BROKER_URLS) {
+pub fn get_redpanda_admin_urls() -> Result<(bool, Vec<String>), Error> {
+    let urls: Vec<String> = match env::var(REDPANDA_ADMIN_URLS) {
         Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
         Err(_) => {
-            tracing::warn!("Skipping test because no {} is set", KAFKA_BROKER_URLS);
+            tracing::warn!("Skipping test because no {} is set", REDPANDA_ADMIN_URLS);
             return Ok((true, vec![]));
         }
     };
