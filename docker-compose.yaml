@@ -22,8 +22,9 @@ services:
       - 9644:9644
       - 28082:28082
       - 29092:29092
+    volumes:
+      - ./etc/redpanda/.bootstrap.yaml:/etc/redpanda/.bootstrap.yaml
 
-  # Want a two node Redpanda cluster? Uncomment this block :)
   redpanda-2:
     image: docker.redpanda.com/redpandadata/redpanda:v23.3.10
     container_name: redpanda-2
@@ -42,6 +43,8 @@ services:
     ports:
       - 8083:8083
       - 9093:9093
+    volumes:
+      - ./etc/redpanda/.bootstrap.yaml:/etc/redpanda/.bootstrap.yaml
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.4.5
