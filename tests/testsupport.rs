@@ -6,6 +6,8 @@ const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
 #[allow(dead_code)]
 const KAFKA_TOPIC: &str = "KAFKA_TOPIC";
+#[allow(dead_code)]
+const KAFKA_TOPIC_2: &str = "KAFKA_TOPIC_2";
 
 #[allow(dead_code)]
 pub async fn ensure_topic_creation(
@@ -67,6 +69,18 @@ pub fn get_topic() -> Result<(bool, String), Error> {
         Ok(topic) => topic,
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC);
+            return Ok((true, "".to_string()));
+        }
+    };
+    Ok((false, topic))
+}
+
+#[allow(dead_code)]
+pub fn get_topic_2() -> Result<(bool, String), Error> {
+    let topic = match env::var(KAFKA_TOPIC_2) {
+        Ok(topic) => topic,
+        Err(_) => {
+            tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC_2);
             return Ok((true, "".to_string()));
         }
     };

@@ -28,6 +28,10 @@ async fn it_can_write_then_read() -> Result<(), Error> {
     if skip {
         return Ok(());
     }
+    let (skip, topic_2) = testsupport::get_topic_2()?;
+    if skip {
+        return Ok(());
+    }
     let client = AdminAPI::builder().urls(urls).build()?;
 
     // Create
@@ -35,18 +39,17 @@ async fn it_can_write_then_read() -> Result<(), Error> {
     let transform_metadata = TransformMetadata {
         name: name.to_string(),
         input_topic: topic.clone(),
-        output_topics: vec![topic],
+        output_topics: vec![topic_2],
         ..Default::default()
     };
-    let contents =
-        std::fs::read("testdata/add_one.wasm").map_err(|err| Error::ArgError(err.to_string()))?;
+    let contents = std::fs::read("testdata/redpanda-identity.wasm")
+        .map_err(|err| Error::ArgError(err.to_string()))?;
     client
         .deploy_wasm_transform(transform_metadata, contents)
         .await?;
 
     // List
-    let transforms = client.list_wasm_transforms().await?;
-    eprintln!("** transforms: {:?}", transforms);
+    // TODO
 
     // Delete
     client.delete_wasm_transform(name).await?;
