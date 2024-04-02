@@ -8,10 +8,10 @@ pub struct Transform {
     pub contents: Vec<u8>,
 }
 
-impl Into<Body> for Transform {
-    fn into(self) -> Body {
-        let mut bytes = serde_json::to_vec(&self.metadata).unwrap();
-        let mut contents = self.contents.clone();
+impl From<Transform> for Body {
+    fn from(val: Transform) -> Self {
+        let mut bytes = serde_json::to_vec(&val.metadata).unwrap();
+        let mut contents = val.contents.clone();
         bytes.append(&mut contents);
         Body::from(bytes)
     }
