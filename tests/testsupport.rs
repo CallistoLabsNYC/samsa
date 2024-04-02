@@ -37,6 +37,19 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
+pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
+    let (skip, brokers) = get_brokers()?;
+    if skip {
+        return Ok((skip, vec![], "".to_string()));
+    }
+    let (skip, topic) = get_topic()?;
+    if skip {
+        return Ok((skip, vec![], "".to_string()));
+    }
+    Ok((false, brokers, topic))
+}
+
+#[allow(dead_code)]
 pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
     let urls: Vec<String> = match env::var(KAFKA_BROKER_URLS) {
         Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
@@ -49,17 +62,13 @@ pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
-    let (skip, brokers) = get_brokers()?;
-    if skip {
-        return Ok((skip, vec![], "".to_string()));
-    }
+pub fn get_topic() -> Result<(bool, String), Error> {
     let topic = match env::var(KAFKA_TOPIC) {
         Ok(topic) => topic,
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC);
-            return Ok((true, vec![], "".to_string()));
+            return Ok((true, "".to_string()));
         }
     };
-    Ok((false, brokers, topic))
+    Ok((false, topic))
 }
