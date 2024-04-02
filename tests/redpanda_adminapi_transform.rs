@@ -1,7 +1,7 @@
 mod testsupport;
 
 use random_word::Lang;
-use samsa::prelude::redpanda::adminapi::{AdminAPI, TransformMetadata};
+use samsa::prelude::redpanda::adminapi::{AdminAPI, TransformMetadataIn, TransformMetadataOut};
 use samsa::prelude::Error;
 
 #[tokio::test]
@@ -36,7 +36,7 @@ async fn it_can_write_then_read() -> Result<(), Error> {
 
     // Create
     let name = random_word::gen(Lang::En);
-    let transform_metadata = TransformMetadata {
+    let transform_metadata = TransformMetadataIn {
         name: name.to_string(),
         input_topic: topic.clone(),
         output_topics: vec![topic_2],
@@ -49,13 +49,15 @@ async fn it_can_write_then_read() -> Result<(), Error> {
         .await?;
 
     // List
-    // TODO
+    let transforms: Vec<TransformMetadataOut> = client.list_wasm_transforms().await?;
+    assert!(transforms.iter().any(|x| x.name == name));
 
     // Delete
     client.delete_wasm_transform(name).await?;
 
     // List
-    // TODO
+    let transforms: Vec<TransformMetadataOut> = client.list_wasm_transforms().await?;
+    assert!(!transforms.iter().any(|x| x.name == name));
 
     Ok(())
 }

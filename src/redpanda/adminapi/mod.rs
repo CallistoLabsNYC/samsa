@@ -20,7 +20,7 @@ use reqwest::{Body, Method};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 pub use transform::Transform;
-pub use transform_metadata::TransformMetadata;
+pub use transform_metadata::{TransformMetadataIn, TransformMetadataOut};
 
 #[derive(Clone, Default)]
 pub struct AdminAPI {
@@ -56,7 +56,7 @@ impl AdminAPI {
 
     pub async fn deploy_wasm_transform(
         &self,
-        metadata: TransformMetadata,
+        metadata: TransformMetadataIn,
         contents: Vec<u8>,
     ) -> Result<Response> {
         let transform = Transform { metadata, contents };
@@ -74,7 +74,10 @@ impl AdminAPI {
     }
 
     async fn get_any(&self, path: &str) -> Result<Response> {
-        let req = self.client.get(format!("{}{}", self.urls[0], path));
+        let req = self
+            .client
+            .get(format!("{}{}", self.urls[0], path))
+            .header("Accept", "application/json");
         let res = req.send().await?;
         Ok(res)
     }
@@ -124,8 +127,8 @@ impl AdminAPI {
         Err(KafkaError(KafkaCode::BrokerNotAvailable))
     }
 
-    pub async fn list_wasm_transforms(&self) -> Result<Vec<TransformMetadata>> {
-        let transforms: Vec<TransformMetadata> =
+    pub async fn list_wasm_transforms(&self) -> Result<Vec<TransformMetadataOut>> {
+        let transforms: Vec<TransformMetadataOut> =
             self.get_any("/v1/transform/").await?.json().await?;
         Ok(transforms)
     }

@@ -1,10 +1,10 @@
-use crate::redpanda::adminapi::TransformMetadata;
+use crate::redpanda::adminapi::TransformMetadataIn;
 use reqwest::Body;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Transform {
-    pub metadata: TransformMetadata,
+    pub metadata: TransformMetadataIn,
     pub contents: Vec<u8>,
 }
 
