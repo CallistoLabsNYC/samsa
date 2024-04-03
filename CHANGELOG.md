@@ -1,6 +1,9 @@
 # Samsa Changelog
 
 ## [Unreleased]
+### Added
+- [#51](https://github.com/CallistoLabsNYC/samsa/issues/51) Add create and delete topic protocol support
+
 ### Fixed
 - [#45](https://github.com/CallistoLabsNYC/samsa/issues/45) Cannot perform ConsumerGroupBuilder::build() via a reference
 
