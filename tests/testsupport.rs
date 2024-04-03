@@ -1,5 +1,5 @@
-use samsa::prelude::{BrokerConnection, Error};
-use std::env;
+use samsa::prelude::{create_topics, BrokerConnection, Error};
+use std::{collections::HashMap, env};
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
@@ -14,11 +14,14 @@ pub async fn ensure_topic_creation(
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
-    let topics = vec![topic];
-    let metadata_request =
-        samsa::prelude::protocol::MetadataRequest::new(correlation_id, client_id, &topics);
-    conn.send_request(&metadata_request).await?;
-    let _metadata = conn.receive_response().await?;
+    create_topics(
+        conn.clone(),
+        correlation_id,
+        client_id,
+        HashMap::from([(topic, 1)]),
+    )
+    .await?;
+
     Ok(())
 }
 

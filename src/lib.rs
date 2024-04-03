@@ -115,6 +115,7 @@
 //! - [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)
 //! - [Confluence Docs](https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol)
 
+mod admin;
 mod assignor;
 mod consumer;
 mod consumer_builder;
@@ -427,6 +428,7 @@ pub mod prelude {
     //! ).await?;
     //! ```
     //!
+    pub use crate::admin::{create_topics, delete_topics};
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
     pub use crate::consumer::{
         commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions,
