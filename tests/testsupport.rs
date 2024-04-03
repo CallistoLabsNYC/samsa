@@ -3,9 +3,11 @@ use std::{collections::HashMap, env};
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
-const KAFKA_BROKER_URLS: &str = "KAFKA_BROKER_URLS";
+const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
 #[allow(dead_code)]
 const KAFKA_TOPIC: &str = "KAFKA_TOPIC";
+#[allow(dead_code)]
+const KAFKA_TOPIC_2: &str = "KAFKA_TOPIC_2";
 
 #[allow(dead_code)]
 pub async fn ensure_topic_creation(
@@ -37,11 +39,24 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
-    let urls: Vec<String> = match env::var(KAFKA_BROKER_URLS) {
+pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
+    let (skip, brokers) = get_brokers()?;
+    if skip {
+        return Ok((skip, vec![], "".to_string()));
+    }
+    let (skip, topic) = get_topic()?;
+    if skip {
+        return Ok((skip, vec![], "".to_string()));
+    }
+    Ok((false, brokers, topic))
+}
+
+#[allow(dead_code)]
+pub fn get_redpanda_admin_urls() -> Result<(bool, Vec<String>), Error> {
+    let urls: Vec<String> = match env::var(REDPANDA_ADMIN_URLS) {
         Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
         Err(_) => {
-            tracing::warn!("Skipping test because no {} is set", KAFKA_BROKER_URLS);
+            tracing::warn!("Skipping test because no {} is set", REDPANDA_ADMIN_URLS);
             return Ok((true, vec![]));
         }
     };
@@ -49,17 +64,25 @@ pub fn get_broker_urls() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
-    let (skip, brokers) = get_brokers()?;
-    if skip {
-        return Ok((skip, vec![], "".to_string()));
-    }
+pub fn get_topic() -> Result<(bool, String), Error> {
     let topic = match env::var(KAFKA_TOPIC) {
         Ok(topic) => topic,
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC);
-            return Ok((true, vec![], "".to_string()));
+            return Ok((true, "".to_string()));
         }
     };
-    Ok((false, brokers, topic))
+    Ok((false, topic))
+}
+
+#[allow(dead_code)]
+pub fn get_topic_2() -> Result<(bool, String), Error> {
+    let topic = match env::var(KAFKA_TOPIC_2) {
+        Ok(topic) => topic,
+        Err(_) => {
+            tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC_2);
+            return Ok((true, "".to_string()));
+        }
+    };
+    Ok((false, topic))
 }

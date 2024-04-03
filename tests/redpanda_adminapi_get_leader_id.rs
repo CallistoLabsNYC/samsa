@@ -5,7 +5,7 @@ use samsa::prelude::Error;
 
 #[tokio::test]
 async fn it_can_get_redpanda_adminapi_leader_id() -> Result<(), Box<Error>> {
-    let (skip, urls) = testsupport::get_broker_urls()?;
+    let (skip, urls) = testsupport::get_redpanda_admin_urls()?;
     if skip {
         return Ok(());
     }

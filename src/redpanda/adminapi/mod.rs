@@ -5,6 +5,7 @@ mod environment_variable;
 mod node_config;
 mod partition;
 mod partition_transform_status;
+mod transform;
 mod transform_metadata;
 
 use crate::error::Error::KafkaError;
@@ -18,7 +19,8 @@ use reqwest::Response;
 use reqwest::{Body, Method};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-pub use transform_metadata::TransformMetadata;
+pub use transform::Transform;
+pub use transform_metadata::{TransformMetadataIn, TransformMetadataOut};
 
 #[derive(Clone, Default)]
 pub struct AdminAPI {
@@ -32,7 +34,7 @@ impl AdminAPI {
         Builder::default()
     }
 
-    async fn broker_id_to_url(self, broker_id: i32) -> Result<String> {
+    async fn broker_id_to_url(&self, broker_id: i32) -> Result<String> {
         if let Ok(url) = self.clone().get_url_from_broker_id(broker_id) {
             return Ok(url);
         }
@@ -40,20 +42,30 @@ impl AdminAPI {
         self.get_url_from_broker_id(broker_id)
     }
 
-    async fn delete_any(self, path: &str) -> Result<Response> {
+    async fn delete_any(&self, path: &str) -> Result<Response> {
         let req = self.client.delete(format!("{}{}", self.urls[0], path));
         let res = req.send().await?;
         Ok(res)
     }
 
-    pub async fn delete_wasm_transform(self, name: &str) -> Result<()> {
+    pub async fn delete_wasm_transform(&self, name: &str) -> Result<()> {
         let path = format!("/v1/transform/{}", name);
         self.send_to_leader(Method::DELETE, &path).await?;
         Ok(())
     }
 
-    pub async fn each_broker<F>(self, f: impl Fn(AdminAPI) -> Result<()>) -> Result<()> {
-        for url in self.urls {
+    pub async fn deploy_wasm_transform(
+        &self,
+        metadata: TransformMetadataIn,
+        contents: Vec<u8>,
+    ) -> Result<Response> {
+        let transform = Transform { metadata, contents };
+        self.send_to_leader_with_body(Method::POST, "/v1/transform/deploy", transform)
+            .await
+    }
+
+    pub async fn each_broker<F>(&self, f: impl Fn(AdminAPI) -> Result<()>) -> Result<()> {
+        for url in self.clone().urls {
             let url = url.clone();
             let aa = new_admin_for_single_host(url)?;
             f(aa)?;
@@ -61,13 +73,16 @@ impl AdminAPI {
         Ok(())
     }
 
-    async fn get_any(self, path: &str) -> Result<Response> {
-        let req = self.client.get(format!("{}{}", self.urls[0], path));
+    async fn get_any(&self, path: &str) -> Result<Response> {
+        let req = self
+            .client
+            .get(format!("{}{}", self.urls[0], path))
+            .header("Accept", "application/json");
         let res = req.send().await?;
         Ok(res)
     }
 
-    pub async fn get_leader_id(self) -> Result<i32> {
+    pub async fn get_leader_id(&self) -> Result<i32> {
         let pa = self.get_partition("redpanda", "controller", 0).await?;
         if pa.leader_id == -1 {
             return Err(KafkaError(KafkaCode::LeaderNotAvailable));
@@ -75,7 +90,7 @@ impl AdminAPI {
         Ok(pa.leader_id)
     }
 
-    pub async fn get_node_config(self) -> Result<NodeConfig> {
+    pub async fn get_node_config(&self) -> Result<NodeConfig> {
         let node_config = self
             .send_one(Method::GET, "/v1/node_config", false)
             .await?
@@ -85,7 +100,7 @@ impl AdminAPI {
     }
 
     pub async fn get_partition(
-        self,
+        &self,
         namespace: &str,
         topic: &str,
         partition: i32,
@@ -101,7 +116,7 @@ impl AdminAPI {
         Ok(partition)
     }
 
-    fn get_url_from_broker_id(self, broker_id: i32) -> Result<String> {
+    fn get_url_from_broker_id(&self, broker_id: i32) -> Result<String> {
         let locked = self
             .broker_id_to_urls
             .lock()
@@ -112,13 +127,13 @@ impl AdminAPI {
         Err(KafkaError(KafkaCode::BrokerNotAvailable))
     }
 
-    pub async fn list_wasm_transforms(self) -> Result<Vec<TransformMetadata>> {
-        let transforms: Vec<TransformMetadata> =
+    pub async fn list_wasm_transforms(&self) -> Result<Vec<TransformMetadataOut>> {
+        let transforms: Vec<TransformMetadataOut> =
             self.get_any("/v1/transform/").await?.json().await?;
         Ok(transforms)
     }
 
-    async fn map_broker_ids_to_urls(self) -> Result<()> {
+    async fn map_broker_ids_to_urls(&self) -> Result<()> {
         // TODO
         // self.each_broker(|aa| async {
         //     let nc = self.get_node_config().await.unwrap();
@@ -132,7 +147,7 @@ impl AdminAPI {
         Ok(())
     }
 
-    async fn send_any(self, method: Method, path: &str) -> Result<Response> {
+    async fn send_any(&self, method: Method, path: &str) -> Result<Response> {
         let req = self
             .client
             .request(method, format!("{}{}", self.urls[0], path));
@@ -140,7 +155,7 @@ impl AdminAPI {
         Ok(res)
     }
 
-    async fn send_one(self, method: Method, path: &str, _retryable: bool) -> Result<Response> {
+    async fn send_one(&self, method: Method, path: &str, _retryable: bool) -> Result<Response> {
         if self.urls.len() != 1 {
             return Err(Error::ArgError(format!(
                 "unable to issue a single-admin-endpoint request to {} admin endpoints",
@@ -155,7 +170,7 @@ impl AdminAPI {
     }
 
     async fn send_one_with_body<B: Into<Body>>(
-        self,
+        &self,
         method: Method,
         path: &str,
         body: B,
@@ -174,7 +189,7 @@ impl AdminAPI {
         Ok(res)
     }
 
-    async fn send_to_leader(self, method: Method, path: &str) -> Result<Response> {
+    async fn send_to_leader(&self, method: Method, path: &str) -> Result<Response> {
         // If there's only one broker, let's just send the request to it
         if self.urls.len() == 1 {
             return self.send_one(method, path, true).await;
@@ -221,7 +236,7 @@ impl AdminAPI {
     }
 
     async fn send_to_leader_with_body<B: Into<Body>>(
-        self,
+        &self,
         method: Method,
         path: &str,
         body: B,
