@@ -8,7 +8,7 @@ const CORRELATION_ID: i32 = 1;
 
 #[tokio::test]
 async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
-    let (skip, brokers, _) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }
@@ -48,7 +48,7 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
 
 #[tokio::test]
 async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Error>> {
-    let (skip, brokers, _) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }
