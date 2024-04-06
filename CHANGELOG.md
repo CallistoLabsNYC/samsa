@@ -1,5 +1,9 @@
 # Samsa Changelog
 
+## [Unreleased]
+### Fixed
+- [#56](https://github.com/CallistoLabsNYC/samsa/issues/56) Static Analysis and Build CI actions run with no purpose during tag release
+
 ## [0.1.4] - 2024-04-06
 ### Added
 - [#51](https://github.com/CallistoLabsNYC/samsa/issues/51) Add create and delete topic protocol support
