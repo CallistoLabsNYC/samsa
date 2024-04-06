@@ -203,6 +203,7 @@ pub mod prelude {
     //! [`produce`] sends messages to a broker.
     //! #### Example
     //! ```rust
+    //! use samsa::prelude::produce;
     //! produce(
     //!     broker_conn,
     //!     correlation_id,
@@ -265,6 +266,7 @@ pub mod prelude {
     //! [`list_offsets`] finds the offsets given a timestamp.
     //! #### Example
     //! ```rust
+    //! use std::collections::HashMap;
     //! use samsa::prelude::list_offsets;
     //! let topic_partitions = HashMap::from([("my-topic", vec![0, 1, 2, 3])]);
     //! let offset_response = list_offsets(
