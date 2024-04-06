@@ -8,6 +8,7 @@
 //!
 //! ### Example
 //! ```rust
+//! use samsa::prelude::protocol;
 //! let sync_request = protocol::SyncGroupRequest::new(
 //!     CORRELATION_ID,
 //!     CLIENT_ID,
@@ -54,6 +55,7 @@ const API_VERSION: i16 = 2;
 ///
 /// ### Example
 /// ```rust
+/// use samsa::prelude::protocol;
 /// let sync_request = protocol::SyncGroupRequest::new(
 ///     CORRELATION_ID,
 ///     CLIENT_ID,

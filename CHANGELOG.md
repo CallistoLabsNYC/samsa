@@ -1,6 +1,6 @@
 # Samsa Changelog
 
-## [Unreleased]
+## [0.1.4] - 2024-04-06
 ### Added
 - [#51](https://github.com/CallistoLabsNYC/samsa/issues/51) Add create and delete topic protocol support
 - [#32](https://github.com/CallistoLabsNYC/samsa/issues/32) Manage Redpanda transforms via admin api
