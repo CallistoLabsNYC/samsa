@@ -1,6 +1,9 @@
 # Samsa Changelog
 
 ## [Unreleased]
+### Changed
+- [#58](https://github.com/CallistoLabsNYC/samsa/issues/58) ConsumerGroup cannot stream when caller only has a reference to a wrapper struct
+
 ### Fixed
 - [#56](https://github.com/CallistoLabsNYC/samsa/issues/56) Static Analysis and Build CI actions run with no purpose during tag release
 

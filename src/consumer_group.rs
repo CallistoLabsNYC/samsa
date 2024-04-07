@@ -21,6 +21,7 @@ use crate::{
 
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
+#[derive(Clone, Debug)]
 pub struct ConsumerGroup {
     pub bootstrap_addrs: Vec<String>,
     pub coordinator_conn: BrokerConnection,
