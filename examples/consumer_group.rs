@@ -2,8 +2,6 @@ use std::time::Duration;
 
 use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
-use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
-
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
