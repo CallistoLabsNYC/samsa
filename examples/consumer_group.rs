@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
+use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
