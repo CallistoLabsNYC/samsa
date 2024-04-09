@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-
-use nom::AsBytes;
 use samsa::prelude::{ConsumerBuilder, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
@@ -23,9 +20,9 @@ async fn main() -> Result<(), ()> {
 
     let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 
-    let src_topic = "shakespeare".to_string();
+    let src_topic = "my-topic".to_string();
 
-    let counter = ConsumerBuilder::new(
+    let stream = ConsumerBuilder::new(
         bootstrap_addrs,
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0, 1, 2, 3])
@@ -34,28 +31,12 @@ async fn main() -> Result<(), ()> {
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
     .build()
-    .into_flat_stream()
-    .take(800000)
-    .map(|record| {
-        std::str::from_utf8(record.value.as_bytes())
-            .unwrap()
-            .replace(&['(', ')', ',', '\"', '.', ';', ':', '\''][..], "")
-            .to_lowercase()
-    })
-    .fold(HashMap::new(), |mut counter, word| {
-        if let Some(count) = counter.get(&word) {
-            counter.insert(word, count + 1);
-        } else {
-            counter.insert(word, 1);
-        }
-        counter
-    })
-    .await;
+    .into_stream();
 
-    let mut hash_vec: Vec<(&String, &u32)> = counter.iter().collect();
-    hash_vec.sort_by(|a, b| b.1.cmp(a.1));
-    for (word, count) in hash_vec.iter().take(100) {
-        tracing::info!("{word}: {count}");
+    tokio::pin!(stream);
+
+    while let Some(message) = stream.next().await {
+        tracing::info!("{:?}", message);
     }
 
     Ok(())
