@@ -27,7 +27,9 @@ async fn main() -> Result<(), ()> {
 
     let counter = ConsumerBuilder::new(
         bootstrap_addrs,
-        TopicPartitionsBuilder::new().assign(src_topic, vec![0, 1, 2, 3]).build(),
+        TopicPartitionsBuilder::new()
+            .assign(src_topic, vec![0, 1, 2, 3])
+            .build(),
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
