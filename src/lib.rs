@@ -44,6 +44,7 @@
 //!         partition_id,
 //!         key: Some(bytes::Bytes::from_static(b"Tester")),
 //!         value: Some(bytes::Bytes::from_static(b"Value")),
+//!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
 //!     };
 //!
 //! let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])

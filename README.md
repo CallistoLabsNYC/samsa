@@ -59,11 +59,14 @@ producer_client
 ```
 
 ### Consumer
+A `Consumer` is used to fetch messages from the broker. It is an asynchronous iterator that can be configured to auto-commit. To instantiate one, start with a `ConsumerBuilder`.
 ```rust
 let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 let partitions = vec![0];
 let topic_name = "my-topic";
-let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+    .assign(topic_name, partitions)
+    .build();
 
 let consumer = samsa::prelude::ConsumerBuilder::new(
     bootstrap_addrs,
@@ -88,7 +91,9 @@ You can set up a consumer group with a group id and assignment. The offsets are 
 let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 let partitions = vec![0];
 let topic_name = "my-topic";
-let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+    .assign(topic_name, partitions)
+    .build();
 let group_id = "The Data Boyz".to_string();
 
 let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
@@ -97,7 +102,7 @@ let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
     assignment,
 ).await?
 .build().await?;
- 
+
 let stream = consumer_group_member.into_stream();
 // have to pin streams before iterating
 tokio::pin!(stream);
@@ -110,5 +115,5 @@ while let Some(batch) = stream.next().await {
 
 
 ## Resources
-- https://kafka.apache.org/protocol.html
-- https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol
+- [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)
+- [Confluence Docs](https://cwiki.apache.org/confluence/display/KAFKA/A+Guide+To+The+Kafka+Protocol)
