@@ -65,7 +65,9 @@
 //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 //! let partitions = vec![0];
 //! let topic_name = "my-topic";
-//! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+//! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+//!     .assign(topic_name, partitions)
+//!     .build();
 //!
 //! let consumer = samsa::prelude::ConsumerBuilder::new(
 //!     bootstrap_addrs,
@@ -90,7 +92,9 @@
 //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 //! let partitions = vec![0];
 //! let topic_name = "my-topic";
-//! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+//! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+//!     .assign(topic_name, partitions)
+//!     .build();
 //! let group_id = "The Data Boyz".to_string();
 //!
 //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
@@ -238,7 +242,9 @@ pub mod prelude {
     //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
     //! let partitions = vec![0];
     //! let topic_name = "my-topic";
-    //! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+    //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+    //!     .assign(topic_name, partitions)
+    //!     .build();
     //!
     //! let consumer = samsa::prelude::ConsumerBuilder::new(
     //!     bootstrap_addrs,
@@ -268,7 +274,11 @@ pub mod prelude {
     //! ```rust
     //! use std::collections::HashMap;
     //! use samsa::prelude::list_offsets;
-    //! let topic_partitions = HashMap::from([("my-topic", vec![0, 1, 2, 3])]);
+    //! let partitions = vec![0];
+    //! let topic_name = "my-topic";
+    //! let topic_partitions = samsa::prelude::TopicPartitionsBuilder::new()
+    //!     .assign(topic_name, partitions)
+    //!     .build();
     //! let offset_response = list_offsets(
     //!     conn,
     //!     correlation_id,
@@ -350,7 +360,9 @@ pub mod prelude {
     //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
     //! let partitions = vec![0];
     //! let topic_name = "my-topic";
-    //! let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+    //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+    //!     .assign(topic_name, partitions)
+    //!     .build();
     //! let group_id = "The Data Boyz".to_string();
     //!
     //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(

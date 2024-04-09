@@ -126,7 +126,9 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 /// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 /// let partitions = vec![0];
 /// let topic_name = "my-topic";
-/// let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+/// let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+///     .assign(topic_name, partitions)
+///     .build();
 ///
 /// let consumer = samsa::prelude::ConsumerBuilder::new(
 ///     bootstrap_addrs,
