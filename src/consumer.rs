@@ -64,8 +64,45 @@ impl FetchParams {
 }
 
 type TopicPartitionKey = (String, i32);
-/// Used to represent topic partition assignments.
+
+/// Used to represent topic-partition assignments.
+/// 
+/// Consumers need to be assigned to consume from topics and their partitions.
+/// The [TopicPartitionsBuilder] is an ease of use type to build these assignments
 pub type TopicPartitions = HashMap<String, Vec<i32>>;
+
+/// Build a topic-partition assignment for Consumers.
+/// 
+/// # Example
+/// ```rust
+/// let topic_partitions = TopicPartitionsBuilder::new()
+///     .assign("topic1", vec![0,1,2])
+///     .assign("topic1", vec![3,4,5])
+///     .build();
+/// ```
+pub struct TopicPartitionsBuilder {
+    data: TopicPartitions
+}
+
+impl TopicPartitionsBuilder {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new()
+        }
+    }
+
+    /// Add assignment for a topic and its partitions.
+    pub fn assign(mut self, topic: String, partitions: Vec<i32>) -> Self {
+        self.data.insert(topic, partitions);
+
+        self
+    } 
+
+    pub fn build(self) -> TopicPartitions {
+        self.data
+    }
+}
+
 /// Used to represent topic partition offsets.
 pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 

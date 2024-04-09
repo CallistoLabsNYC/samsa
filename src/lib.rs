@@ -433,7 +433,7 @@ pub mod prelude {
     pub use crate::admin::{create_topics, delete_topics};
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
     pub use crate::consumer::{
-        commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions,
+        commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions, TopicPartitionsBuilder
     };
     pub use crate::consumer_builder::{fetch_offset, list_offsets, ConsumerBuilder};
     pub use crate::consumer_group::{
