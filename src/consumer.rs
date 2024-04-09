@@ -103,6 +103,12 @@ impl TopicPartitionsBuilder {
     }
 }
 
+impl Default for TopicPartitionsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Used to represent topic partition offsets.
 pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 
