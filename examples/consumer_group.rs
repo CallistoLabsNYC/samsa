@@ -1,5 +1,6 @@
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
+use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -23,10 +24,12 @@ async fn main() -> Result<(), ()> {
 
     let src_topic = "shakespeare".to_string();
 
-    let stream = samsa::prelude::ConsumerGroupBuilder::new(
+    let stream = ConsumerGroupBuilder::new(
         bootstrap_addrs,
         "Squad".to_string(),
-        HashMap::from([(src_topic, vec![0, 1, 2, 3])]),
+        TopicPartitionsBuilder::new()
+            .assign(src_topic, vec![0, 1, 2, 3])
+            .build(),
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?

@@ -64,8 +64,51 @@ impl FetchParams {
 }
 
 type TopicPartitionKey = (String, i32);
-/// Used to represent topic partition assignments.
+
+/// Used to represent topic-partition assignments.
+///
+/// Consumers need to be assigned to consume from topics and their partitions.
+/// The [TopicPartitionsBuilder] is an ease of use type to build these assignments
 pub type TopicPartitions = HashMap<String, Vec<i32>>;
+
+/// Build a topic-partition assignment for Consumers.
+///
+/// # Example
+/// ```rust
+/// let topic_partitions = TopicPartitionsBuilder::new()
+///     .assign("topic1", vec![0,1,2])
+///     .assign("topic1", vec![3,4,5])
+///     .build();
+/// ```
+pub struct TopicPartitionsBuilder {
+    data: TopicPartitions,
+}
+
+impl TopicPartitionsBuilder {
+    pub fn new() -> Self {
+        Self {
+            data: HashMap::new(),
+        }
+    }
+
+    /// Add assignment for a topic and its partitions.
+    pub fn assign(mut self, topic: String, partitions: Vec<i32>) -> Self {
+        self.data.insert(topic, partitions);
+
+        self
+    }
+
+    pub fn build(self) -> TopicPartitions {
+        self.data
+    }
+}
+
+impl Default for TopicPartitionsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Used to represent topic partition offsets.
 pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 
@@ -89,7 +132,9 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 /// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 /// let partitions = vec![0];
 /// let topic_name = "my-topic";
-/// let assignment = std::collections::HashMap::from([(topic_name.to_string(), partitions)]);
+/// let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+///     .assign(topic_name, partitions)
+///     .build();
 ///
 /// let consumer = samsa::prelude::ConsumerBuilder::new(
 ///     bootstrap_addrs,
