@@ -96,7 +96,7 @@
 //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
 //!     .assign(topic_name, partitions)
 //!     .build();
-//! let group_id = "The Data Boyz".to_string();
+//! let group_id = "The Data Team".to_string();
 //!
 //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
 //!     bootstrap_addrs,
@@ -364,7 +364,7 @@ pub mod prelude {
     //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     //!     .assign(topic_name, partitions)
     //!     .build();
-    //! let group_id = "The Data Boyz".to_string();
+    //! let group_id = "The Data Team".to_string();
     //!
     //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
     //!     bootstrap_addrs,

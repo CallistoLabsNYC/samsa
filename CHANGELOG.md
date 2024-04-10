@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - [#58](https://github.com/CallistoLabsNYC/samsa/issues/58) ConsumerGroup cannot stream when caller only has a reference to a wrapper struct
+- [#47](https://github.com/CallistoLabsNYC/samsa/issues/47) Examples - Publisher and Consumer do not use same topic.
 - [#34](https://github.com/CallistoLabsNYC/samsa/issues/34) Add documentation and comments for TopicAssignments & TopicPartition structs
 
 ### Fixed

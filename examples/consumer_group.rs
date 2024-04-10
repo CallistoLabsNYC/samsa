@@ -22,11 +22,12 @@ async fn main() -> Result<(), ()> {
 
     let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 
-    let src_topic = "shakespeare".to_string();
+    let group_id = "Squad".to_string();
+    let src_topic = "my-topic".to_string();
 
     let stream = ConsumerGroupBuilder::new(
         bootstrap_addrs,
-        "Squad".to_string(),
+        group_id,
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0, 1, 2, 3])
             .build(),

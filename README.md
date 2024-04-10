@@ -17,6 +17,7 @@ This crate provides Rust native consumers and producers as well as low level bin
     - [Producer](#producer)
     - [Consumer](#consumer)
     - [Consumer group](#consumer-group)
+- [Examples](#examples)
 - [Resources](#resources)
 
 
@@ -112,6 +113,33 @@ while let Some(batch) = stream.next().await {
     println!("{:?}", batch);
 }
 ```
+
+## Examples
+We provide 3 high level [examples](/examples) for those interested in trying `samsa` out. The setup is as follows:
+
+1. Use `docker-compose up` to start your redpanda cluster.
+1. Go to http://localhost:8080/topics to view the redpanda console.
+1. Create a topic named `my-topic` with 4 partitions.
+
+### Producer
+This one is good to run first to fill up your topic with data.
+1. Run `cargo run --example producer`
+1. Visit http://localhost:8080/topics/my-topic to see data flowing in!
+
+### Consumer
+Consume the messages in your topic.
+1. Run `cargo run --example consumer`
+1. Observe all the torrent of data in your terminal
+
+### ConsumerGroup
+Coordinate a group of 4 consumers. This one is throttled to see the group rebalancing.
+
+1. Run `cargo run --example consumer_group`
+1. Visit http://localhost:8080/groups/Squad to see the lone member.
+1. In another terminal window, run `cargo run --example consumer_group`
+1. Visit the console to see the new member join.
+1. Repeat 2 more times to see the full group.
+
 
 
 ## Resources

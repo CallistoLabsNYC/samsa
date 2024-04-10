@@ -19,7 +19,7 @@ async fn main() -> Result<(), ()> {
 
     let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 
-    let src_topic = "shakespeare".to_string();
+    let src_topic = "my-topic".to_string();
 
     let conn = samsa::prelude::BrokerConnection::new(bootstrap_addrs)
         .await
