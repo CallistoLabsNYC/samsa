@@ -20,15 +20,20 @@ async fn main() -> Result<(), ()> {
     });
 
     tracing::info!("Connecting to cluster");
-    ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
+    let output_stream = ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
         .await
         .map_err(|err| tracing::error!("{:?}", err))?
-        .build_from_stream(stream)
+        .build_from_stream(tokio_stream::StreamExt::chunks_timeout(
+            stream,
+            200,
+            std::time::Duration::from_secs(3),
+        ))
         .await;
 
-    // keep the original task alive
-    // TODO: fix this
-    tokio::time::sleep(tokio::time::Duration::MAX).await;
+    tokio::pin!(output_stream);
+    while let Some(message) = output_stream.next().await {
+        tracing::info!("Produced {} message", message.len());
+    }
 
     Ok(())
 }

@@ -3,7 +3,10 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use tokio::sync::mpsc::Sender;
+use tokio::{
+    sync::mpsc::{Sender, UnboundedReceiver},
+    task::JoinSet,
+};
 use tracing::instrument;
 
 use crate::{
@@ -74,9 +77,9 @@ impl ProduceParams {
 pub struct Producer {
     /// Direct connection to the background worker.
     pub sender: Sender<ProduceMessage>,
+    /// Responses of the
+    pub receiver: UnboundedReceiver<Vec<Option<ProduceResponse>>>,
 }
-
-pub struct ProducerSink;
 
 /// Common produce message format.
 #[derive(Clone)]
@@ -101,7 +104,7 @@ pub(crate) async fn flush_producer(
     cluster_metadata: &ClusterMetadata,
     produce_params: &ProduceParams,
     messages: Vec<ProduceMessage>,
-) -> Result<()> {
+) -> Result<Vec<Option<ProduceResponse>>> {
     let mut brokers_and_messages = HashMap::new();
     tracing::info!("Producing {} messages", messages.len());
     for message in messages {
@@ -120,20 +123,36 @@ pub(crate) async fn flush_producer(
         };
     }
 
-    for (broker, messages) in brokers_and_messages.iter() {
-        let broker_conn = cluster_metadata.broker_connections.get(broker).unwrap();
-        produce(
-            broker_conn.to_owned(),
-            produce_params.correlation_id,
-            &produce_params.client_id,
-            produce_params.required_acks,
-            produce_params.timeout_ms,
-            messages,
-        )
-        .await?;
+    let mut set = JoinSet::new();
+
+    for (broker, messages) in brokers_and_messages.into_iter() {
+        let broker_conn = cluster_metadata
+            .broker_connections
+            .get(&broker)
+            .unwrap()
+            .clone();
+        let p = produce_params.clone();
+        set.spawn(async move {
+            produce(
+                broker_conn.to_owned(),
+                p.correlation_id,
+                &p.client_id,
+                p.required_acks,
+                p.timeout_ms,
+                &messages,
+            )
+            .await
+        });
     }
 
-    Ok(())
+    let mut responses = vec![];
+
+    while let Some(res) = set.join_next().await {
+        let produce_response = res.unwrap()?;
+        responses.push(produce_response);
+    }
+
+    Ok(responses)
 }
 
 /// Produce messages to a broker.
