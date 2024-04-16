@@ -99,6 +99,7 @@ impl Producer {
     }
 }
 
+// vector for the results from each broker
 #[instrument(skip(messages, produce_params, cluster_metadata))]
 pub(crate) async fn flush_producer(
     cluster_metadata: &ClusterMetadata,
@@ -129,7 +130,7 @@ pub(crate) async fn flush_producer(
         let broker_conn = cluster_metadata
             .broker_connections
             .get(&broker)
-            .unwrap()
+            .ok_or(Error::NoConnectionForBroker(broker))?
             .clone();
         let p = produce_params.clone();
         set.spawn(async move {
