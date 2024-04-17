@@ -108,7 +108,10 @@ impl<'a> ConsumerGroupBuilder {
             return Err(Error::KafkaError(coordinator.error_code));
         }
 
-        let host = std::str::from_utf8(coordinator.host.as_bytes()).unwrap();
+        let host = std::str::from_utf8(coordinator.host.as_bytes()).map_err(|err| {
+            tracing::error!("Error converting from UTF8 {:?}", err);
+            Error::DecodingUtf8Error
+        })?;
         let port = coordinator.port;
         let coordinator_addr = format!("{}:{}", host, port);
         let coordinator_conn = BrokerConnection::new(vec![coordinator_addr]).await?;

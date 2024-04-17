@@ -91,7 +91,6 @@ impl<'a> ClusterMetadata {
             });
         }
 
-        // why is this double result??
         while let Some(res) = set.join_next().await {
             let (index, conn) = res.unwrap()?;
             self.broker_connections.insert(index, conn);

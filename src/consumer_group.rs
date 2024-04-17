@@ -10,7 +10,7 @@ use crate::{
     assignor::{assign, ROUND_ROBIN_PROTOCOL},
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
-    error::{KafkaCode, Result},
+    error::{KafkaCode, Result, Error},
     network::BrokerConnection,
     protocol::{
         self,
@@ -110,7 +110,10 @@ impl ConsumerGroup {
                         .collect();
 
                     let partition_assignments = assign(
-                        std::str::from_utf8(join.protocol_name.as_bytes()).unwrap(),
+                        std::str::from_utf8(join.protocol_name.as_bytes()).map_err(|err| {
+                            tracing::error!("Error converting from UTF8 {:?}", err);
+                            Error::DecodingUtf8Error
+                        })?,
                         assigned_topic_partitions,
                         number_of_consumers,
                     )?;
@@ -205,7 +208,7 @@ impl ConsumerGroup {
 
                 loop {
                     // Ugly unwrap here...
-                    yield consumer.next().await.unwrap();
+                    yield consumer.next().await;
 
                     tracing::info!("Member {:?} | Heartbeat", self.member_id);
                     let hb = heartbeat(
