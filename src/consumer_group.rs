@@ -210,7 +210,7 @@ impl ConsumerGroup {
                     // If the consumer stream yields None...
                     // We need to decide what to do,
                     // For now we just ignore Nones and keep beating
-                    // (the consumer would yield None if it was done? 
+                    // (the consumer would yield None if it was done?
                     // not really a thing in kafka, and ours doesn't ever do a None)
                     if let Some(v) = consumer.next().await {
                         yield v;
