@@ -10,7 +10,7 @@ use crate::{
     assignor::{assign, ROUND_ROBIN_PROTOCOL},
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
-    error::{KafkaCode, Result, Error},
+    error::{Error, KafkaCode, Result},
     network::BrokerConnection,
     protocol::{
         self,
@@ -207,8 +207,14 @@ impl ConsumerGroup {
                 tokio::pin!(consumer);
 
                 loop {
-                    // Ugly unwrap here...
-                    yield consumer.next().await;
+                    // If the consumer stream yields None...
+                    // We need to decide what to do,
+                    // For now we just ignore Nones and keep beating
+                    // (the consumer would yield None if it was done? 
+                    // not really a thing in kafka, and ours doesn't ever do a None)
+                    if let Some(v) = consumer.next().await {
+                        yield v;
+                    }
 
                     tracing::info!("Member {:?} | Heartbeat", self.member_id);
                     let hb = heartbeat(
