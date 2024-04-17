@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use tokio::sync::broadcast;
-use tokio::sync::mpsc::channel;
-use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
 use tokio_stream::{Stream, StreamExt};
 
-use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer, ProducerSink};
+use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
+use crate::protocol::ProduceResponse;
 use crate::{error::Result, metadata::ClusterMetadata, DEFAULT_CLIENT_ID};
 
 const DEFAULT_MAX_BATCH_SIZE: usize = 100;
@@ -108,70 +107,48 @@ impl<'a> ProducerBuilder {
     }
 
     pub async fn build(self) -> Producer {
-        let (sender, receiver) = channel(self.max_batch_size);
+        let (input_sender, input_receiver) = channel(self.max_batch_size);
+        // unbounded because you don't want to force the reading.
+        let (output_sender, output_receiver) = unbounded_channel();
 
-        let produce_stream = into_produce_stream(receiver).chunks_timeout(
+        // we should make this chunks timeout optional
+        let produce_stream = into_produce_stream(input_receiver).chunks_timeout(
             self.max_batch_size,
             Duration::from_millis(self.batch_timeout_ms),
         );
 
-        tokio::spawn(async move {
-            tokio::pin!(produce_stream);
-            while let Some(messages) = produce_stream.next().await {
-                if let Err(err) =
-                    flush_producer(&self.cluster_metadata, &self.produce_params, messages).await
-                {
-                    tracing::error!("Error in producer agent {:?}", err);
-                }
-            }
-        });
+        tokio::spawn(producer(
+            produce_stream,
+            output_sender,
+            self.cluster_metadata,
+            self.produce_params,
+        ));
 
-        Producer { sender }
-    }
-
-    pub async fn build_from_channel(
-        self,
-        receiver: broadcast::Receiver<ProduceMessage>,
-    ) -> ProducerSink {
-        let produce_stream = into_produce_stream_broadcast(receiver).chunks_timeout(
-            self.max_batch_size,
-            Duration::from_millis(self.batch_timeout_ms),
-        );
-
-        tokio::spawn(async move {
-            tokio::pin!(produce_stream);
-            while let Some(messages) = produce_stream.next().await {
-                if let Err(err) =
-                    flush_producer(&self.cluster_metadata, &self.produce_params, messages).await
-                {
-                    tracing::error!("Error in producer agent {:?}", err);
-                }
-            }
-        });
-
-        ProducerSink
+        Producer {
+            sender: input_sender,
+            receiver: output_receiver,
+        }
     }
 
     pub async fn build_from_stream(
         self,
-        stream: impl Stream<Item = ProduceMessage> + std::marker::Send + 'static,
-    ) -> ProducerSink {
-        tokio::spawn(async move {
-            let produce_stream = stream.chunks_timeout(
-                self.max_batch_size,
-                Duration::from_millis(self.batch_timeout_ms),
-            );
-            tokio::pin!(produce_stream);
-            while let Some(messages) = produce_stream.next().await {
-                if let Err(err) =
-                    flush_producer(&self.cluster_metadata, &self.produce_params, messages).await
-                {
-                    tracing::error!("Error in producer agent {:?}", err);
-                }
-            }
-        });
+        stream: impl Stream<Item = Vec<ProduceMessage>> + std::marker::Send + 'static,
+    ) -> impl Stream<Item = Vec<Option<ProduceResponse>>> {
+        // unbounded because you don't want to force the reading.
+        let (output_sender, mut output_receiver) = unbounded_channel();
 
-        ProducerSink
+        tokio::spawn(producer(
+            stream,
+            output_sender,
+            self.cluster_metadata,
+            self.produce_params,
+        ));
+
+        async_stream::stream! {
+            while let Some(message) = output_receiver.recv().await {
+                yield message;
+            }
+        }
     }
 }
 
@@ -185,12 +162,23 @@ fn into_produce_stream(
     }
 }
 
-fn into_produce_stream_broadcast(
-    mut receiver: broadcast::Receiver<ProduceMessage>,
-) -> impl Stream<Item = ProduceMessage> {
-    async_stream::stream! {
-        while let Ok(message) = receiver.recv().await {
-            yield message;
+async fn producer(
+    stream: impl Stream<Item = Vec<ProduceMessage>> + Send + 'static,
+    output_sender: UnboundedSender<Vec<Option<ProduceResponse>>>,
+    cluster_metadata: ClusterMetadata,
+    produce_params: ProduceParams,
+) {
+    tokio::pin!(stream);
+    while let Some(messages) = stream.next().await {
+        match flush_producer(&cluster_metadata, &produce_params, messages).await {
+            Err(err) => {
+                tracing::error!("Error in producer agent {:?}", err);
+            }
+            Ok(r) => {
+                if let Err(err) = output_sender.send(r) {
+                    tracing::error!("Error sending results from producer agent {:?}", err);
+                }
+            }
         }
     }
 }

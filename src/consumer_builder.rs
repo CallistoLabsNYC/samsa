@@ -115,7 +115,7 @@ impl<'a> ConsumerBuilder {
                     .topic_names
                     .iter()
                     .find(|my_topic| **my_topic == topic_name)
-                    .unwrap();
+                    .ok_or(Error::MetadataNeedsSync)?;
 
                 self.offsets.insert(
                     (topic_name.to_owned(), partition.partition_index),
@@ -173,7 +173,7 @@ impl<'a> ConsumerBuilder {
                 .topic_names
                 .iter()
                 .find(|my_topic| **my_topic == topic_name)
-                .unwrap();
+                .ok_or(Error::MetadataNeedsSync)?;
 
             // starting from zero!
             let offset = if partition.committed_offset == -1 {
