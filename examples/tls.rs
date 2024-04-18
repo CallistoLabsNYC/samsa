@@ -2,14 +2,15 @@ use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::net::ToSocketAddrs;
-use std::path::PathBuf;
 use std::sync::Arc;
-
+use std::path::{Path, PathBuf};
 use argh::FromArgs;
 use samsa::prelude::encode::ToByte;
 use tokio::io::{copy, split, stdin as tokio_stdin, stdout as tokio_stdout, AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_rustls::{rustls, TlsConnector};
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use rustls_pemfile::{certs, pkcs8_private_keys};
 
 /// Tokio Rustls client example
 #[derive(FromArgs)]
@@ -27,8 +28,27 @@ struct Options {
     domain: Option<String>,
 
     /// cafile
-    #[argh(option, short = 'c')]
+    #[argh(option, short = 'a')]
     cafile: Option<PathBuf>,
+
+    /// cert file
+    #[argh(option, short = 'c')]
+    cert: PathBuf,
+
+    /// key file
+    #[argh(option, short = 'k')]
+    key: PathBuf,
+}
+
+fn load_certs(path: &Path) -> io::Result<Vec<CertificateDer<'static>>> {
+    certs(&mut BufReader::new(File::open(path)?)).collect()
+}
+
+fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
+    pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
+        .next()
+        .unwrap()
+        .map(Into::into)
 }
 
 #[tokio::main]
@@ -41,6 +61,9 @@ async fn main() -> io::Result<()> {
         .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound)).unwrap();
     let domain = options.domain.unwrap_or(options.host);
     let topics = vec!["tester"];
+
+    let certs = load_certs(&options.cert)?;
+    let key = load_keys(&options.key)?;
 
     let mut root_cert_store = rustls::RootCertStore::empty();
     if let Some(cafile) = &options.cafile {
@@ -55,7 +78,8 @@ async fn main() -> io::Result<()> {
 
     let config = rustls::ClientConfig::builder()
         .with_root_certificates(root_cert_store)
-        .with_no_client_auth(); // i guess this was previously the default.unwrap()
+        .with_client_auth_cert(certs, key).unwrap()
+        ;
     let connector = TlsConnector::from(Arc::new(config));
 
     let stream = TcpStream::connect(&addr).await.unwrap();
