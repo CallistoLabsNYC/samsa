@@ -46,5 +46,6 @@ name = "encoder"
 harness = false
 
 [features]
+tls = []
 integration_tests = []
 redpanda = ["reqwest", "serde", "serde_derive"]
