@@ -8,9 +8,7 @@ use std::io::BufReader;
 use std::net::ToSocketAddrs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::io::{
-   AsyncWriteExt,
-};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio_rustls::{rustls, TlsConnector};
 
@@ -95,11 +93,16 @@ async fn main() -> io::Result<()> {
     let mut stream = connector.connect(domain, stream).await.unwrap();
 
     let mut req = samsa::prelude::protocol::ProduceRequest::new(0, 1000, 1, "rust");
-    req.add("test-1-user-signedup", 0, Some(bytes::Bytes::from("new")), Some(bytes::Bytes::from("old")), vec![]);
+    req.add(
+        "test-1-user-signedup",
+        0,
+        Some(bytes::Bytes::from("new")),
+        Some(bytes::Bytes::from("old")),
+        vec![],
+    );
     let mut buf = vec![];
     req.encode(&mut buf).unwrap();
     stream.write_all(&buf).await.unwrap();
-    
 
     // let size = stream.read_buf(buf)
     Ok(())

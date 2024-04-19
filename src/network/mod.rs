@@ -35,11 +35,8 @@
 //! request that exceeds this limit will result in the socket being
 //! disconnected.
 
-
-pub mod tls;
 pub mod tcp;
+pub mod tls;
 
 // #[cfg(not(feature = "tls"))]
 pub type BrokerConnection = tcp::BrokerConnection;
-
-

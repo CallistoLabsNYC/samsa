@@ -21,7 +21,7 @@ async fn main() -> Result<(), ()> {
             key: "./etc/redpanda/certs/client.key".into(),
             cert: "./etc/redpanda/certs/client.crt".into(),
             host: "piggy.callistolabs.cloud".to_owned(),
-            port: 9092
+            port: 9092,
         }],
         cafile: Some("./etc/redpanda/certs/root.crt".into()),
     };

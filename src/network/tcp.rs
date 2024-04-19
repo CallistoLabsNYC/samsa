@@ -5,7 +5,6 @@ use bytes::{Buf, BytesMut};
 use tokio::net::TcpStream;
 use tracing::instrument;
 
-
 use crate::{
     encode::ToByte,
     error::{Error, Result},
