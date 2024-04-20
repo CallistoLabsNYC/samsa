@@ -13,7 +13,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol::{Header, ProduceRequest, ProduceResponse},
+    protocol::{produce::request::Attributes, Header, ProduceRequest, ProduceResponse},
     DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -105,6 +105,7 @@ pub(crate) async fn flush_producer(
     cluster_metadata: &ClusterMetadata,
     produce_params: &ProduceParams,
     messages: Vec<ProduceMessage>,
+    attributes: Attributes,
 ) -> Result<Vec<Option<ProduceResponse>>> {
     let mut brokers_and_messages = HashMap::new();
     tracing::info!("Producing {} messages", messages.len());
@@ -133,6 +134,7 @@ pub(crate) async fn flush_producer(
             .ok_or(Error::NoConnectionForBroker(broker))?
             .clone();
         let p = produce_params.clone();
+        let a = attributes.clone();
         set.spawn(async move {
             produce(
                 broker_conn.to_owned(),
@@ -141,6 +143,7 @@ pub(crate) async fn flush_producer(
                 p.required_acks,
                 p.timeout_ms,
                 &messages,
+                a,
             )
             .await
         });
@@ -166,11 +169,17 @@ pub async fn produce(
     required_acks: i16,
     timeout_ms: i32,
     messages: &Vec<ProduceMessage>,
+    attributes: Attributes,
 ) -> Result<Option<ProduceResponse>> {
     tracing::debug!("Producing {} messages", messages.len());
 
-    let mut produce_request =
-        ProduceRequest::new(required_acks, timeout_ms, correlation_id, client_id);
+    let mut produce_request = ProduceRequest::new(
+        required_acks,
+        timeout_ms,
+        correlation_id,
+        client_id,
+        attributes,
+    );
 
     for message in messages {
         produce_request.add(

@@ -1,6 +1,9 @@
 mod testsupport;
 
-use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode};
+use samsa::prelude::{
+    protocol::{self, produce::request::Attributes},
+    BrokerConnection, Error, KafkaCode,
+};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "produce & fetch protocol integration test";
@@ -28,7 +31,8 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     //
     // Test producing
     //
-    let mut produce_request = protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID);
+    let mut produce_request =
+        protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID, Attributes::new(None));
     let header = protocol::Header::new(
         String::from("Header key"),
         bytes::Bytes::from("Header value"),
@@ -125,6 +129,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         1,
         1000,
         &vec![produce_message],
+        Attributes::new(None),
     )
     .await?
     .unwrap();

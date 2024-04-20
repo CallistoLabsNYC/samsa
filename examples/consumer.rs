@@ -5,7 +5,7 @@ use tokio_stream::StreamExt;
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::TRACE)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -20,7 +20,7 @@ async fn main() -> Result<(), ()> {
 
     let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
 
-    let src_topic = "my-topic".to_string();
+    let src_topic = "my-tester".to_string();
 
     let stream = ConsumerBuilder::new(
         bootstrap_addrs,
@@ -31,7 +31,7 @@ async fn main() -> Result<(), ()> {
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
     .build()
-    .into_stream();
+    .into_stream().throttle(std::time::Duration::from_secs(1));
 
     tokio::pin!(stream);
 

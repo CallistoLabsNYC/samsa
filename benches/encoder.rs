@@ -1,6 +1,9 @@
 use bytes::{Bytes, BytesMut};
 use criterion::*;
-use samsa::prelude::{encode::ToByte, protocol};
+use samsa::prelude::{
+    encode::ToByte,
+    protocol::{self, produce::request::Attributes},
+};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let correlation_id = 2;
@@ -8,7 +11,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let topic_name = "purchases";
     let partition_id = 3;
 
-    let mut produce_req = protocol::ProduceRequest::new(0, 1000, correlation_id, client_id);
+    let mut produce_req =
+        protocol::ProduceRequest::new(0, 1000, correlation_id, client_id, Attributes::new(None));
     produce_req.add(
         topic_name,
         partition_id,

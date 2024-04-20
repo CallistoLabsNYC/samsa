@@ -3,7 +3,7 @@
 use bytes::Bytes;
 use nom::{
     bytes::complete::take,
-    multi::many0,
+    multi::{many0, many_m_n},
     number::complete::{be_i16, be_i32, be_i64, be_i8},
     IResult,
 };
@@ -12,7 +12,9 @@ use nombytes::NomBytes;
 use crate::{
     error::{Error, KafkaCode, Result},
     parser,
-    protocol::{parse_header_response, HeaderResponse},
+    prelude::Compression,
+    protocol::{parse_header_response, produce::request::Attributes, HeaderResponse},
+    utils::uncompress,
 };
 
 /*
@@ -131,7 +133,7 @@ pub struct RecordBatch {
     pub partition_leader_epoch: i32,
     pub magic: i8,
     pub crc: i32,
-    pub attributes: i16,
+    pub attributes: Attributes,
     pub last_offset_delta: i32,
     pub base_timestamp: i64,
     pub max_timestamp: i64,
@@ -237,21 +239,61 @@ fn parse_aborted_transactions(s: NomBytes) -> IResult<NomBytes, AbortedTransacti
     ))
 }
 
-fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
+pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
     let (s, base_offset) = be_i64(s)?;
     let (s, batch_length) = be_i32(s)?;
+    println!("{:?}", batch_length);
     let (s, partition_leader_epoch) = be_i32(s)?;
     let (s, magic) = be_i8(s)?;
     let (s, crc) = be_i32(s)?;
     let (s, attributes) = be_i16(s)?;
+    let attributes = Attributes::from(attributes);
     let (s, last_offset_delta) = be_i32(s)?;
     let (s, base_timestamp) = be_i64(s)?;
     let (s, max_timestamp) = be_i64(s)?;
     let (s, producer_id) = be_i64(s)?;
     let (s, producer_epoch) = be_i16(s)?;
-    let (s, base_sequence) = be_i32(s)?;
+    let (s, base_sequence) = be_i32(s)?; //
 
-    let (s, records) = parser::parse_array(parse_record)(s)?;
+    // When compression is enabled, the RecordBatch header remains
+    // uncompressed, but the Records are compressed together
+    let (s, records) = match attributes.compression {
+        None => parser::parse_array(parse_record)(s)?,
+        Some(Compression::Gzip) => {
+            println!("Decompressing with GZIP");
+            let (s, record_count) = be_i32(s)?;
+            println!("count {:?}", record_count);
+
+            let record_count: usize = record_count as usize;
+
+            let (s, compressed_length) = be_i32(s)?;
+            println!("length {:?}", compressed_length);
+
+            // 51 is magic number is because of how many bytes between now and batch length
+            let (s, compressed_records) = take((compressed_length) as usize)(s)?;
+            println!("compressed {:?}", compressed_records);
+            let r: Vec<u8> = compressed_records.clone().into_bytes().into();
+            println!("compressed {:?}", r);
+
+
+            let records_bytes =
+                uncompress(compressed_records.into_bytes().as_ref()).unwrap();
+            println!("uncompressed {:?}", records_bytes);
+
+            let records_bytes2 =
+                uncompress::<&[u8]>(r.as_ref()).unwrap();
+            println!("uncompressed {:?}", records_bytes2);
+
+
+            let (rest, records) = many_m_n(record_count, record_count, parse_record)(
+                NomBytes::new(Bytes::from(records_bytes)),
+            )?;
+            println!("{:?}", records);
+
+
+            (s, records)
+        }
+    };
 
     Ok((
         s,

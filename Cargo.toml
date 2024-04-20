@@ -14,6 +14,7 @@ categories = ["api-bindings"]
 async-stream = "0.3.5"
 bytes = { version = "1.5.0" }
 crc = "3.0.1"
+flate2 = "1.0.28"
 futures = "0.3.30"
 nom = "7.1.3"
 nombytes = "0.1.1"
