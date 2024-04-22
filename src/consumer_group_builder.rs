@@ -1,11 +1,12 @@
 use bytes::Bytes;
 use nom::AsBytes;
 
+use crate::prelude::TcpBrokerConnection;
 use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::tcp::TcpBrokerConnection,
+    network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -139,17 +140,17 @@ impl<'a> ConsumerGroupBuilder {
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::find_coordinator
-pub async fn find_coordinator(
-    conn: TcpBrokerConnection,
+pub async fn find_coordinator<T: BrokerConnection>(
+    mut conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
 ) -> Result<protocol::FindCoordinatorResponse> {
     let find_coordinator_request =
         protocol::FindCoordinatorRequest::new(correlation_id, client_id, group_id);
-    conn.send_request_(&find_coordinator_request).await?;
+    conn.send_request(&find_coordinator_request).await?;
 
-    let find_coordinator_response = conn.receive_response_().await?;
+    let find_coordinator_response = conn.receive_response().await?;
 
     protocol::FindCoordinatorResponse::try_from(find_coordinator_response.freeze())
 }
