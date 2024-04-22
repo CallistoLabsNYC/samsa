@@ -45,32 +45,7 @@ pub mod tls;
 // pub type BrokerConnection = tcp::BrokerConnection;
 
 pub trait BrokerConnection {
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {}
-    async fn receive_response(&mut self) -> Result<BytesMut> {}
-}
-
-impl BrokerConnection for tls::TlsConnection {
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
-        self.send_request(req)
-    }
-
-    async fn receive_response(&mut self) -> Result<BytesMut> {
-        self.receive_response()
-    }
-}
-
-impl BrokerConnection for tcp::TcpConnection {
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
-        self.send_request(req)
-    }
-
-    async fn receive_response(&mut self) -> Result<BytesMut> {
-        self.receive_response()
-    }
-}
-
-impl Debug for dyn BrokerConnection {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Series{{{}}}", self.len())
-    }
+    // async fn new<T>(options: T) -> Result<Self> {}
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()>;
+    async fn receive_response(&mut self) -> Result<BytesMut>;
 }

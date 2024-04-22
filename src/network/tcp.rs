@@ -119,8 +119,10 @@ impl TcpConnection {
             }
         }
     }
+}
 
-    /// Serialize a given request and send to Kafka/Redpanda broker.
+impl super::BrokerConnection for TcpConnection {
+/// Serialize a given request and send to Kafka/Redpanda broker.
     ///
     /// The Kafka protocol specifies that all requests will
     /// be processed in the order they are sent and responses will return in
@@ -136,7 +138,7 @@ impl TcpConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -167,7 +169,7 @@ impl TcpConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&mut self) -> Result<BytesMut> {
+    async fn receive_response(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
 

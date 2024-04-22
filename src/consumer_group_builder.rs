@@ -139,8 +139,8 @@ impl<'a> ConsumerGroupBuilder {
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::find_coordinator
-pub async fn find_coordinator(
-    conn: BrokerConnection,
+pub async fn find_coordinator<T: BrokerConnection>(
+    conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,

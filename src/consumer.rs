@@ -1,6 +1,6 @@
 //! Client that consumes records from a cluster.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use async_stream::try_stream;
 use bytes::Bytes;
@@ -339,11 +339,11 @@ pub fn into_flat_stream(
 /// [protocol spec]: protocol::commit_offset
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
-pub async fn commit_offset(
+pub async fn commit_offset<T: BrokerConnection + Debug>(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: network::BrokerConnection,
+    coordinator_conn: T,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -394,11 +394,11 @@ pub async fn commit_offset(
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn commit_offset_wrapper(
+async fn commit_offset_wrapper<T: BrokerConnection + Debug>(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: network::BrokerConnection,
+    coordinator_conn: T,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -425,8 +425,8 @@ async fn commit_offset_wrapper(
 /// [protocol spec]: protocol::fetch
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
-pub async fn fetch(
-    broker_conn: BrokerConnection,
+pub async fn fetch<T: BrokerConnection + Debug>(
+    broker_conn: T,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,

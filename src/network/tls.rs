@@ -7,14 +7,14 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use bytes::{Buf, BytesMut};
+use bytes::BytesMut;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use std::net::ToSocketAddrs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_rustls::{client::TlsStream, rustls, TlsConnector};
-use tracing::instrument;
+// use tracing::instrument;
 
 use crate::{
     encode::ToByte,
@@ -130,7 +130,21 @@ impl TlsConnection {
         }
         return Err(Error::IoError(ErrorKind::NotFound));
     }
+}
 
+fn load_certs(path: &Path) -> io::Result<Vec<CertificateDer<'static>>> {
+    certs(&mut BufReader::new(File::open(path)?)).collect()
+}
+
+fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
+    pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
+        .next()
+        .unwrap()
+        .map(Into::into)
+}
+
+
+impl super::BrokerConnection for TlsConnection {
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///
     /// The Kafka protocol specifies that all requests will
@@ -147,7 +161,7 @@ impl TlsConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -183,7 +197,7 @@ impl TlsConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&mut self) -> Result<BytesMut> {
+    async fn receive_response(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut stream = self
             .stream
@@ -207,15 +221,4 @@ impl TlsConnection {
 
         Ok(buffer)
     }
-}
-
-fn load_certs(path: &Path) -> io::Result<Vec<CertificateDer<'static>>> {
-    certs(&mut BufReader::new(File::open(path)?)).collect()
-}
-
-fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
-    pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
-        .next()
-        .unwrap()
-        .map(Into::into)
 }

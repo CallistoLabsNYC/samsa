@@ -250,8 +250,8 @@ impl ConsumerGroup {
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::sync_group
-pub async fn sync_group<'a>(
-    conn: BrokerConnection,
+pub async fn sync_group<'a, T: BrokerConnection>(
+    conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -280,8 +280,8 @@ pub async fn sync_group<'a>(
 ///
 /// [protocol spec]: protocol::join_group
 #[allow(clippy::too_many_arguments)]
-pub async fn join_group<'a>(
-    conn: BrokerConnection,
+pub async fn join_group<'a, T: BrokerConnection>(
+    conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -312,8 +312,8 @@ pub async fn join_group<'a>(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::heartbeat
-pub async fn heartbeat(
-    conn: BrokerConnection,
+pub async fn heartbeat<T: BrokerConnection>(
+    conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -339,8 +339,8 @@ pub async fn heartbeat(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::leave_group
-pub async fn leave_group(
-    conn: BrokerConnection,
+pub async fn leave_group<T: BrokerConnection>(
+    conn: T,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,

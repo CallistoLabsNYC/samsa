@@ -6,8 +6,8 @@ use std::collections::HashMap;
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::create_topics
-pub async fn create_topics(
-    conn: BrokerConnection,
+pub async fn create_topics<T: BrokerConnection>(
+    mut conn: T,
     correlation_id: i32,
     client_id: &str,
     topics_with_partition_count: HashMap<&str, i32>,
@@ -31,8 +31,8 @@ pub async fn create_topics(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::delete_topics
-pub async fn delete_topics(
-    conn: BrokerConnection,
+pub async fn delete_topics<T: BrokerConnection>(
+    mut conn: T,
     correlation_id: i32,
     client_id: &str,
     topics: Vec<&str>,
