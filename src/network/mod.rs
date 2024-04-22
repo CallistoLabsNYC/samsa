@@ -34,9 +34,43 @@
 //! The server has a configurable maximum limit on request size and any
 //! request that exceeds this limit will result in the socket being
 //! disconnected.
+use crate::prelude::{Result, encode::ToByte};
+use bytes::BytesMut;
+use std::fmt::Debug;
 
 pub mod tcp;
 pub mod tls;
 
 // #[cfg(not(feature = "tls"))]
-pub type BrokerConnection = tcp::BrokerConnection;
+// pub type BrokerConnection = tcp::BrokerConnection;
+
+pub trait BrokerConnection {
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {}
+    async fn receive_response(&mut self) -> Result<BytesMut> {}
+}
+
+impl BrokerConnection for tls::TlsConnection {
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+        self.send_request(req)
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.receive_response()
+    }
+}
+
+impl BrokerConnection for tcp::TcpConnection {
+    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+        self.send_request(req)
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.receive_response()
+    }
+}
+
+impl Debug for dyn BrokerConnection {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Series{{{}}}", self.len())
+    }
+}

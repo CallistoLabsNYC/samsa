@@ -24,18 +24,18 @@ use crate::{
 /// connection details for the user.
 
 #[derive(Clone, Debug)]
-pub struct BrokerConnection {
+pub struct TcpConnection {
     stream: Arc<TcpStream>,
 }
 
-impl BrokerConnection {
+impl TcpConnection {
     /// Connect to a Kafka/Redpanda broker
     ///
     /// ### Example
     /// ```
     /// // connect to a kafka/redpanda broker
     /// let bootstrap_addrs = vec!["localhost:9092"];
-    /// let conn = samsa::prelude::BrokerConnection(bootstrap_addrs).await?;
+    /// let conn = samsa::prelude::TcpConnection(bootstrap_addrs).await?;
     /// ```
     pub async fn new(bootstrap_addrs: Vec<String>) -> Result<Self> {
         tracing::debug!("Connecting to {}", bootstrap_addrs.join(","));
@@ -63,7 +63,7 @@ impl BrokerConnection {
     }
 
     #[instrument(name = "network-read", level = "trace")]
-    async fn read(&self, size: usize) -> Result<BytesMut> {
+    async fn read(&mut self, size: usize) -> Result<BytesMut> {
         loop {
             // Wait for the socket to be readable
             self.stream
@@ -93,7 +93,7 @@ impl BrokerConnection {
     }
 
     #[instrument(name = "network-write", level = "trace")]
-    async fn write(&self, buf: &[u8]) -> Result<usize> {
+    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
         loop {
             // Wait for the socket to be writable
             self.stream
@@ -136,7 +136,7 @@ impl BrokerConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+    pub async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -167,7 +167,7 @@ impl BrokerConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&self) -> Result<BytesMut> {
+    pub async fn receive_response(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
 
