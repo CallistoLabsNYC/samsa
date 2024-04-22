@@ -1,4 +1,4 @@
-use crate::prelude::{protocol, Result, TcpBrokerConnection};
+use crate::prelude::{protocol, BrokerConnection, Result};
 use std::collections::HashMap;
 
 /// Create a topic in the cluster.
@@ -6,8 +6,8 @@ use std::collections::HashMap;
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::create_topics
-pub async fn create_topics(
-    conn: TcpBrokerConnection,
+pub async fn create_topics<T: BrokerConnection>(
+    mut conn: T,
     correlation_id: i32,
     client_id: &str,
     topics_with_partition_count: HashMap<&str, i32>,
@@ -19,9 +19,9 @@ pub async fn create_topics(
         create_topics.add(topic_name, num_partitions, 1);
     }
 
-    conn.send_request_(&create_topics).await?;
+    conn.send_request(&create_topics).await?;
 
-    let create_topics_response = conn.receive_response_().await?;
+    let create_topics_response = conn.receive_response().await?;
 
     protocol::CreateTopicsResponse::try_from(create_topics_response.freeze())
 }
@@ -31,8 +31,8 @@ pub async fn create_topics(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::delete_topics
-pub async fn delete_topics(
-    conn: TcpBrokerConnection,
+pub async fn delete_topics<T: BrokerConnection>(
+    mut conn: T,
     correlation_id: i32,
     client_id: &str,
     topics: Vec<&str>,
@@ -43,9 +43,9 @@ pub async fn delete_topics(
         delete_topics.add(topic_name);
     }
 
-    conn.send_request_(&delete_topics).await?;
+    conn.send_request(&delete_topics).await?;
 
-    let delete_topics_response = conn.receive_response_().await?;
+    let delete_topics_response = conn.receive_response().await?;
 
     protocol::DeleteTopicsResponse::try_from(delete_topics_response.freeze())
 }
