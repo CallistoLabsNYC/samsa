@@ -8,6 +8,7 @@ use crate::{
 };
 use nom::AsBytes;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use tracing::instrument;
 
 /// Configure a [`Consumer`].
@@ -258,11 +259,11 @@ impl<'a> ConsumerBuilder {
 
 /// Fetch a set of offsets for a consumer group.
 #[instrument(level = "debug")]
-pub async fn fetch_offset(
+pub async fn fetch_offset<T: BrokerConnection + Debug>(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: BrokerConnection,
+    mut coordinator_conn: T,
     topic_partitions: &TopicPartitions,
 ) -> Result<protocol::OffsetFetchResponse> {
     tracing::debug!(
@@ -288,8 +289,8 @@ pub async fn fetch_offset(
 ///
 /// See this [protocol spec](crate::prelude::protocol::list_offsets) for more information.
 #[instrument(level = "debug")]
-pub async fn list_offsets(
-    broker_conn: &BrokerConnection,
+pub async fn list_offsets<T: BrokerConnection + Debug>(
+    mut broker_conn: T,
     correlation_id: i32,
     client_id: &str,
     topic_partitions: &TopicPartitions,
