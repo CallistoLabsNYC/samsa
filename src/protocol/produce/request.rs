@@ -361,9 +361,11 @@ impl RecordBatch {
             Some(Compression::Gzip) => {
                 let mut compressed = Vec::new();
                 for record in &self.records {
-                    record._encode_to_buf(&mut compressed)?;
+                    record.encode(&mut compressed)?;
                 }
+                println!("uncompressed {:?}", compressed);
                 compressed = compress(&compressed)?;
+                println!("compressed {:?}", compressed);
 
                 // first the count
                 (self.records.len() as i32).encode(&mut buf)?;
