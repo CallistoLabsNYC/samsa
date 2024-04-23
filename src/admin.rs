@@ -1,4 +1,4 @@
-use crate::prelude::{protocol, BrokerConnection, Result};
+use crate::prelude::{protocol, Result, TcpBrokerConnection};
 use std::collections::HashMap;
 
 /// Create a topic in the cluster.
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 ///
 /// [protocol spec]: protocol::create_topics
 pub async fn create_topics(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     topics_with_partition_count: HashMap<&str, i32>,
@@ -32,7 +32,7 @@ pub async fn create_topics(
 ///
 /// [protocol spec]: protocol::delete_topics
 pub async fn delete_topics(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     topics: Vec<&str>,

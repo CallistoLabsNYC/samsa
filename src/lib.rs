@@ -456,7 +456,7 @@ pub mod prelude {
     pub use crate::consumer_group_builder::{find_coordinator, ConsumerGroupBuilder};
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::metadata::ClusterMetadata;
-    pub use crate::network::BrokerConnection;
+    pub use crate::network::tcp::TcpBrokerConnection;
     // #[cfg(feature = "tls")]
     pub use crate::network::tls::{ConnectionOptions, TlsBrokerOptions, TlsConnection};
     pub use crate::producer::{produce, ProduceMessage, Producer};

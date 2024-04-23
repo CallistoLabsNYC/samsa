@@ -55,7 +55,7 @@ impl TlsConnection {
     /// ```
     /// // connect to a kafka/redpanda broker
     /// let addrs = vec!["localhost:9092"];
-    /// let conn = samsa::prelude::BrokerConnection(addrs).await?;
+    /// let conn = samsa::prelude::TcpBrokerConnection(addrs).await?;
     /// ```
     pub async fn new(options: ConnectionOptions) -> Result<Self> {
         tracing::debug!(

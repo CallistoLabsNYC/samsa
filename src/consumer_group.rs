@@ -11,7 +11,7 @@ use crate::{
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::tcp::TcpBrokerConnection,
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
@@ -24,7 +24,7 @@ const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup {
     pub bootstrap_addrs: Vec<String>,
-    pub coordinator_conn: BrokerConnection,
+    pub coordinator_conn: TcpBrokerConnection,
     pub correlation_id: i32,
     pub client_id: String,
     pub session_timeout_ms: i32,
@@ -251,7 +251,7 @@ impl ConsumerGroup {
 ///
 /// [protocol spec]: protocol::sync_group
 pub async fn sync_group<'a>(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -281,7 +281,7 @@ pub async fn sync_group<'a>(
 /// [protocol spec]: protocol::join_group
 #[allow(clippy::too_many_arguments)]
 pub async fn join_group<'a>(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -313,7 +313,7 @@ pub async fn join_group<'a>(
 ///
 /// [protocol spec]: protocol::heartbeat
 pub async fn heartbeat(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -340,7 +340,7 @@ pub async fn heartbeat(
 ///
 /// [protocol spec]: protocol::leave_group
 pub async fn leave_group(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,

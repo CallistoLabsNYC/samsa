@@ -12,7 +12,7 @@ use tracing::instrument;
 use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
-    network::BrokerConnection,
+    network::tcp::TcpBrokerConnection,
     protocol::{Header, ProduceRequest, ProduceResponse},
     DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
@@ -160,7 +160,7 @@ pub(crate) async fn flush_producer(
 ///
 /// See this [protocol spec](crate::prelude::protocol::produce) for more information.
 pub async fn produce(
-    broker_conn: BrokerConnection,
+    broker_conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     required_acks: i16,

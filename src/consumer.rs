@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
-    network::{self, BrokerConnection},
+    network::tcp::TcpBrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -289,7 +289,7 @@ impl<'a> Consumer {
     /// To learn more about offset committing, see the protocol module.
     pub fn into_autocommit_stream(
         self,
-        coordinator_conn: network::BrokerConnection,
+        coordinator_conn: TcpBrokerConnection,
         group_id: &'a str,
         generation_id: i32,
         member_id: Bytes,
@@ -343,7 +343,7 @@ pub async fn commit_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: network::BrokerConnection,
+    coordinator_conn: TcpBrokerConnection,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -398,7 +398,7 @@ async fn commit_offset_wrapper(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: network::BrokerConnection,
+    coordinator_conn: TcpBrokerConnection,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -426,7 +426,7 @@ async fn commit_offset_wrapper(
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn fetch(
-    broker_conn: BrokerConnection,
+    broker_conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,

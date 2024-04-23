@@ -1,4 +1,4 @@
-use samsa::prelude::{create_topics, BrokerConnection, Error};
+use samsa::prelude::{create_topics, Error, TcpBrokerConnection};
 use std::{collections::HashMap, env};
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
@@ -11,7 +11,7 @@ const KAFKA_TOPIC_2: &str = "KAFKA_TOPIC_2";
 
 #[allow(dead_code)]
 pub async fn ensure_topic_creation(
-    conn: &BrokerConnection,
+    conn: &TcpBrokerConnection,
     topic: &str,
     correlation_id: i32,
     client_id: &str,

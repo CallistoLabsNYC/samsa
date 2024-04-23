@@ -24,18 +24,18 @@ use crate::{
 /// connection details for the user.
 
 #[derive(Clone, Debug)]
-pub struct BrokerConnection {
+pub struct TcpBrokerConnection {
     stream: Arc<TcpStream>,
 }
 
-impl BrokerConnection {
+impl TcpBrokerConnection {
     /// Connect to a Kafka/Redpanda broker
     ///
     /// ### Example
     /// ```
     /// // connect to a kafka/redpanda broker
     /// let bootstrap_addrs = vec!["localhost:9092"];
-    /// let conn = samsa::prelude::BrokerConnection(bootstrap_addrs).await?;
+    /// let conn = samsa::prelude::TcpBrokerConnection(bootstrap_addrs).await?;
     /// ```
     pub async fn new(bootstrap_addrs: Vec<String>) -> Result<Self> {
         tracing::debug!("Connecting to {}", bootstrap_addrs.join(","));

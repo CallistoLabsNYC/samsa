@@ -1,6 +1,6 @@
 mod testsupport;
 
-use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode};
+use samsa::prelude::{protocol, Error, KafkaCode, TcpBrokerConnection};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "produce & fetch protocol integration test";
@@ -13,7 +13,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers.clone()).await?;
+    let conn = TcpBrokerConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     let cluster_metadata =
@@ -92,7 +92,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers.clone()).await?;
+    let conn = TcpBrokerConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     let cluster_metadata =

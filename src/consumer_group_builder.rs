@@ -5,7 +5,7 @@ use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::tcp::TcpBrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -100,7 +100,7 @@ impl<'a> ConsumerGroupBuilder {
     }
 
     pub async fn build(self) -> Result<ConsumerGroup> {
-        let conn = BrokerConnection::new(self.bootstrap_addrs.clone()).await?;
+        let conn = TcpBrokerConnection::new(self.bootstrap_addrs.clone()).await?;
         let coordinator =
             find_coordinator(conn, self.correlation_id, &self.client_id, &self.group_id).await?;
 
@@ -114,7 +114,7 @@ impl<'a> ConsumerGroupBuilder {
         })?;
         let port = coordinator.port;
         let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn = BrokerConnection::new(vec![coordinator_addr]).await?;
+        let coordinator_conn = TcpBrokerConnection::new(vec![coordinator_addr]).await?;
 
         Ok(ConsumerGroup {
             bootstrap_addrs: self.bootstrap_addrs,
@@ -140,7 +140,7 @@ impl<'a> ConsumerGroupBuilder {
 ///
 /// [protocol spec]: protocol::find_coordinator
 pub async fn find_coordinator(
-    conn: BrokerConnection,
+    conn: TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,

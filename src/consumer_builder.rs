@@ -1,9 +1,9 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
 use crate::metadata::ClusterMetadata;
+use crate::network::tcp::TcpBrokerConnection;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
-    network::{self, BrokerConnection},
     protocol, DEFAULT_CLIENT_ID,
 };
 use nom::AsBytes;
@@ -137,7 +137,7 @@ impl<'a> ConsumerBuilder {
     /// offset is intialized to 0.
     pub async fn seek_to_group(
         mut self,
-        coordinator_conn: network::BrokerConnection,
+        coordinator_conn: TcpBrokerConnection,
         group_id: &str,
     ) -> Result<Self> {
         tracing::debug!("Seeking offsets to group {}", group_id);
@@ -262,7 +262,7 @@ pub async fn fetch_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: BrokerConnection,
+    coordinator_conn: TcpBrokerConnection,
     topic_partitions: &TopicPartitions,
 ) -> Result<protocol::OffsetFetchResponse> {
     tracing::debug!(
@@ -289,7 +289,7 @@ pub async fn fetch_offset(
 /// See this [protocol spec](crate::prelude::protocol::list_offsets) for more information.
 #[instrument(level = "debug")]
 pub async fn list_offsets(
-    broker_conn: &BrokerConnection,
+    broker_conn: &TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     topic_partitions: &TopicPartitions,
