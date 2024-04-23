@@ -36,7 +36,6 @@
 //! disconnected.
 use crate::prelude::{Result, encode::ToByte};
 use bytes::BytesMut;
-use std::fmt::Debug;
 
 pub mod tcp;
 pub mod tls;
