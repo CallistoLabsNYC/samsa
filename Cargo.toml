@@ -13,6 +13,7 @@ categories = ["api-bindings"]
 [dependencies]
 argh = "0.1.12"
 async-stream = "0.3.5"
+async-trait = "0.1.79"
 bytes = { version = "1.5.0" }
 crc = "3.0.1"
 futures = "0.3.30"

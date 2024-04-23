@@ -39,8 +39,10 @@ pub mod tcp;
 pub mod tls;
 
 use crate::prelude::{encode::ToByte, Result};
+use async_trait::async_trait;
 use bytes::BytesMut;
 
+#[async_trait]
 pub trait BrokerConnection {
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///
@@ -58,7 +60,7 @@ pub trait BrokerConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()>;
+    async fn send_request<R: ToByte + Sync>(&self, req: &R) -> Result<()>;
 
     /// Receive a response in raw bytes from a Kafka/Redpanda broker.
     ///

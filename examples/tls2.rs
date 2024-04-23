@@ -1,4 +1,6 @@
-use samsa::prelude::{protocol, ConnectionOptions, TlsBrokerOptions, TlsConnection};
+use samsa::prelude::{
+    protocol, BrokerConnection, ConnectionOptions, TlsBrokerConnection, TlsBrokerOptions,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -26,7 +28,7 @@ async fn main() -> Result<(), ()> {
         cafile: Some("./etc/redpanda/certs/root.crt".into()),
     };
 
-    let conn = TlsConnection::new(options).await.unwrap();
+    let conn = TlsBrokerConnection::new(options).await.unwrap();
 
     let metta = metadata(conn).await;
 
@@ -35,7 +37,7 @@ async fn main() -> Result<(), ()> {
     Ok(())
 }
 
-pub async fn metadata(mut conn: TlsConnection) -> protocol::MetadataResponse {
+pub async fn metadata(mut conn: TlsBrokerConnection) -> protocol::MetadataResponse {
     let topics = vec![
         "microcks-services-updates".to_string(),
         "test-1-user-signedup".to_string(),

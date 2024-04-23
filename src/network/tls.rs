@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::{io, sync::Arc};
 
+use async_trait::async_trait;
 use bytes::BytesMut;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
@@ -13,6 +14,7 @@ use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_rustls::{client::TlsStream, rustls, TlsConnector};
 
+use crate::network::BrokerConnection;
 use crate::{
     encode::ToByte,
     error::{Error, Result},
@@ -32,7 +34,7 @@ use crate::{
 /// connection details for the user.
 
 #[derive(Clone, Debug)]
-pub struct TlsConnection {
+pub struct TlsBrokerConnection {
     stream: Arc<Mutex<TlsStream<TcpStream>>>,
 }
 
@@ -48,7 +50,7 @@ pub struct TlsBrokerOptions {
     pub cert: PathBuf,
 }
 
-impl TlsConnection {
+impl TlsBrokerConnection {
     /// Connect to a Kafka/Redpanda broker
     ///
     /// ### Example
@@ -127,24 +129,11 @@ impl TlsConnection {
             None => Error::IoError(ErrorKind::NotFound),
         })
     }
+}
 
-    /// Serialize a given request and send to Kafka/Redpanda broker.
-    ///
-    /// The Kafka protocol specifies that all requests will
-    /// be processed in the order they are sent and responses will return in
-    /// that order as well. Users of this method should be sure to use the receive_response method
-    /// to accept Kafka responses in the order that these requests are sent.
-    ///
-    /// This method is only useful in practice when used in combination with
-    /// a request type. To see how this would be done, visit the protocol module.
-    ///
-    /// ### Example
-    /// ```
-    /// // send an arbitrary set of bytes to kafka broker
-    /// let buf = "test";
-    /// conn.send_request(buf).await?;
-    /// ```
-    pub async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+#[async_trait]
+impl BrokerConnection for TlsBrokerConnection {
+    async fn send_request<R: ToByte + Sync>(&self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -166,21 +155,7 @@ impl TlsConnection {
         Ok(())
     }
 
-    /// Receive a response in raw bytes from a Kafka/Redpanda broker.
-    ///
-    /// Kafka queues up responses on the socket as requests are sent by the client.
-    /// This method pulls 1 request off the socket at a time and returns the raw bytes.
-    ///
-    /// This method returns raw data that is not useful until parsed
-    /// into a response type. To see how this would be done, visit the
-    /// protocol module.
-    ///
-    /// ### Example
-    /// ```
-    /// // receive a message from a kafka broker
-    /// let response_bytes = conn.receive_response().await?;
-    /// ```
-    pub async fn receive_response(&mut self) -> Result<BytesMut> {
+    async fn receive_response(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut stream = self.stream.lock().await;
 
