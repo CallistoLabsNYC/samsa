@@ -287,8 +287,16 @@ mod test {
             value: Some(Bytes::from("1")),
             headers: vec![],
         });
-        record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("2")), headers: vec![] });
-        record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("3")), headers: vec![] });
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("2")),
+            headers: vec![],
+        });
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("3")),
+            headers: vec![],
+        });
 
         let mut buf = Vec::with_capacity(10);
         record_batch._encode_to_buf(&mut buf).unwrap();
