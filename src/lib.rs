@@ -474,4 +474,9 @@ pub mod prelude {
     pub mod redpanda {
         pub use crate::redpanda::*;
     }
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum Compression {
+        Gzip,
+    }
 }

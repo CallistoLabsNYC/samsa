@@ -5,8 +5,9 @@ use bytes::{BufMut, Bytes};
 use crate::{
     encode::ToByte,
     error::Result,
+    prelude::Compression,
     protocol::HeaderRequest,
-    utils::{now, to_crc},
+    utils::{compress, now, to_crc},
 };
 
 const API_KEY_PRODUCE: i16 = 0;
@@ -38,6 +39,7 @@ pub struct ProduceRequest<'a> {
     pub timeout_ms: i32,
     /// Each topic to produce to.
     topic_partitions: Vec<TopicPartition<'a>>,
+    attributes: Attributes,
 }
 
 impl<'a> ProduceRequest<'a> {
@@ -46,6 +48,7 @@ impl<'a> ProduceRequest<'a> {
         timeout_ms: i32,
         correlation_id: i32,
         client_id: &'a str,
+        attributes: Attributes,
     ) -> ProduceRequest {
         ProduceRequest {
             header: HeaderRequest::new(API_KEY_PRODUCE, API_VERSION, correlation_id, client_id),
@@ -53,6 +56,7 @@ impl<'a> ProduceRequest<'a> {
             required_acks,
             timeout_ms,
             topic_partitions: vec![],
+            attributes,
         }
     }
 
@@ -74,7 +78,7 @@ impl<'a> ProduceRequest<'a> {
                 tp.add(partition, message);
             }
             None => {
-                let mut tp = TopicPartition::new(topic);
+                let mut tp = TopicPartition::new(topic, self.attributes.clone());
                 tp.add(partition, message);
                 self.topic_partitions.push(tp);
             }
@@ -100,13 +104,15 @@ struct TopicPartition<'a> {
     pub index: &'a str,
     /// Each partition to produce to.
     pub partitions: Vec<Partition>,
+    attributes: Attributes,
 }
 
 impl<'a> TopicPartition<'a> {
-    pub fn new(index: &'a str) -> TopicPartition {
+    pub fn new(index: &'a str, attributes: Attributes) -> TopicPartition {
         TopicPartition {
             index,
             partitions: vec![],
+            attributes,
         }
     }
 
@@ -120,7 +126,7 @@ impl<'a> TopicPartition<'a> {
                 p.add(message);
             }
             None => {
-                let mut p = Partition::new(partition);
+                let mut p = Partition::new(partition, self.attributes.clone());
                 p.add(message);
                 self.partitions.push(p);
             }
@@ -143,20 +149,22 @@ struct Partition {
     pub partition: i32,
     /// The record data to be produced.
     pub batches: Vec<RecordBatch>,
+    attributes: Attributes,
 }
 
 impl Partition {
-    pub fn new(partition: i32) -> Partition {
+    pub fn new(partition: i32, attributes: Attributes) -> Partition {
         Partition {
             partition,
             batches: Vec::new(),
+            attributes,
         }
     }
 
     // all records go into one batch, we have to find out how to
     pub fn add(&mut self, message: Message) {
         if self.batches.is_empty() {
-            self.batches.push(RecordBatch::new());
+            self.batches.push(RecordBatch::new(self.attributes.clone()));
         }
 
         self.batches[0].add(message);
@@ -179,7 +187,7 @@ impl ToByte for Partition {
 }
 
 #[derive(Clone, Debug)]
-struct Message {
+pub struct Message {
     pub key: Option<Bytes>,
     pub value: Option<Bytes>,
     pub headers: Vec<Header>,
@@ -220,7 +228,7 @@ impl Message {
 // baseSequence: int32
 // records: [Record]
 #[derive(Debug)]
-struct RecordBatch {
+pub struct RecordBatch {
     /// Denotes the first offset in the RecordBatch. The 'offsetDelta' of each Record in the batch would be be computed relative to this FirstOffset. In particular, the offset of each Record in the Batch is its 'OffsetDelta' + 'FirstOffset'.
     base_offset: i64,
     /// Introduced with KIP-101, this is set by the broker upon receipt of a produce request and is used to ensure no loss of data when there are leader changes with log truncation. Client developers do not need to worry about setting this value.
@@ -229,7 +237,7 @@ struct RecordBatch {
     magic: i8,
     /// The CRC is the CRC32 of the remainder of the message bytes. This is used to check the integrity of the message on the broker and consumer.
     crc: u32,
-    attributes: i16,
+    attributes: Attributes,
     /// The offset of the last message in the RecordBatch. This is used by the broker to ensure correct behavior even when Records within a batch are compacted out.
     last_offset_delta: i32,
     /// The timestamp of the first Record in the batch. The timestamp of each Record in the RecordBatch is its 'TimestampDelta' + 'FirstTimestamp'.
@@ -245,14 +253,64 @@ struct RecordBatch {
     records: Vec<Record>,
 }
 
+//     bit 0~2:
+//         0: no compression
+//         1: gzip
+//         2: snappy
+//         3: lz4
+//         4: zstd
+//     bit 3: timestampType
+//     bit 4: isTransactional (0 means not transactional)
+//     bit 5: isControlBatch (0 means not a control batch)
+//     bit 6: hasDeleteHorizonMs (0 means baseTimestamp is not set as the delete horizon for compaction)
+//     bit 7~15: unused
+#[derive(Clone, Debug, PartialEq)]
+pub struct Attributes {
+    pub compression: Option<Compression>,
+}
+
+impl Attributes {
+    pub fn new(compression: Option<Compression>) -> Self {
+        Attributes { compression }
+    }
+}
+
+impl From<i16> for Attributes {
+    fn from(n: i16) -> Self {
+        // if the 1 bit is on, then its GZIP compression
+        // technically ignoring other compression types for now
+        let compression = if n % 2 == 1 {
+            Some(Compression::Gzip)
+        } else {
+            None
+        };
+
+        Self::new(compression)
+    }
+}
+
+impl ToByte for Attributes {
+    fn encode<W: BufMut>(&self, out: &mut W) -> Result<()> {
+        let mut attr: i16 = 0;
+
+        attr = match self.compression {
+            Some(Compression::Gzip) => attr + 1,
+            _ => attr,
+        };
+
+        attr.encode(out)?;
+        Ok(())
+    }
+}
+
 impl RecordBatch {
-    pub fn new() -> Self {
+    pub fn new(attributes: Attributes) -> Self {
         Self {
             base_offset: 0,
             partition_leader_epoch: -1,
             magic: MESSAGE_MAGIC_BYTE,
             crc: 0,
-            attributes: 0,
+            attributes,
             last_offset_delta: -1,
             base_timestamp: now(),
             max_timestamp: 0,
@@ -296,7 +354,24 @@ impl RecordBatch {
         self.producer_id.encode(&mut buf)?;
         self.producer_epoch.encode(&mut buf)?;
         self.base_sequence.encode(&mut buf)?;
-        self.records.encode(&mut buf)?;
+
+        // Note that when compression is enabled, the compressed record data is
+        // serialized directly following the count of the number of records.
+        match self.attributes.compression {
+            Some(Compression::Gzip) => {
+                let mut compressed = Vec::new();
+                for record in &self.records {
+                    record.encode(&mut compressed)?;
+                }
+                compressed = compress(&compressed)?;
+
+                // first the count
+                (self.records.len() as i32).encode(&mut buf)?;
+                // then the compressed data without the bytestring length in front
+                buf.put(compressed.as_ref());
+            }
+            _ => self.records.encode(&mut buf)?,
+        }
 
         let crc = to_crc(&buf[(crc_pos + 4)..]);
         crc.encode(&mut &mut buf[crc_pos..crc_pos + 4])?;
@@ -319,7 +394,7 @@ impl RecordBatch {
 // value: byte[]
 // Headers => [Header]
 #[derive(Debug)]
-struct Record {
+pub struct Record {
     attributes: i8,
     timestamp_delta: usize,
     offset_delta: usize,
@@ -327,7 +402,6 @@ struct Record {
     key: Option<Bytes>,
     value_length: usize,
     value: Option<Bytes>,
-    #[allow(dead_code)]
     headers: Vec<Header>,
 }
 

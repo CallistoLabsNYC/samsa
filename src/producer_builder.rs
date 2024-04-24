@@ -3,7 +3,9 @@ use std::time::Duration;
 use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
 use tokio_stream::{Stream, StreamExt};
 
+use crate::prelude::Compression;
 use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
+use crate::protocol::produce::request::Attributes;
 use crate::protocol::ProduceResponse;
 use crate::{error::Result, metadata::ClusterMetadata, DEFAULT_CLIENT_ID};
 
@@ -44,6 +46,7 @@ pub struct ProducerBuilder {
     produce_params: ProduceParams,
     max_batch_size: usize,
     batch_timeout_ms: u64,
+    attributes: Attributes,
 }
 
 impl<'a> ProducerBuilder {
@@ -57,6 +60,7 @@ impl<'a> ProducerBuilder {
             produce_params: ProduceParams::new(),
             max_batch_size: DEFAULT_MAX_BATCH_SIZE,
             batch_timeout_ms: DEFAULT_BATCH_TIMEOUT_MS,
+            attributes: Attributes::new(None),
         })
     }
 
@@ -106,6 +110,11 @@ impl<'a> ProducerBuilder {
         self
     }
 
+    pub fn compression(&mut self, algo: Compression) -> &mut Self {
+        self.attributes.compression = Some(algo);
+        self
+    }
+
     pub async fn build(self) -> Producer {
         let (input_sender, input_receiver) = channel(self.max_batch_size);
         // unbounded because you don't want to force the reading.
@@ -122,6 +131,7 @@ impl<'a> ProducerBuilder {
             output_sender,
             self.cluster_metadata,
             self.produce_params,
+            self.attributes,
         ));
 
         Producer {
@@ -142,6 +152,7 @@ impl<'a> ProducerBuilder {
             output_sender,
             self.cluster_metadata,
             self.produce_params,
+            self.attributes,
         ));
 
         async_stream::stream! {
@@ -167,10 +178,18 @@ async fn producer(
     output_sender: UnboundedSender<Vec<Option<ProduceResponse>>>,
     cluster_metadata: ClusterMetadata,
     produce_params: ProduceParams,
+    attributes: Attributes,
 ) {
     tokio::pin!(stream);
     while let Some(messages) = stream.next().await {
-        match flush_producer(&cluster_metadata, &produce_params, messages).await {
+        match flush_producer(
+            &cluster_metadata,
+            &produce_params,
+            messages,
+            attributes.clone(),
+        )
+        .await
+        {
             Err(err) => {
                 tracing::error!("Error in producer agent {:?}", err);
             }

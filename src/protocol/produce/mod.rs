@@ -8,8 +8,16 @@ mod test {
     use bytes::Bytes;
     use nombytes::NomBytes;
 
+    use self::request::Attributes;
+
     use super::*;
-    use crate::{encode::ToByte, error::KafkaCode, protocol};
+    use crate::{
+        encode::ToByte,
+        error::KafkaCode,
+        prelude::Compression,
+        protocol::{self, fetch::response::parse_record_batch},
+        utils::{compress, uncompress},
+    };
 
     #[test]
     fn encode() {
@@ -52,7 +60,13 @@ mod test {
         //     101, 115, 116, 101, 114, 14, 86, 97, 108, 117, 101, 32, 51, 0,
         // ];
 
-        let mut produce_req = request::ProduceRequest::new(0, 1000, correlation_id, client_id);
+        let mut produce_req = request::ProduceRequest::new(
+            0,
+            1000,
+            correlation_id,
+            client_id,
+            request::Attributes::new(Some(Compression::Gzip)),
+        );
         produce_req.add(
             topic_name,
             partition_id,
@@ -240,5 +254,55 @@ mod test {
         let (_, parsed) =
             response::parse_produce_fetch_response(NomBytes::from(buf.as_slice())).unwrap();
         assert_eq!(parsed, res);
+    }
+
+    #[test]
+    fn it_compresses_a_record_correctly() {
+        let record = request::Record::new(
+            request::Message {
+                key: Some(Bytes::from("key")),
+                value: Some(Bytes::from("value")),
+                headers: vec![],
+            },
+            100,
+            100,
+        );
+
+        let mut buf = Vec::with_capacity(10);
+
+        record.encode(&mut buf).unwrap();
+
+        let compressed = compress(&buf).unwrap();
+
+        let uncompressed = uncompress(Bytes::from(compressed).as_ref()).unwrap();
+
+        assert_eq!(buf, uncompressed);
+    }
+
+    #[test]
+    fn it_compresses_many_records_correctly() {
+        let mut record_batch = request::RecordBatch::new(Attributes::new(Some(Compression::Gzip)));
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("1")),
+            headers: vec![],
+        });
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("2")),
+            headers: vec![],
+        });
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("3")),
+            headers: vec![],
+        });
+
+        let mut buf = Vec::with_capacity(10);
+        record_batch._encode_to_buf(&mut buf).unwrap();
+
+        let (_, unparsed_batch) =
+            parse_record_batch(nombytes::NomBytes::new(Bytes::from(buf))).unwrap();
+        assert_eq!(unparsed_batch.records.len(), 3);
     }
 }
