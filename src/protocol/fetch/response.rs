@@ -242,7 +242,6 @@ fn parse_aborted_transactions(s: NomBytes) -> IResult<NomBytes, AbortedTransacti
 pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
     let (s, base_offset) = be_i64(s)?;
     let (s, batch_length) = be_i32(s)?;
-    println!("{:?}", batch_length);
     let (s, partition_leader_epoch) = be_i32(s)?;
     let (s, magic) = be_i8(s)?;
     let (s, crc) = be_i32(s)?;
@@ -260,31 +259,16 @@ pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
     let (s, records) = match attributes.compression {
         None => parser::parse_array(parse_record)(s)?,
         Some(Compression::Gzip) => {
-            println!("Decompressing with GZIP");
+            tracing::debug!("Decompressing with GZIP");
             let (s, record_count) = be_i32(s)?;
-            println!("count {:?}", record_count);
-
             let record_count: usize = record_count as usize;
 
-            let (s, compressed_length) = be_i32(s)?;
-            println!("length {:?}", compressed_length);
-
-            // 51 is magic number is because of how many bytes between now and batch length
-            let (s, compressed_records) = take((compressed_length) as usize)(s)?;
-            println!("compressed {:?}", compressed_records);
-            let r: Vec<u8> = compressed_records.clone().into_bytes().into();
-            println!("compressed {:?}", r);
-
+            // 49 is magic number is because of how many bytes between now and batch length
+            let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
             let records_bytes = uncompress(compressed_records.into_bytes().as_ref()).unwrap();
-            println!("uncompressed {:?}", records_bytes);
-
-            let records_bytes2 = uncompress::<&[u8]>(r.as_ref()).unwrap();
-            println!("uncompressed {:?}", records_bytes2);
-
-            let (rest, records) = many_m_n(record_count, record_count, parse_record)(
+            let (_, records) = many_m_n(record_count, record_count, parse_record)(
                 NomBytes::new(Bytes::from(records_bytes)),
             )?;
-            println!("{:?}", records);
 
             (s, records)
         }

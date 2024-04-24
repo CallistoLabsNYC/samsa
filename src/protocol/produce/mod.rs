@@ -271,13 +271,10 @@ mod test {
         let mut buf = Vec::with_capacity(10);
 
         record.encode(&mut buf).unwrap();
-        println!("buf {:?}", buf);
 
         let compressed = compress(&buf).unwrap();
-        println!("compressed {:?}", compressed);
 
         let uncompressed = uncompress(Bytes::from(compressed).as_ref()).unwrap();
-        println!("uncompressed {:?}", uncompressed);
 
         assert_eq!(buf, uncompressed);
     }
@@ -290,16 +287,14 @@ mod test {
             value: Some(Bytes::from("1")),
             headers: vec![],
         });
-        // record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("2")), headers: vec![] });
-        // record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("3")), headers: vec![] });
+        record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("2")), headers: vec![] });
+        record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("3")), headers: vec![] });
 
         let mut buf = Vec::with_capacity(10);
         record_batch._encode_to_buf(&mut buf).unwrap();
 
-        println!("{:?}", buf);
-        let (s, unparsed_batch) =
+        let (_, unparsed_batch) =
             parse_record_batch(nombytes::NomBytes::new(Bytes::from(buf))).unwrap();
-        assert_eq!(unparsed_batch.batch_length, 3);
-        // assert_eq!(record_batch, unparsed_batch);
+        assert_eq!(unparsed_batch.records.len(), 3);
     }
 }

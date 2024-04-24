@@ -363,15 +363,12 @@ impl RecordBatch {
                 for record in &self.records {
                     record.encode(&mut compressed)?;
                 }
-                println!("uncompressed {:?}", compressed);
                 compressed = compress(&compressed)?;
-                println!("compressed {:?}", compressed);
 
                 // first the count
                 (self.records.len() as i32).encode(&mut buf)?;
-                // then the compressed data
-                compressed.encode(&mut buf)?;
-                // buf.put(compressed.as_ref());
+                // then the compressed data without the bytestring length in front
+                buf.put(compressed.as_ref());
             }
             _ => self.records.encode(&mut buf)?,
         }
