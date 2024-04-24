@@ -11,7 +11,13 @@ mod test {
     use self::request::Attributes;
 
     use super::*;
-    use crate::{encode::ToByte, error::KafkaCode, prelude::Compression, protocol::{self, fetch::response::parse_record_batch}, utils::{compress, uncompress}};
+    use crate::{
+        encode::ToByte,
+        error::KafkaCode,
+        prelude::Compression,
+        protocol::{self, fetch::response::parse_record_batch},
+        utils::{compress, uncompress},
+    };
 
     #[test]
     fn encode() {
@@ -252,7 +258,15 @@ mod test {
 
     #[test]
     fn it_compresses_a_record_correctly() {
-        let record = request::Record::new(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("value")), headers: vec![] }, 100, 100);
+        let record = request::Record::new(
+            request::Message {
+                key: Some(Bytes::from("key")),
+                value: Some(Bytes::from("value")),
+                headers: vec![],
+            },
+            100,
+            100,
+        );
 
         let mut buf = Vec::with_capacity(10);
 
@@ -271,7 +285,11 @@ mod test {
     #[test]
     fn it_compresses_many_records_correctly() {
         let mut record_batch = request::RecordBatch::new(Attributes::new(Some(Compression::Gzip)));
-        record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("1")), headers: vec![] });
+        record_batch.add(request::Message {
+            key: Some(Bytes::from("key")),
+            value: Some(Bytes::from("1")),
+            headers: vec![],
+        });
         // record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("2")), headers: vec![] });
         // record_batch.add(request::Message { key: Some(Bytes::from("key")), value: Some(Bytes::from("3")), headers: vec![] });
 
@@ -279,9 +297,9 @@ mod test {
         record_batch._encode_to_buf(&mut buf).unwrap();
 
         println!("{:?}", buf);
-        let (s, unparsed_batch) = parse_record_batch(nombytes::NomBytes::new(Bytes::from(buf))).unwrap();
+        let (s, unparsed_batch) =
+            parse_record_batch(nombytes::NomBytes::new(Bytes::from(buf))).unwrap();
         assert_eq!(unparsed_batch.batch_length, 3);
         // assert_eq!(record_batch, unparsed_batch);
     }
-
 }

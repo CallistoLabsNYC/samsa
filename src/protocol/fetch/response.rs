@@ -275,21 +275,16 @@ pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
             let r: Vec<u8> = compressed_records.clone().into_bytes().into();
             println!("compressed {:?}", r);
 
-
-            let records_bytes =
-                uncompress(compressed_records.into_bytes().as_ref()).unwrap();
+            let records_bytes = uncompress(compressed_records.into_bytes().as_ref()).unwrap();
             println!("uncompressed {:?}", records_bytes);
 
-            let records_bytes2 =
-                uncompress::<&[u8]>(r.as_ref()).unwrap();
+            let records_bytes2 = uncompress::<&[u8]>(r.as_ref()).unwrap();
             println!("uncompressed {:?}", records_bytes2);
-
 
             let (rest, records) = many_m_n(record_count, record_count, parse_record)(
                 NomBytes::new(Bytes::from(records_bytes)),
             )?;
             println!("{:?}", records);
-
 
             (s, records)
         }

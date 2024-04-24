@@ -21,16 +21,19 @@ async fn main() -> Result<(), ()> {
     let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
     let topic_name = "my-tester";
 
-    let stream = tokio_stream::StreamExt::throttle(iter(vec![0].into_iter()).cycle().enumerate().map(|(i, _)| {
-        let partition_id = (i % 4) as i32;
-        ProduceMessage {
-            topic: topic_name.to_string(),
-            partition_id,
-            key: Some(Bytes::from_static(b"Tester")),
-            value: Some(Bytes::from_static(b"Value")),
-            headers: vec![],
-        }
-    }), std::time::Duration::from_secs(1));
+    let stream = tokio_stream::StreamExt::throttle(
+        iter(vec![0].into_iter()).cycle().enumerate().map(|(i, _)| {
+            let partition_id = (i % 4) as i32;
+            ProduceMessage {
+                topic: topic_name.to_string(),
+                partition_id,
+                key: Some(Bytes::from_static(b"Tester")),
+                value: Some(Bytes::from_static(b"Value")),
+                headers: vec![],
+            }
+        }),
+        std::time::Duration::from_secs(1),
+    );
 
     tracing::info!("Connecting to cluster");
     let output_stream = ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])

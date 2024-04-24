@@ -355,7 +355,7 @@ impl RecordBatch {
         self.producer_epoch.encode(&mut buf)?;
         self.base_sequence.encode(&mut buf)?;
 
-        // Note that when compression is enabled, the compressed record data is 
+        // Note that when compression is enabled, the compressed record data is
         // serialized directly following the count of the number of records.
         match self.attributes.compression {
             Some(Compression::Gzip) => {

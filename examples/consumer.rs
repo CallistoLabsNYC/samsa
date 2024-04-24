@@ -31,7 +31,8 @@ async fn main() -> Result<(), ()> {
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
     .build()
-    .into_stream().throttle(std::time::Duration::from_secs(1));
+    .into_stream()
+    .throttle(std::time::Duration::from_secs(1));
 
     tokio::pin!(stream);
 
