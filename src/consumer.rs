@@ -177,7 +177,7 @@ impl<'a> Consumer {
         // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html#examples
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let response = fetch(
-                broker_conn.clone(),
+                &broker_conn,
                 self.fetch_params.correlation_id,
                 &self.fetch_params.client_id,
                 self.fetch_params.max_wait_ms,
@@ -426,7 +426,7 @@ async fn commit_offset_wrapper(
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn fetch(
-    broker_conn: TcpBrokerConnection,
+    broker_conn: &TcpBrokerConnection,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,

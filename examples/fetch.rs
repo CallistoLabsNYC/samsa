@@ -32,7 +32,7 @@ async fn main() -> Result<(), ()> {
     let isolation_level = 0;
 
     let response = samsa::prelude::fetch(
-        conn.clone(),
+        &conn,
         correlation_id,
         client_id,
         max_wait_ms,

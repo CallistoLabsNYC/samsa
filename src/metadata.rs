@@ -1,5 +1,6 @@
 //! Cluster metadata & operations.
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use nom::AsBytes;
 use tokio::task::JoinSet;
@@ -13,7 +14,7 @@ use crate::{
 
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata {
-    pub broker_connections: HashMap<i32, TcpBrokerConnection>,
+    pub broker_connections: HashMap<i32, Arc<TcpBrokerConnection>>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
     pub client_id: String,
@@ -93,7 +94,7 @@ impl<'a> ClusterMetadata {
 
         while let Some(res) = set.join_next().await {
             let (index, conn) = res.unwrap()?;
-            self.broker_connections.insert(index, conn);
+            self.broker_connections.insert(index, Arc::new(conn));
         }
 
         Ok(())
@@ -132,7 +133,7 @@ impl<'a> ClusterMetadata {
         &self,
         topic_name: &'a str,
         partition_id: i32,
-    ) -> Result<&TcpBrokerConnection> {
+    ) -> Result<Arc<TcpBrokerConnection>> {
         let leader_id = self
             .get_leader_for_topic_partition(topic_name, partition_id)
             .ok_or(Error::NoLeaderForTopicPartition(
@@ -143,19 +144,21 @@ impl<'a> ClusterMetadata {
         self.broker_connections
             .get(&leader_id)
             .ok_or(Error::NoConnectionForBroker(leader_id))
+            .cloned()
     }
 
     pub fn get_connections_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
-    ) -> Result<Vec<(&TcpBrokerConnection, TopicPartition)>> {
+    ) -> Result<Vec<(Arc<TcpBrokerConnection>, TopicPartition)>> {
         let leaders = self.get_leaders_for_topic_partitions(topic_partitions)?;
         let mut connections = vec![];
         for (broker_id, assignments) in leaders.iter() {
             let broker_conn = self
                 .broker_connections
                 .get(broker_id)
-                .ok_or(Error::MetadataNeedsSync);
+                .ok_or(Error::MetadataNeedsSync)
+                .cloned();
             if let Err(err) = broker_conn {
                 tracing::error!("No broker connection for assignment {:?}", assignments);
                 return Err(err);

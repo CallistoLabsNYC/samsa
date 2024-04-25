@@ -20,7 +20,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
         samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
             .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
-    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
+    let (conn, _) = &cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -99,7 +99,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
             .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
-    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
+    let (conn, _) = &cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -119,7 +119,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         headers: vec![header],
     };
     let produce_response = samsa::prelude::produce(
-        conn.clone(),
+        &conn,
         CORRELATION_ID,
         CLIENT_ID,
         1,
@@ -144,7 +144,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     // Test fetch
     //
     let fetch_response = samsa::prelude::fetch(
-        conn.clone(),
+        &conn,
         CORRELATION_ID,
         CLIENT_ID,
         10000,

@@ -170,7 +170,7 @@ async fn producer(
 ) {
     tokio::pin!(stream);
     while let Some(messages) = stream.next().await {
-        match flush_producer(&cluster_metadata, &produce_params, messages).await {
+        match flush_producer(cluster_metadata.clone(), &produce_params, messages).await {
             Err(err) => {
                 tracing::error!("Error in producer agent {:?}", err);
             }
