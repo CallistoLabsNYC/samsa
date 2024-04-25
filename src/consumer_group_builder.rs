@@ -147,9 +147,9 @@ pub async fn find_coordinator(
 ) -> Result<protocol::FindCoordinatorResponse> {
     let find_coordinator_request =
         protocol::FindCoordinatorRequest::new(correlation_id, client_id, group_id);
-    conn.send_request(&find_coordinator_request).await?;
+    conn.send_request_(&find_coordinator_request).await?;
 
-    let find_coordinator_response = conn.receive_response().await?;
+    let find_coordinator_response = conn.receive_response_().await?;
 
     protocol::FindCoordinatorResponse::try_from(find_coordinator_response.freeze())
 }

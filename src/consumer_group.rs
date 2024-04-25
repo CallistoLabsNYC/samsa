@@ -267,9 +267,9 @@ pub async fn sync_group<'a>(
         member_id,
         assignments,
     )?;
-    conn.send_request(&sync_request).await?;
+    conn.send_request_(&sync_request).await?;
 
-    let sync_response = conn.receive_response().await?;
+    let sync_response = conn.receive_response_().await?;
 
     protocol::SyncGroupResponse::try_from(sync_response.freeze())
 }
@@ -301,8 +301,8 @@ pub async fn join_group<'a>(
         protocol_type,
         protocols,
     )?;
-    conn.send_request(&join_request).await?;
-    let join_response = conn.receive_response().await?;
+    conn.send_request_(&join_request).await?;
+    let join_response = conn.receive_response_().await?;
 
     protocol::JoinGroupResponse::try_from(join_response.freeze())
 }
@@ -327,9 +327,9 @@ pub async fn heartbeat(
         generation_id,
         member_id,
     )?;
-    conn.send_request(&heartbeat).await?;
+    conn.send_request_(&heartbeat).await?;
 
-    let heartbeat_response = conn.receive_response().await?;
+    let heartbeat_response = conn.receive_response_().await?;
 
     protocol::HeartbeatResponse::try_from(heartbeat_response.freeze())
 }
@@ -347,9 +347,9 @@ pub async fn leave_group(
     member_id: Bytes,
 ) -> Result<protocol::LeaveGroupResponse> {
     let leave = protocol::LeaveGroupRequest::new(correlation_id, client_id, group_id, member_id)?;
-    conn.send_request(&leave).await?;
+    conn.send_request_(&leave).await?;
 
-    let leave_response = conn.receive_response().await?;
+    let leave_response = conn.receive_response_().await?;
 
     protocol::LeaveGroupResponse::try_from(leave_response.freeze())
 }

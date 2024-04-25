@@ -22,8 +22,8 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
 
     create_req.add("tester-creation", 2, 1);
 
-    conn.send_request(&create_req).await?;
-    let res = conn.receive_response().await?.freeze();
+    conn.send_request_(&create_req).await?;
+    let res = conn.receive_response_().await?.freeze();
 
     let create_res = protocol::CreateTopicsResponse::try_from(res)?;
 
@@ -36,8 +36,8 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
 
     delete_req.add("tester-creation");
 
-    conn.send_request(&delete_req).await?;
-    let res = conn.receive_response().await?.freeze();
+    conn.send_request_(&delete_req).await?;
+    let res = conn.receive_response_().await?.freeze();
 
     let delete_res = protocol::DeleteTopicsResponse::try_from(res)?;
 

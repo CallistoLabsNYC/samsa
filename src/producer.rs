@@ -182,9 +182,9 @@ pub async fn produce(
         );
     }
 
-    broker_conn.send_request(&produce_request).await?;
+    broker_conn.send_request_(&produce_request).await?;
     if required_acks > 0 {
-        let response = ProduceResponse::try_from(broker_conn.receive_response().await?.freeze())?;
+        let response = ProduceResponse::try_from(broker_conn.receive_response_().await?.freeze())?;
         Ok(Some(response))
     } else {
         Ok(None)

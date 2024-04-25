@@ -19,9 +19,9 @@ pub async fn create_topics(
         create_topics.add(topic_name, num_partitions, 1);
     }
 
-    conn.send_request(&create_topics).await?;
+    conn.send_request_(&create_topics).await?;
 
-    let create_topics_response = conn.receive_response().await?;
+    let create_topics_response = conn.receive_response_().await?;
 
     protocol::CreateTopicsResponse::try_from(create_topics_response.freeze())
 }
@@ -43,9 +43,9 @@ pub async fn delete_topics(
         delete_topics.add(topic_name);
     }
 
-    conn.send_request(&delete_topics).await?;
+    conn.send_request_(&delete_topics).await?;
 
-    let delete_topics_response = conn.receive_response().await?;
+    let delete_topics_response = conn.receive_response_().await?;
 
     protocol::DeleteTopicsResponse::try_from(delete_topics_response.freeze())
 }

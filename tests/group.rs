@@ -23,9 +23,9 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     //
     let coordinator_req =
         protocol::FindCoordinatorRequest::new(CORRELATION_ID, CLIENT_ID, GROUP_ID);
-    conn.send_request(&coordinator_req).await?;
+    conn.send_request_(&coordinator_req).await?;
     let coordinator_res =
-        protocol::FindCoordinatorResponse::try_from(conn.receive_response().await?.freeze())?;
+        protocol::FindCoordinatorResponse::try_from(conn.receive_response_().await?.freeze())?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -60,9 +60,10 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
         protocols,
     )?;
 
-    coordinator_conn.send_request(&join_group_request).await?;
-    let join_group_response =
-        protocol::JoinGroupResponse::try_from(coordinator_conn.receive_response().await?.freeze())?;
+    coordinator_conn.send_request_(&join_group_request).await?;
+    let join_group_response = protocol::JoinGroupResponse::try_from(
+        coordinator_conn.receive_response_().await?.freeze(),
+    )?;
 
     assert_eq!(join_group_response.members.len(), 1);
     assert_eq!(join_group_response.leader, join_group_response.member_id);
@@ -92,9 +93,10 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
         vec![assignments],
     )?;
 
-    coordinator_conn.send_request(&sync_req).await?;
-    let sync_response =
-        protocol::SyncGroupResponse::try_from(coordinator_conn.receive_response().await?.freeze())?;
+    coordinator_conn.send_request_(&sync_req).await?;
+    let sync_response = protocol::SyncGroupResponse::try_from(
+        coordinator_conn.receive_response_().await?.freeze(),
+    )?;
 
     assert_eq!(sync_response.error_code, KafkaCode::None);
     assert_eq!(sync_response.assignment.partition_assignments.len(), 1);
@@ -117,9 +119,10 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
         join_group_response.generation_id,
         join_group_response.member_id.clone(),
     )?;
-    coordinator_conn.send_request(&heartbeat_request).await?;
-    let heartbeat_response =
-        protocol::HeartbeatResponse::try_from(coordinator_conn.receive_response().await?.freeze())?;
+    coordinator_conn.send_request_(&heartbeat_request).await?;
+    let heartbeat_response = protocol::HeartbeatResponse::try_from(
+        coordinator_conn.receive_response_().await?.freeze(),
+    )?;
 
     assert_eq!(heartbeat_response.error_code, KafkaCode::None);
 
@@ -132,9 +135,9 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
         GROUP_ID,
         join_group_response.member_id.clone(),
     )?;
-    coordinator_conn.send_request(&leave_group_request).await?;
+    coordinator_conn.send_request_(&leave_group_request).await?;
     let leave_group_response = protocol::LeaveGroupResponse::try_from(
-        coordinator_conn.receive_response().await?.freeze(),
+        coordinator_conn.receive_response_().await?.freeze(),
     )?;
 
     assert_eq!(leave_group_response.error_code, KafkaCode::None);

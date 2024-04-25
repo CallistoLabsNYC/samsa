@@ -136,7 +136,7 @@ impl TcpBrokerConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+    pub async fn send_request_<R: ToByte>(&self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -167,7 +167,7 @@ impl TcpBrokerConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&self) -> Result<BytesMut> {
+    pub async fn receive_response_(&self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
 

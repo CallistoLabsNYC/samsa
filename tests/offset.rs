@@ -24,9 +24,9 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     //
     let coordinator_req =
         protocol::FindCoordinatorRequest::new(CORRELATION_ID, CLIENT_ID, GROUP_ID);
-    conn.send_request(&coordinator_req).await?;
+    conn.send_request_(&coordinator_req).await?;
     let coordinator_res =
-        protocol::FindCoordinatorResponse::try_from(conn.receive_response().await?.freeze())?;
+        protocol::FindCoordinatorResponse::try_from(conn.receive_response_().await?.freeze())?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -51,10 +51,10 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     offset_commit_request.add(&topic, PARTITION_ID, OFFSET, Some("metadata"));
 
     coordinator_conn
-        .send_request(&offset_commit_request)
+        .send_request_(&offset_commit_request)
         .await?;
     let offset_commit_response = protocol::OffsetCommitResponse::try_from(
-        coordinator_conn.receive_response().await?.freeze(),
+        coordinator_conn.receive_response_().await?.freeze(),
     )?;
 
     assert_eq!(offset_commit_response.topics.len(), 1);
@@ -71,9 +71,9 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     let mut offset_fetch_req =
         protocol::OffsetFetchRequest::new(CORRELATION_ID, CLIENT_ID, GROUP_ID);
     offset_fetch_req.add(&topic, PARTITION_ID);
-    coordinator_conn.send_request(&offset_fetch_req).await?;
+    coordinator_conn.send_request_(&offset_fetch_req).await?;
     let offset_fetch_response = protocol::OffsetFetchResponse::try_from(
-        coordinator_conn.receive_response().await?.freeze(),
+        coordinator_conn.receive_response_().await?.freeze(),
     )?;
 
     assert_eq!(offset_fetch_response.error_code, KafkaCode::None);

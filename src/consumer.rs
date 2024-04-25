@@ -370,9 +370,9 @@ pub async fn commit_offset(
         );
     }
 
-    coordinator_conn.send_request(&offset_request).await?;
+    coordinator_conn.send_request_(&offset_request).await?;
 
-    let offset_response = coordinator_conn.receive_response().await?;
+    let offset_response = coordinator_conn.receive_response_().await?;
 
     let response = protocol::OffsetCommitResponse::try_from(offset_response.freeze())?;
 
@@ -463,9 +463,9 @@ pub async fn fetch(
         }
     }
 
-    broker_conn.send_request(&request).await?;
+    broker_conn.send_request_(&request).await?;
     let response =
-        protocol::FetchResponse::try_from(broker_conn.receive_response().await?.freeze())?;
+        protocol::FetchResponse::try_from(broker_conn.receive_response_().await?.freeze())?;
 
     Ok(response)
 }

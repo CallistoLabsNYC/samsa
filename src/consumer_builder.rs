@@ -276,9 +276,9 @@ pub async fn fetch_offset(
             offset_request.add(topic_name, *partition_index);
         }
     }
-    coordinator_conn.send_request(&offset_request).await?;
+    coordinator_conn.send_request_(&offset_request).await?;
 
-    let offset_response = coordinator_conn.receive_response().await?;
+    let offset_response = coordinator_conn.receive_response_().await?;
     protocol::OffsetFetchResponse::try_from(offset_response.freeze())
 }
 
@@ -307,7 +307,7 @@ pub async fn list_offsets(
         }
     }
 
-    broker_conn.send_request(&list_offsets_request).await?;
-    let list_offsets_response = broker_conn.receive_response().await?;
+    broker_conn.send_request_(&list_offsets_request).await?;
+    let list_offsets_response = broker_conn.receive_response_().await?;
     protocol::ListOffsetsResponse::try_from(list_offsets_response.freeze())
 }

@@ -15,9 +15,9 @@ async fn it_can_get_metadata() -> Result<(), Box<Error>> {
 
     let topics = vec![topic.clone()];
     let metadata_request = protocol::MetadataRequest::new(CORRELATION_ID, CLIENT_ID, &topics);
-    conn.send_request(&metadata_request).await?;
+    conn.send_request_(&metadata_request).await?;
 
-    let metadata = conn.receive_response().await?;
+    let metadata = conn.receive_response_().await?;
     let metadata = protocol::MetadataResponse::try_from(metadata.freeze())?;
 
     assert_eq!(metadata.brokers.len(), 2);

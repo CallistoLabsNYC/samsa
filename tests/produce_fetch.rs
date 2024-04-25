@@ -41,8 +41,8 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
         vec![header],
     );
 
-    conn.send_request(&produce_request).await?;
-    let bytess = conn.receive_response().await?.freeze();
+    conn.send_request_(&produce_request).await?;
+    let bytess = conn.receive_response_().await?.freeze();
 
     let produce_response = protocol::ProduceResponse::try_from(bytess)?;
 
@@ -62,9 +62,9 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     //
     let mut fetch_req = protocol::FetchRequest::new(CORRELATION_ID, CLIENT_ID, 10000, 10, 1000, 0);
     fetch_req.add(&topic, PARTITION_ID, 0, 10000);
-    conn.send_request(&fetch_req).await?;
+    conn.send_request_(&fetch_req).await?;
     let fetch_response =
-        protocol::FetchResponse::try_from(conn.receive_response().await?.freeze())?;
+        protocol::FetchResponse::try_from(conn.receive_response_().await?.freeze())?;
 
     assert_eq!(fetch_response.topics.len(), 1);
     assert_eq!(fetch_response.topics[0].partitions.len(), 1);

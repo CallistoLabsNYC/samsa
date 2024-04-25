@@ -112,9 +112,9 @@ impl<'a> ClusterMetadata {
         tracing::debug!("Fetching metadata");
         let metadata_request =
             protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
-        conn.send_request(&metadata_request).await?;
+        conn.send_request_(&metadata_request).await?;
 
-        let response_bytes = conn.receive_response().await?;
+        let response_bytes = conn.receive_response_().await?;
         let metadata_response = protocol::MetadataResponse::try_from(response_bytes.freeze())?;
 
         metadata_response.is_error()?;
