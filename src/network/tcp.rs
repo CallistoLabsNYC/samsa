@@ -1,10 +1,12 @@
 use std::io::ErrorKind;
 use std::{io, sync::Arc};
 
+use async_trait::async_trait;
 use bytes::{Buf, BytesMut};
 use tokio::net::TcpStream;
 use tracing::instrument;
 
+use crate::network::BrokerConnection;
 use crate::{
     encode::ToByte,
     error::{Error, Result},
@@ -174,5 +176,16 @@ impl TcpBrokerConnection {
         let length = size.get_u32();
         tracing::trace!("Reading {} bytes", length);
         self.read(length as usize).await
+    }
+}
+
+#[async_trait]
+impl BrokerConnection for TcpBrokerConnection {
+    async fn send_request<R: ToByte + Sync>(&self, req: &R) -> Result<()> {
+        self.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.receive_response_().await
     }
 }
