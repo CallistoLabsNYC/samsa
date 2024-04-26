@@ -1,11 +1,13 @@
 //! Cluster metadata & operations.
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use nom::AsBytes;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
+use crate::network::BrokerConnection;
 use crate::{
     error::{Error, Result},
     network::tcp::TcpBrokerConnection,
@@ -109,13 +111,13 @@ impl<'a> ClusterMetadata {
     //         Partition { error_code: KafkaCode::None, partition_index: 2, leader_id: 1, replica_nodes: [1], isr_nodes: [1] },
     //         Partition { error_code: KafkaCode::None, partition_index: 3, leader_id: 2, replica_nodes: [2], isr_nodes: [2] }] }] }
     #[instrument(name = "metadata-fetch")]
-    pub async fn fetch(&mut self, conn: TcpBrokerConnection) -> Result<()> {
-        tracing::debug!("Fetching metadata");
+    pub async fn fetch<T: BrokerConnection + Debug>(&mut self, mut conn: T) -> Result<()> {
+        tracing::trace!("Fetching metadata");
         let metadata_request =
             protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
-        conn.send_request_(&metadata_request).await?;
+        conn.send_request(&metadata_request).await?;
 
-        let response_bytes = conn.receive_response_().await?;
+        let response_bytes = conn.receive_response().await?;
         let metadata_response = protocol::MetadataResponse::try_from(response_bytes.freeze())?;
 
         metadata_response.is_error()?;
