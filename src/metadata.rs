@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use nom::AsBytes;
+use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
@@ -16,7 +17,7 @@ use crate::{
 
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata {
-    pub broker_connections: HashMap<i32, Arc<TcpBrokerConnection>>,
+    pub broker_connections: HashMap<i32, Arc<Mutex<TcpBrokerConnection>>>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
     pub client_id: String,
@@ -96,7 +97,8 @@ impl<'a> ClusterMetadata {
 
         while let Some(res) = set.join_next().await {
             let (index, conn) = res.unwrap()?;
-            self.broker_connections.insert(index, Arc::new(conn));
+            self.broker_connections
+                .insert(index, Arc::new(Mutex::new(conn)));
         }
 
         Ok(())
@@ -135,7 +137,7 @@ impl<'a> ClusterMetadata {
         &self,
         topic_name: &'a str,
         partition_id: i32,
-    ) -> Result<Arc<impl BrokerConnection>> {
+    ) -> Result<Arc<Mutex<impl BrokerConnection>>> {
         let leader_id = self
             .get_leader_for_topic_partition(topic_name, partition_id)
             .ok_or(Error::NoLeaderForTopicPartition(
@@ -152,7 +154,7 @@ impl<'a> ClusterMetadata {
     pub fn get_connections_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
-    ) -> Result<Vec<(Arc<TcpBrokerConnection>, TopicPartition)>> {
+    ) -> Result<Vec<(Arc<Mutex<TcpBrokerConnection>>, TopicPartition)>> {
         let leaders = self.get_leaders_for_topic_partitions(topic_partitions)?;
         let mut connections = vec![];
         for (broker_id, assignments) in leaders.iter() {

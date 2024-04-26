@@ -3,10 +3,7 @@
 use std::collections::HashMap;
 
 use bytes::Bytes;
-use tokio::{
-    sync::mpsc::{Sender, UnboundedReceiver},
-    task::JoinSet,
-};
+use tokio::sync::mpsc::{Sender, UnboundedReceiver};
 use tracing::instrument;
 
 use crate::{
@@ -124,8 +121,7 @@ pub(crate) async fn flush_producer(
         };
     }
 
-    let mut set = JoinSet::new();
-
+    let mut responses = vec![];
     for (broker, messages) in brokers_and_messages.into_iter() {
         let broker_conn = cluster_metadata
             .broker_connections
@@ -133,24 +129,17 @@ pub(crate) async fn flush_producer(
             .ok_or(Error::NoConnectionForBroker(broker))?
             .clone();
         let p = produce_params.clone();
-        set.spawn(async move {
-            produce(
-                &broker_conn,
-                p.correlation_id,
-                &p.client_id,
-                p.required_acks,
-                p.timeout_ms,
-                &messages,
-            )
-            .await
-        });
-    }
-
-    let mut responses = vec![];
-
-    while let Some(res) = set.join_next().await {
-        let produce_response = res.unwrap()?;
-        responses.push(produce_response);
+        let conn = broker_conn.lock().await;
+        let res = produce(
+            &conn,
+            p.correlation_id,
+            &p.client_id,
+            p.required_acks,
+            p.timeout_ms,
+            &messages,
+        )
+        .await?;
+        responses.push(res);
     }
 
     Ok(responses)

@@ -21,6 +21,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
             .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
     let (conn, _) = &cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
+    let conn = conn.lock().await;
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -118,6 +119,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         partition_id: PARTITION_ID,
         headers: vec![header],
     };
+    let conn = conn.lock().await;
     let produce_response = samsa::prelude::produce(
         &conn,
         CORRELATION_ID,

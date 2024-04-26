@@ -176,8 +176,9 @@ impl<'a> Consumer {
         // TODO: Make these all calls run async
         // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html#examples
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
+            let conn = broker_conn.lock().await;
             let response = fetch(
-                &broker_conn,
+                &conn,
                 self.fetch_params.correlation_id,
                 &self.fetch_params.client_id,
                 self.fetch_params.max_wait_ms,
