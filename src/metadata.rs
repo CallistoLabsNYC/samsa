@@ -135,7 +135,7 @@ impl<'a> ClusterMetadata {
         &self,
         topic_name: &'a str,
         partition_id: i32,
-    ) -> Result<Arc<TcpBrokerConnection>> {
+    ) -> Result<Arc<impl BrokerConnection>> {
         let leader_id = self
             .get_leader_for_topic_partition(topic_name, partition_id)
             .ok_or(Error::NoLeaderForTopicPartition(
