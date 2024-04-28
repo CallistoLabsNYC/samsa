@@ -1,16 +1,17 @@
+use argh::FromArgs;
+use rustls_pemfile::{certs, pkcs8_private_keys};
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use samsa::prelude::encode::ToByte;
+use samsa::prelude::protocol::produce::request::Attributes;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
 use std::net::ToSocketAddrs;
-use std::sync::Arc;
 use std::path::{Path, PathBuf};
-use argh::FromArgs;
-use samsa::prelude::encode::ToByte;
-use tokio::io::{stdin as tokio_stdin, stdout as tokio_stdout, AsyncWriteExt};
+use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio_rustls::{rustls, TlsConnector};
-use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use rustls_pemfile::{certs, pkcs8_private_keys};
 
 /// Tokio Rustls client example
 #[derive(FromArgs)]
@@ -62,7 +63,6 @@ async fn main() -> io::Result<()> {
         .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))
         .unwrap();
     let domain = options.domain.unwrap_or(options.host);
-    let topics = vec!["tester"];
 
     let certs = load_certs(&options.cert)?;
     let key = load_keys(&options.key)?;
@@ -80,13 +80,11 @@ async fn main() -> io::Result<()> {
 
     let config = rustls::ClientConfig::builder()
         .with_root_certificates(root_cert_store)
-        .with_client_auth_cert(certs, key).unwrap()
-        ;
+        .with_client_auth_cert(certs, key)
+        .unwrap();
     let connector = TlsConnector::from(Arc::new(config));
 
     let stream = TcpStream::connect(&addr).await.unwrap();
-
-    let (_stdin, _stdout) = (tokio_stdin(), tokio_stdout());
 
     let domain = rustls_pki_types::ServerName::try_from(domain.as_str())
         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid dnsname"))
@@ -95,7 +93,15 @@ async fn main() -> io::Result<()> {
 
     let mut stream = connector.connect(domain, stream).await.unwrap();
 
-    let req = samsa::prelude::protocol::MetadataRequest::new(1, "rust", &topics);
+    let mut req =
+        samsa::prelude::protocol::ProduceRequest::new(0, 1000, 1, "rust", Attributes::default());
+    req.add(
+        "test-1-user-signedup",
+        0,
+        Some(bytes::Bytes::from("new")),
+        Some(bytes::Bytes::from("old")),
+        vec![],
+    );
     let mut buf = vec![];
     req.encode(&mut buf).unwrap();
     stream.write_all(&buf).await.unwrap();

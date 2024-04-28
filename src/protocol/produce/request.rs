@@ -264,7 +264,7 @@ pub struct RecordBatch {
 //     bit 5: isControlBatch (0 means not a control batch)
 //     bit 6: hasDeleteHorizonMs (0 means baseTimestamp is not set as the delete horizon for compaction)
 //     bit 7~15: unused
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Attributes {
     pub compression: Option<Compression>,
 }
