@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
-    network::{self, BrokerConnection},
+    network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -153,9 +153,9 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 /// }
 /// ```
 #[derive(Clone, Debug, Default)]
-pub struct Consumer {
+pub struct Consumer<T: BrokerConnection> {
     /// Keeps track of the brokers and the topic partition info for the cluster.
-    pub(crate) cluster_metadata: ClusterMetadata,
+    pub(crate) cluster_metadata: ClusterMetadata<T>,
     /// Parameters for fetching.
     pub(crate) fetch_params: FetchParams,
     /// Assignment of topic partitions.
@@ -164,7 +164,7 @@ pub struct Consumer {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a> Consumer {
+impl<'a, T: BrokerConnection + Debug + Copy + 'a> Consumer<T> {
     #[instrument]
     async fn consume(&self) -> Result<Vec<protocol::FetchResponse>> {
         // TODO: Push this into the metadata
@@ -289,7 +289,7 @@ impl<'a> Consumer {
     /// To learn more about offset committing, see the protocol module.
     pub fn into_autocommit_stream(
         self,
-        coordinator_conn: network::BrokerConnection,
+        coordinator_conn: T,
         group_id: &'a str,
         generation_id: i32,
         member_id: Bytes,
@@ -343,7 +343,7 @@ pub async fn commit_offset<T: BrokerConnection + Debug>(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: T,
+    mut coordinator_conn: T,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -426,7 +426,7 @@ async fn commit_offset_wrapper<T: BrokerConnection + Debug>(
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn fetch<T: BrokerConnection + Debug>(
-    broker_conn: T,
+    mut broker_conn: T,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,
@@ -472,10 +472,12 @@ pub async fn fetch<T: BrokerConnection + Debug>(
 
 #[cfg(test)]
 mod test {
+    use crate::network::BrokerConnection;
+
     use super::Consumer;
 
-    struct ConsumerWrapper {
-        consumer: Consumer,
+    struct ConsumerWrapper<T: BrokerConnection> {
+        consumer: Consumer<T>,
     }
 
     #[tokio::test]

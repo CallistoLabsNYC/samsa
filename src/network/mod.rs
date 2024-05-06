@@ -37,6 +37,8 @@
 use crate::prelude::{Result, encode::ToByte};
 use bytes::BytesMut;
 
+use self::tcp::TcpConnection;
+
 pub mod tcp;
 pub mod tls;
 
@@ -44,7 +46,22 @@ pub mod tls;
 // pub type BrokerConnection = tcp::BrokerConnection;
 
 pub trait BrokerConnection {
-    // async fn new<T>(options: T) -> Result<Self> {}
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()>;
+    async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()>;
     async fn receive_response(&mut self) -> Result<BytesMut>;
+}
+
+pub enum ConnectionParamsKind {
+    TcpParams(Vec<String>),
+    TlsParams(tls::ConnectionOptions)
+}
+
+pub struct ConnectionParams(ConnectionParamsKind);
+
+impl ConnectionParams {
+    async fn new(&self) -> Result<Box<dyn BrokerConnection>> {
+        match self.0 {
+            ConnectionParamsKind::TcpParams(bootstrap_addrs) => tcp::TcpConnection::new(bootstrap_addrs).await.map(|c| Box::new(c) as dyn BrokerConnection),
+            ConnectionParamsKind::TlsParams(options) => tls::TlsConnection::new(options).await.map(Box::new)
+        }
+    }
 }

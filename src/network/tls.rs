@@ -21,6 +21,8 @@ use crate::{
     error::{Error, Result},
 };
 
+use super::ConnectionParams;
+
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
 /// This is designed to be held by a metadata structure which will
@@ -145,6 +147,7 @@ fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
 
 
 impl super::BrokerConnection for TlsConnection {
+
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///
     /// The Kafka protocol specifies that all requests will
@@ -161,7 +164,7 @@ impl super::BrokerConnection for TlsConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+    async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);

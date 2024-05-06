@@ -1,5 +1,6 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
 use crate::metadata::ClusterMetadata;
+use crate::network::ConnectionParams;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
@@ -39,9 +40,9 @@ use tracing::instrument;
 /// }
 /// ```
 #[derive(Clone)]
-pub struct ConsumerBuilder {
+pub struct ConsumerBuilder<T: BrokerConnection> {
     /// Keeps track of the brokers and the topic partition info for the cluster.
-    pub(crate) cluster_metadata: ClusterMetadata,
+    pub(crate) cluster_metadata: ClusterMetadata<T>,
     /// Parameters for fetching.
     pub(crate) fetch_params: FetchParams,
     /// Assignment of topic partitions.
@@ -50,10 +51,10 @@ pub struct ConsumerBuilder {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a> ConsumerBuilder {
+impl<'a, T: BrokerConnection + Debug + Copy> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        bootstrap_addrs: Vec<String>,
+        connection_params: ConnectionParams,
         assigned_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
         let topics = assigned_topic_partitions
@@ -62,7 +63,7 @@ impl<'a> ConsumerBuilder {
             .collect();
 
         let cluster_metadata =
-            metadata::ClusterMetadata::new(bootstrap_addrs, DEFAULT_CLIENT_ID.to_owned(), topics)
+            metadata::ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics)
                 .await?;
 
         Ok(Self {
@@ -91,7 +92,7 @@ impl<'a> ConsumerBuilder {
         // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let offsets_list = list_offsets(
-                broker_conn,
+                *broker_conn,
                 self.fetch_params.correlation_id,
                 &self.fetch_params.client_id,
                 &topic_partitions,
@@ -138,7 +139,7 @@ impl<'a> ConsumerBuilder {
     /// offset is intialized to 0.
     pub async fn seek_to_group(
         mut self,
-        coordinator_conn: network::BrokerConnection,
+        coordinator_conn: T,
         group_id: &str,
     ) -> Result<Self> {
         tracing::debug!("Seeking offsets to group {}", group_id);
@@ -247,7 +248,7 @@ impl<'a> ConsumerBuilder {
         self
     }
 
-    pub fn build(self) -> Consumer {
+    pub fn build(self) -> Consumer<T> {
         Consumer {
             cluster_metadata: self.cluster_metadata,
             fetch_params: self.fetch_params,

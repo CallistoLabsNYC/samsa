@@ -1,6 +1,6 @@
 //! Client that sends records to a cluster.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use bytes::Bytes;
 use tokio::{
@@ -101,8 +101,8 @@ impl Producer {
 
 // vector for the results from each broker
 #[instrument(skip(messages, produce_params, cluster_metadata))]
-pub(crate) async fn flush_producer(
-    cluster_metadata: &ClusterMetadata,
+pub(crate) async fn flush_producer<T: BrokerConnection + Debug + Copy + Send + 'static>(
+    cluster_metadata: &ClusterMetadata<T>,
     produce_params: &ProduceParams,
     messages: Vec<ProduceMessage>,
 ) -> Result<Vec<Option<ProduceResponse>>> {
@@ -135,7 +135,7 @@ pub(crate) async fn flush_producer(
         let p = produce_params.clone();
         set.spawn(async move {
             produce(
-                broker_conn.to_owned(),
+                broker_conn,
                 p.correlation_id,
                 &p.client_id,
                 p.required_acks,
@@ -160,7 +160,7 @@ pub(crate) async fn flush_producer(
 ///
 /// See this [protocol spec](crate::prelude::protocol::produce) for more information.
 pub async fn produce<T: BrokerConnection>(
-    broker_conn: T,
+    mut broker_conn: T,
     correlation_id: i32,
     client_id: &str,
     required_acks: i16,

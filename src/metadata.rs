@@ -1,5 +1,5 @@
 //! Cluster metadata & operations.
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use nom::AsBytes;
 use tokio::task::JoinSet;
@@ -7,13 +7,14 @@ use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
-    network::BrokerConnection,
+    network::{BrokerConnection, ConnectionParams},
     protocol::{self, metadata::response::*},
 };
 
 #[derive(Clone, Default, Debug)]
-pub struct ClusterMetadata {
-    pub broker_connections: HashMap<i32, BrokerConnection>,
+pub struct ClusterMetadata<T: BrokerConnection> {
+    pub connection_params: ConnectionParams,
+    pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
     pub client_id: String,
@@ -22,21 +23,22 @@ pub struct ClusterMetadata {
 
 type TopicPartition = HashMap<String, Vec<i32>>;
 
-impl<'a> ClusterMetadata {
+impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
     pub async fn new(
-        bootstrap_addrs: Vec<String>,
+        connection_params: ConnectionParams,
         client_id: String,
         topics: Vec<String>,
-    ) -> Result<ClusterMetadata> {
-        tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
+    ) -> Result<ClusterMetadata<T>> {
+        // tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
         let mut metadata = ClusterMetadata {
+            connection_params,
             broker_connections: HashMap::new(),
             brokers: vec![],
             topics: vec![],
             client_id,
             topic_names: topics,
         };
-        let bootstrap_connection = BrokerConnection::new(bootstrap_addrs).await?;
+        let bootstrap_connection = T::new(connection_params).await?;
 
         metadata.fetch(bootstrap_connection).await?;
         metadata.sync().await?;
@@ -76,18 +78,18 @@ impl<'a> ClusterMetadata {
         Some(leader.node_id)
     }
 
-    #[instrument(name = "metadata-sync")]
     pub async fn sync(&mut self) -> Result<()> {
         tracing::debug!("Syncing metadata");
         let mut set = JoinSet::new();
 
         for broker in self.brokers.iter() {
             let broker = broker.clone();
+            let connection_params = self.connection_params.clone();
             set.spawn(async move {
                 let id = broker.node_id;
                 let addr = broker.addr()?;
-                let conn = BrokerConnection::new(vec![addr]).await?;
-                Ok::<(i32, BrokerConnection), Error>((id, conn))
+                let conn = connection_params.new(self.connection_params).await?;
+                Ok::<(i32, dyn BrokerConnection), Error>((id, conn))
             });
         }
 
@@ -108,7 +110,7 @@ impl<'a> ClusterMetadata {
     //         Partition { error_code: KafkaCode::None, partition_index: 2, leader_id: 1, replica_nodes: [1], isr_nodes: [1] },
     //         Partition { error_code: KafkaCode::None, partition_index: 3, leader_id: 2, replica_nodes: [2], isr_nodes: [2] }] }] }
     #[instrument(name = "metadata-fetch")]
-    pub async fn fetch(&mut self, conn: BrokerConnection) -> Result<()> {
+    pub async fn fetch(&mut self, mut conn: T) -> Result<()> {
         tracing::debug!("Fetching metadata");
         let metadata_request =
             protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
@@ -132,7 +134,7 @@ impl<'a> ClusterMetadata {
         &self,
         topic_name: &'a str,
         partition_id: i32,
-    ) -> Result<&BrokerConnection> {
+    ) -> Result<&T> {
         let leader_id = self
             .get_leader_for_topic_partition(topic_name, partition_id)
             .ok_or(Error::NoLeaderForTopicPartition(
@@ -148,7 +150,7 @@ impl<'a> ClusterMetadata {
     pub fn get_connections_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
-    ) -> Result<Vec<(&BrokerConnection, TopicPartition)>> {
+    ) -> Result<Vec<(&T, TopicPartition)>> {
         let leaders = self.get_leaders_for_topic_partitions(topic_partitions)?;
         let mut connections = vec![];
         for (broker_id, assignments) in leaders.iter() {
@@ -244,6 +246,7 @@ mod test {
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
+                connection_params: ConnectionParams::TcpParams(vec![]),
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),
