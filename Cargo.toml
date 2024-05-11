@@ -1,6 +1,6 @@
 [package]
 name = "samsa"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "Rust-native Kafka/Redpanda protocol and client implementation."
 license-file = "LICENSE"
