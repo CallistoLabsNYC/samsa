@@ -55,13 +55,13 @@ pub enum ConnectionParamsKind {
     TlsParams(tls::ConnectionOptions)
 }
 
-pub struct ConnectionParams(ConnectionParamsKind);
+pub struct ConnectionParams<T: BrokerConnection>(ConnectionParamsKind);
 
-impl ConnectionParams {
-    async fn new(&self) -> Result<Box<dyn BrokerConnection>> {
+impl<T: BrokerConnection> ConnectionParams<T> {
+    async fn new(&self) -> Result<T> {
         match self.0 {
-            ConnectionParamsKind::TcpParams(bootstrap_addrs) => tcp::TcpConnection::new(bootstrap_addrs).await.map(|c| Box::new(c) as dyn BrokerConnection),
-            ConnectionParamsKind::TlsParams(options) => tls::TlsConnection::new(options).await.map(Box::new)
+            ConnectionParamsKind::TcpParams(bootstrap_addrs) => tcp::TcpConnection::new(bootstrap_addrs).await,
+            ConnectionParamsKind::TlsParams(options) => tls::TlsConnection::new(options).await
         }
     }
 }

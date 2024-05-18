@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
-    pub connection_params: ConnectionParams,
+    pub connection_params: ConnectionParams<T>,
     pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
@@ -25,7 +25,7 @@ type TopicPartition = HashMap<String, Vec<i32>>;
 
 impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
     pub async fn new(
-        connection_params: ConnectionParams,
+        connection_params: ConnectionParams<T>,
         client_id: String,
         topics: Vec<String>,
     ) -> Result<ClusterMetadata<T>> {

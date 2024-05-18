@@ -54,7 +54,7 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
 impl<'a, T: BrokerConnection + Debug + Copy> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        connection_params: ConnectionParams,
+        connection_params: ConnectionParams<T>,
         assigned_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
         let topics = assigned_topic_partitions

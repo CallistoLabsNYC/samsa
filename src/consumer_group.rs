@@ -23,7 +23,7 @@ const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
-    pub connection_params: ConnectionParams,
+    pub connection_params: ConnectionParams<T>,
     pub coordinator_conn: T,
     pub correlation_id: i32,
     pub client_id: String,
