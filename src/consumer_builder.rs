@@ -90,7 +90,7 @@ impl<'a> ConsumerBuilder {
         // try this https://docs.rs/tokio/latest/tokio/task/join_set/struct.JoinSet.html
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let offsets_list = list_offsets(
-                broker_conn,
+                broker_conn.to_owned(),
                 self.fetch_params.correlation_id,
                 &self.fetch_params.client_id,
                 &topic_partitions,
@@ -262,7 +262,7 @@ pub async fn fetch_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: BrokerConnection,
+    mut coordinator_conn: BrokerConnection,
     topic_partitions: &TopicPartitions,
 ) -> Result<protocol::OffsetFetchResponse> {
     tracing::debug!(
@@ -289,7 +289,7 @@ pub async fn fetch_offset(
 /// See this [protocol spec](crate::prelude::protocol::list_offsets) for more information.
 #[instrument(level = "debug")]
 pub async fn list_offsets(
-    broker_conn: &BrokerConnection,
+    mut broker_conn: BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     topic_partitions: &TopicPartitions,

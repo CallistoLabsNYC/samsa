@@ -11,7 +11,7 @@ async fn it_can_get_metadata() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = samsa::prelude::BrokerConnection::new(brokers).await?;
+    let mut conn = samsa::prelude::BrokerConnection::new(brokers).await?;
 
     let topics = vec![topic.clone()];
     let metadata_request = protocol::MetadataRequest::new(CORRELATION_ID, CLIENT_ID, &topics);

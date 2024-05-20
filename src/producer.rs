@@ -163,7 +163,7 @@ pub(crate) async fn flush_producer(
 ///
 /// See this [protocol spec](crate::prelude::protocol::produce) for more information.
 pub async fn produce(
-    broker_conn: BrokerConnection,
+    mut broker_conn: BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     required_acks: i16,

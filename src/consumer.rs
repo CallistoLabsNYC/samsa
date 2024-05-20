@@ -343,7 +343,7 @@ pub async fn commit_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: network::BrokerConnection,
+    mut coordinator_conn: network::BrokerConnection,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -426,7 +426,7 @@ async fn commit_offset_wrapper(
 #[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn fetch(
-    broker_conn: BrokerConnection,
+    mut broker_conn: BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,

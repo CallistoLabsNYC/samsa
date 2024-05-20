@@ -1,40 +1,3 @@
-//! Connection & communication with a broker.
-//!
-//! # Network Module
-//!
-//! Kafka uses a binary protocol over TCP. The protocol defines all APIs as
-//! request response message pairs. All messages are size delimited and are
-//! made up of the following primitive types.
-//!
-//! The client initiates a socket connection and then writes a sequence of
-//! request messages and reads back the corresponding response message. No
-//! handshake is required on connection or disconnection. TCP is happier if
-//! you maintain persistent connections used for many requests to amortize
-//! the cost of the TCP handshake, but beyond this penalty connecting is
-//! pretty cheap.
-//!
-//! The client will likely need to maintain a connection to multiple brokers,
-//! as data is partitioned and the clients will need to talk to the server
-//! that has their data. However it should not generally be necessary to
-//! maintain multiple connections to a single broker from a single client
-//! instance (i.e. connection pooling).
-//!
-//! The server guarantees that on a single TCP connection, requests will
-//! be processed in the order they are sent and responses will return in
-//! that order as well. The broker's request processing allows only a
-//! single in-flight request per connection in order to guarantee this
-//! ordering. Note that clients can (and ideally should) use non-blocking
-//! IO to implement request pipelining and achieve higher throughput.
-//! i.e., clients can send requests even while awaiting responses for
-//! preceding requests since the outstanding requests will be buffered
-//! in the underlying OS socket buffer. All requests are initiated by
-//! the client, and result in a corresponding response message from the
-//! server except where noted.
-//!
-//! The server has a configurable maximum limit on request size and any
-//! request that exceeds this limit will result in the socket being
-//! disconnected.
-
 use std::io::ErrorKind;
 use std::{io, sync::Arc};
 
@@ -46,6 +9,7 @@ use crate::{
     encode::ToByte,
     error::{Error, Result},
 };
+
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -61,18 +25,18 @@ use crate::{
 /// connection details for the user.
 
 #[derive(Clone, Debug)]
-pub struct BrokerConnection {
+pub struct TcpConnection {
     stream: Arc<TcpStream>,
 }
 
-impl BrokerConnection {
+impl TcpConnection {
     /// Connect to a Kafka/Redpanda broker
     ///
     /// ### Example
     /// ```
     /// // connect to a kafka/redpanda broker
     /// let bootstrap_addrs = vec!["localhost:9092"];
-    /// let conn = samsa::prelude::BrokerConnection(bootstrap_addrs).await?;
+    /// let conn = samsa::prelude::TcpConnection(bootstrap_addrs).await?;
     /// ```
     pub async fn new(bootstrap_addrs: Vec<String>) -> Result<Self> {
         tracing::debug!("Connecting to {}", bootstrap_addrs.join(","));
@@ -100,7 +64,7 @@ impl BrokerConnection {
     }
 
     #[instrument(name = "network-read", level = "trace")]
-    async fn read(&self, size: usize) -> Result<BytesMut> {
+    async fn read(&mut self, size: usize) -> Result<BytesMut> {
         loop {
             // Wait for the socket to be readable
             self.stream
@@ -130,7 +94,7 @@ impl BrokerConnection {
     }
 
     #[instrument(name = "network-write", level = "trace")]
-    async fn write(&self, buf: &[u8]) -> Result<usize> {
+    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
         loop {
             // Wait for the socket to be writable
             self.stream
@@ -173,7 +137,7 @@ impl BrokerConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&self, req: &R) -> Result<()> {
+    pub async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -204,7 +168,7 @@ impl BrokerConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&self) -> Result<BytesMut> {
+    pub async fn receive_response(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
 

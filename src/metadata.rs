@@ -108,7 +108,7 @@ impl<'a> ClusterMetadata {
     //         Partition { error_code: KafkaCode::None, partition_index: 2, leader_id: 1, replica_nodes: [1], isr_nodes: [1] },
     //         Partition { error_code: KafkaCode::None, partition_index: 3, leader_id: 2, replica_nodes: [2], isr_nodes: [2] }] }] }
     #[instrument(name = "metadata-fetch")]
-    pub async fn fetch(&mut self, conn: BrokerConnection) -> Result<()> {
+    pub async fn fetch(&mut self, mut conn: BrokerConnection) -> Result<()> {
         tracing::debug!("Fetching metadata");
         let metadata_request =
             protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
@@ -148,7 +148,7 @@ impl<'a> ClusterMetadata {
     pub fn get_connections_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
-    ) -> Result<Vec<(&BrokerConnection, TopicPartition)>> {
+    ) -> Result<Vec<(BrokerConnection, TopicPartition)>> {
         let leaders = self.get_leaders_for_topic_partitions(topic_partitions)?;
         let mut connections = vec![];
         for (broker_id, assignments) in leaders.iter() {
@@ -163,7 +163,7 @@ impl<'a> ClusterMetadata {
 
             tracing::debug!("Broker {} is in charge of {:?}", broker_id, assignments);
 
-            connections.push((broker_conn.unwrap(), assignments.to_owned()));
+            connections.push((broker_conn.unwrap().to_owned(), assignments.to_owned()));
         }
 
         Ok(connections)

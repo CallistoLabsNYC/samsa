@@ -12,7 +12,7 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers).await?;
+    let mut conn = BrokerConnection::new(brokers).await?;
 
     //
     // Create topic
