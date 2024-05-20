@@ -21,7 +21,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::ConnectionParams;
+use super::{ConnectionParams, ConnectionParamsKind};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -47,6 +47,7 @@ pub struct ConnectionOptions {
     pub cafile: Option<PathBuf>,
 }
 
+#[derive(Clone, Debug)]
 pub struct TlsBrokerOptions {
     pub host: String,
     pub port: u16,
@@ -148,6 +149,12 @@ fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
 
 
 impl super::BrokerConnection for TlsConnection {
+    async fn new(p: ConnectionParams) -> Result<Self> {
+        match p.0 {
+            ConnectionParamsKind::TlsParams(p) => Self::new(p).await,
+            _ => panic!("You have used the wrong type")
+        }
+    }
 
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///

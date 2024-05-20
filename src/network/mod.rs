@@ -37,8 +37,6 @@
 use crate::prelude::{encode::ToByte, Error, Result};
 use bytes::BytesMut;
 
-use self::tls::ConnectionOptions;
-
 pub mod tcp;
 pub mod tls;
 
@@ -48,7 +46,7 @@ pub mod tls;
 pub trait BrokerConnection {
     async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()>;
     async fn receive_response(&mut self) -> Result<BytesMut>;
-    async fn new(p: ConnectionParamsKind) -> Result<impl BrokerConnection>;
+    async fn new(p: ConnectionParams) -> Result<Self> where Self: Sized;
 }
 
 
@@ -62,44 +60,34 @@ pub enum ConnectionParamsKind {
 pub struct ConnectionParams(ConnectionParamsKind);
 
 impl ConnectionParams {
-    // this is when we need to bootstrap
-    pub async fn init<T: BrokerConnection>(&self) -> Result<T> {
-        match self.0 {
-            ConnectionParamsKind::TcpParams(bootstrap_addrs) => {
-                tcp::TcpConnection::new(bootstrap_addrs)
-                    .await
-            }
-            ConnectionParamsKind::TlsParams(options) => {
-                tls::TlsConnection::new(options).await
-            }
-        }
-    }
-
     // this is when we need to connect to one broker
-    pub async fn from_url<T: BrokerConnection>(&self, url: String) -> Result<T> {
-        match self.0 {
+    pub fn from_url(&self, url: String) -> Result<Self> {
+        let p = match &self.0 {
             ConnectionParamsKind::TcpParams(bootstrap_addrs) => {
-                tcp::TcpConnection::new(vec![url]).await
+                ConnectionParamsKind::TcpParams(vec![url])
             }
             ConnectionParamsKind::TlsParams(options) => {
-                let cafile = options.cafile;
+                let cafile = options.cafile.clone();
 
                 let single_connection_options = options
                     .broker_options
+                    .to_vec()
                     .into_iter()
                     .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url);
                 match single_connection_options {
                     Some(single_connection_options) => {
-                        let options = ConnectionOptions {
+                        let options = tls::ConnectionOptions {
                             broker_options: vec![single_connection_options],
                             cafile,
                         };
 
-                        tls::TlsConnection::new(options).await
+                        ConnectionParamsKind::TlsParams(options)
                     }
-                    None => Err(Error::MissingBrokerConfigOptions),
+                    None => return Err(Error::MissingBrokerConfigOptions),
                 }
             }
-        }
+        };
+
+        Ok(ConnectionParams(p))
     }
 }

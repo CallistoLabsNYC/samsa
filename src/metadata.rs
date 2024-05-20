@@ -11,7 +11,7 @@ use crate::{
     protocol::{self, metadata::response::*},
 };
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
     pub connection_params: ConnectionParams,
     pub broker_connections: HashMap<i32, T>,
@@ -38,7 +38,7 @@ impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
             client_id,
             topic_names: topics,
         };
-        let bootstrap_connection = connection_params.init::<T>().await?;
+        let bootstrap_connection = T::new(connection_params).await?;
 
         metadata.fetch(bootstrap_connection).await?;
         metadata.sync().await?;
@@ -78,24 +78,39 @@ impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
         Some(leader.node_id)
     }
 
+    // pub async fn sync(&mut self) -> Result<()> {
+    //     tracing::debug!("Syncing metadata");
+    //     let mut set = JoinSet::new();
+
+    //     for broker in self.brokers.iter() {
+    //         let broker = broker.clone();
+    //         let connection_params = self.connection_params.clone();
+    //         set.spawn(async move {
+    //             let id = broker.node_id;
+    //             let addr = broker.addr()?;
+    //             let conn = T::new(connection_params.from_url(addr)?).await?;
+    //             Ok::<(i32, dyn BrokerConnection), Error>((id, conn))
+    //         });
+    //     }
+
+    //     while let Some(res) = set.join_next().await {
+    //         let (index, conn) = res.unwrap()?;
+    //         self.broker_connections.insert(index, conn);
+    //     }
+
+    //     Ok(())
+    // }
+
     pub async fn sync(&mut self) -> Result<()> {
         tracing::debug!("Syncing metadata");
-        let mut set = JoinSet::new();
+        // let mut set = JoinSet::new();
 
         for broker in self.brokers.iter() {
-            let broker = broker.clone();
-            let connection_params = self.connection_params.clone();
-            set.spawn(async move {
-                let id = broker.node_id;
+                let id: i32 = broker.node_id;
                 let addr = broker.addr()?;
-                let conn = connection_params.from_url(addr).await?;
-                Ok::<(i32, dyn BrokerConnection), Error>((id, conn))
-            });
-        }
-
-        while let Some(res) = set.join_next().await {
-            let (index, conn) = res.unwrap()?;
-            self.broker_connections.insert(index, conn);
+                let url = self.connection_params.from_url(addr)?;
+                let conn = T::new(url).await?;
+                self.broker_connections.insert(id, conn);
         }
 
         Ok(())
@@ -241,7 +256,7 @@ mod test {
     use bytes::Bytes;
 
     use super::*;
-    use crate::error::KafkaCode;
+    use crate::{error::KafkaCode, network::tcp::TcpConnection};
 
     macro_rules! test_metadata {
         () => {
@@ -347,7 +362,7 @@ mod test {
 
     #[test]
     fn test_get_leaders_for_topic_partitions() {
-        let cluster: ClusterMetadata = test_metadata!();
+        let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
         let mut topic_partitions = HashMap::new();
         topic_partitions.insert(String::from("purchases"), vec![0, 1, 2, 3]);
         let leaders = cluster.get_leaders_for_topic_partitions(&topic_partitions);

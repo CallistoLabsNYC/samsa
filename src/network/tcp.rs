@@ -10,6 +10,8 @@ use crate::{
     error::{Error, Result},
 };
 
+use super::{ConnectionParams, ConnectionParamsKind};
+
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -123,6 +125,13 @@ impl TcpConnection {
 }
 
 impl super::BrokerConnection for TcpConnection {
+    async fn new(p: ConnectionParams) -> Result<Self> {
+        match p.0 {
+            ConnectionParamsKind::TcpParams(p) => Self::new(p).await,
+            _ => panic!("You have used the wrong type")
+        }
+    }
+    
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///
     /// The Kafka protocol specifies that all requests will
