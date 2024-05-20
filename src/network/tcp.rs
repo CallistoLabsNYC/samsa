@@ -10,7 +10,6 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::ConnectionParams;
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///

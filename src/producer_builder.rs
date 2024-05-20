@@ -50,7 +50,7 @@ pub struct ProducerBuilder<T: BrokerConnection> {
 
 impl<'a, T: BrokerConnection + Debug + Copy + Send + Sync + 'static> ProducerBuilder<T> {
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
-    pub async fn new(connection_params: ConnectionParams<T>, topics: Vec<String>) -> Result<Self> {
+    pub async fn new(connection_params: ConnectionParams, topics: Vec<String>) -> Result<Self> {
         let cluster_metadata =
             ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
 

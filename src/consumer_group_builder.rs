@@ -16,8 +16,8 @@ const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
 const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
 #[derive(Clone)]
-pub struct ConsumerGroupBuilder<T: BrokerConnection + Debug + Clone> {
-    pub connection_params: ConnectionParams<T>,
+pub struct ConsumerGroupBuilder {
+    pub connection_params: ConnectionParams,
     pub correlation_id: i32,
     pub client_id: String,
     pub session_timeout_ms: i32,
@@ -28,10 +28,10 @@ pub struct ConsumerGroupBuilder<T: BrokerConnection + Debug + Clone> {
     pub fetch_params: FetchParams,
 }
 
-impl<'a, T: BrokerConnection + Debug + Clone> ConsumerGroupBuilder<T> {
+impl<'a> ConsumerGroupBuilder {
     /// Start a consumer group builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        connection_params: ConnectionParams<T>,
+        connection_params: ConnectionParams,
         group_id: String,
         group_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
@@ -101,8 +101,8 @@ impl<'a, T: BrokerConnection + Debug + Clone> ConsumerGroupBuilder<T> {
         self
     }
 
-    pub async fn build(self) -> Result<ConsumerGroup<T>> {
-        let conn = self.connection_params.new().await?;
+    pub async fn build<T: BrokerConnection>(self) -> Result<ConsumerGroup<T>> {
+        let conn = self.connection_params.init::<T>().await?;
         let coordinator =
             find_coordinator(conn, self.correlation_id, &self.client_id, &self.group_id).await?;
 
@@ -116,7 +116,7 @@ impl<'a, T: BrokerConnection + Debug + Clone> ConsumerGroupBuilder<T> {
         })?;
         let port = coordinator.port;
         let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn = self.connection::new(vec![coordinator_addr]).await?;
+        let coordinator_conn = self.connection_params.from_url(coordinator_addr).await?;
 
         Ok(ConsumerGroup {
             connection_params: self.connection_params,

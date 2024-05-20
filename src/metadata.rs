@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
-    pub connection_params: ConnectionParams<T>,
+    pub connection_params: ConnectionParams,
     pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
@@ -25,20 +25,20 @@ type TopicPartition = HashMap<String, Vec<i32>>;
 
 impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
     pub async fn new(
-        connection_params: ConnectionParams<T>,
+        connection_params: ConnectionParams,
         client_id: String,
         topics: Vec<String>,
     ) -> Result<ClusterMetadata<T>> {
         // tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
         let mut metadata = ClusterMetadata {
-            connection_params,
+            connection_params: connection_params.clone(),
             broker_connections: HashMap::new(),
             brokers: vec![],
             topics: vec![],
             client_id,
             topic_names: topics,
         };
-        let bootstrap_connection = T::new(connection_params).await?;
+        let bootstrap_connection = connection_params.init::<T>().await?;
 
         metadata.fetch(bootstrap_connection).await?;
         metadata.sync().await?;
@@ -88,7 +88,7 @@ impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
             set.spawn(async move {
                 let id = broker.node_id;
                 let addr = broker.addr()?;
-                let conn = connection_params.new(self.connection_params).await?;
+                let conn = connection_params.init().await?;
                 Ok::<(i32, dyn BrokerConnection), Error>((id, conn))
             });
         }

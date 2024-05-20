@@ -34,10 +34,10 @@
 //! The server has a configurable maximum limit on request size and any
 //! request that exceeds this limit will result in the socket being
 //! disconnected.
-use crate::prelude::{Result, encode::ToByte};
+use crate::prelude::{encode::ToByte, Error, Result};
 use bytes::BytesMut;
 
-use self::tcp::TcpConnection;
+use self::tls::ConnectionOptions;
 
 pub mod tcp;
 pub mod tls;
@@ -50,18 +50,59 @@ pub trait BrokerConnection {
     async fn receive_response(&mut self) -> Result<BytesMut>;
 }
 
+#[derive(Clone, Debug)]
 pub enum ConnectionParamsKind {
     TcpParams(Vec<String>),
-    TlsParams(tls::ConnectionOptions)
+    TlsParams(tls::ConnectionOptions),
 }
 
-pub struct ConnectionParams<T: BrokerConnection>(ConnectionParamsKind);
+#[derive(Clone, Debug)]
+pub struct ConnectionParams(ConnectionParamsKind);
 
-impl<T: BrokerConnection> ConnectionParams<T> {
-    async fn new(&self) -> Result<T> {
+pub fn erase_conn_type(conn: impl BrokerConnection) -> Box<dyn BrokerConnection> {
+    Box::new(conn)
+}
+
+impl ConnectionParams {
+    // this is when we need to bootstrap
+    pub async fn init<T: BrokerConnection>(&self) -> Result<T> {
         match self.0 {
-            ConnectionParamsKind::TcpParams(bootstrap_addrs) => tcp::TcpConnection::new(bootstrap_addrs).await,
-            ConnectionParamsKind::TlsParams(options) => tls::TlsConnection::new(options).await
+            ConnectionParamsKind::TcpParams(bootstrap_addrs) => {
+                tcp::TcpConnection::new(bootstrap_addrs)
+                    .await
+                    .map(erase_conn_type)
+            }
+            ConnectionParamsKind::TlsParams(options) => {
+                tls::TlsConnection::new(options).await.map(erase_conn_type)
+            }
+        }
+    }
+
+    // this is when we need to connect to one broker
+    pub async fn from_url<T: BrokerConnection>(&self, url: String) -> Result<T> {
+        match self.0 {
+            ConnectionParamsKind::TcpParams(bootstrap_addrs) => {
+                tcp::TcpConnection::new(vec![url]).await
+            }
+            ConnectionParamsKind::TlsParams(options) => {
+                let cafile = options.cafile;
+
+                let single_connection_options = options
+                    .broker_options
+                    .into_iter()
+                    .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url);
+                match single_connection_options {
+                    Some(single_connection_options) => {
+                        let options = ConnectionOptions {
+                            broker_options: vec![single_connection_options],
+                            cafile,
+                        };
+
+                        tls::TlsConnection::new(options).await
+                    }
+                    None => Err(Error::MissingBrokerConfigOptions),
+                }
+            }
         }
     }
 }

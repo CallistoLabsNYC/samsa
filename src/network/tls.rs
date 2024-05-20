@@ -41,6 +41,7 @@ pub struct TlsConnection {
     stream: Arc<Mutex<TlsStream<TcpStream>>>,
 }
 
+#[derive(Clone, Debug)]
 pub struct ConnectionOptions {
     pub broker_options: Vec<TlsBrokerOptions>,
     pub cafile: Option<PathBuf>,

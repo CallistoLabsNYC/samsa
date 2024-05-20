@@ -23,7 +23,7 @@ const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
-    pub connection_params: ConnectionParams<T>,
+    pub connection_params: ConnectionParams,
     pub coordinator_conn: T,
     pub correlation_id: i32,
     pub client_id: String,
@@ -191,7 +191,7 @@ impl<T: BrokerConnection + Debug + Copy> ConsumerGroup<T> {
                             acc
                         });
 
-                let consumer = ConsumerBuilder::new(self.connection_params, assigned_topic_partitions)
+                let consumer = ConsumerBuilder::new(self.connection_params.clone(), assigned_topic_partitions)
                     .await?
                     .seek_to_group(self.coordinator_conn, &self.group_id)
                     .await?
