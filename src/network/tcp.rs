@@ -10,7 +10,6 @@ use crate::{
     error::{Error, Result},
 };
 
-
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
 /// This is designed to be held by a metadata structure which will
