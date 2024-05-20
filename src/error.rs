@@ -29,7 +29,8 @@ pub enum Error {
     AssignmentStrategyNotSupported(String),
     LockError(String),
     NotFound,
-    MissingBrokerConfigOptions
+    MissingBrokerConfigOptions,
+    IncorrectConnectionUsage
 }
 
 impl fmt::Display for Error {

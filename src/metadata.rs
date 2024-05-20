@@ -88,7 +88,7 @@ impl<'a, T: BrokerConnection + Debug + Copy> ClusterMetadata<T> {
             set.spawn(async move {
                 let id = broker.node_id;
                 let addr = broker.addr()?;
-                let conn = connection_params.init().await?;
+                let conn = connection_params.from_url(addr).await?;
                 Ok::<(i32, dyn BrokerConnection), Error>((id, conn))
             });
         }

@@ -101,7 +101,7 @@ impl<'a> ConsumerGroupBuilder {
         self
     }
 
-    pub async fn build<T: BrokerConnection>(self) -> Result<ConsumerGroup<T>> {
+    pub async fn build<T>(self) -> Result<ConsumerGroup<T>> {
         let conn = self.connection_params.init::<T>().await?;
         let coordinator =
             find_coordinator(conn, self.correlation_id, &self.client_id, &self.group_id).await?;

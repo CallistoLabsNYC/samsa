@@ -48,7 +48,9 @@ pub mod tls;
 pub trait BrokerConnection {
     async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()>;
     async fn receive_response(&mut self) -> Result<BytesMut>;
+    async fn new(p: ConnectionParamsKind) -> Result<impl BrokerConnection>;
 }
+
 
 #[derive(Clone, Debug)]
 pub enum ConnectionParamsKind {
@@ -59,10 +61,6 @@ pub enum ConnectionParamsKind {
 #[derive(Clone, Debug)]
 pub struct ConnectionParams(ConnectionParamsKind);
 
-pub fn erase_conn_type(conn: impl BrokerConnection) -> Box<dyn BrokerConnection> {
-    Box::new(conn)
-}
-
 impl ConnectionParams {
     // this is when we need to bootstrap
     pub async fn init<T: BrokerConnection>(&self) -> Result<T> {
@@ -70,10 +68,9 @@ impl ConnectionParams {
             ConnectionParamsKind::TcpParams(bootstrap_addrs) => {
                 tcp::TcpConnection::new(bootstrap_addrs)
                     .await
-                    .map(erase_conn_type)
             }
             ConnectionParamsKind::TlsParams(options) => {
-                tls::TlsConnection::new(options).await.map(erase_conn_type)
+                tls::TlsConnection::new(options).await
             }
         }
     }
