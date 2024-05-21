@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use samsa::prelude::{ConnectionParams, ConnectionParamsKind, ConsumerGroupBuilder, TcpConnection, TopicPartitionsBuilder};
+use samsa::prelude::{
+    ConnectionParams, ConnectionParamsKind, ConsumerGroupBuilder, TcpConnection,
+    TopicPartitionsBuilder,
+};
 use tokio_stream::StreamExt;
 
 #[tokio::main]

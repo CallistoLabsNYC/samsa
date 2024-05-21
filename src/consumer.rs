@@ -472,20 +472,20 @@ pub async fn fetch(
 
 // #[cfg(test)]
 // mod test {
-    // use crate::network::{tcp::TcpConnection, BrokerConnection};
+// use crate::network::{tcp::TcpConnection, BrokerConnection};
 
-    // use super::Consumer;
+// use super::Consumer;
 
-    // struct ConsumerWrapper<T: BrokerConnection> {
-    //     consumer: Consumer<T>,
-    // }
+// struct ConsumerWrapper<T: BrokerConnection> {
+//     consumer: Consumer<T>,
+// }
 
-    // #[tokio::test]
-    // async fn it_can_stream_via_ref_to_wrapper() {
-    //     let consumer = Consumer::<TcpConnection> {
-    //         ..Default::default()
-    //     };
-    //     let wrapper = &ConsumerWrapper { consumer };
-    //     let _stream = wrapper.consumer.clone().into_stream();
-    // }
+// #[tokio::test]
+// async fn it_can_stream_via_ref_to_wrapper() {
+//     let consumer = Consumer::<TcpConnection> {
+//         ..Default::default()
+//     };
+//     let wrapper = &ConsumerWrapper { consumer };
+//     let _stream = wrapper.consumer.clone().into_stream();
+// }
 // }

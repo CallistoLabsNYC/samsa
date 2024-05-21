@@ -16,13 +16,7 @@ pub async fn ensure_topic_creation(
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
-    create_topics(
-        conn,
-        correlation_id,
-        client_id,
-        HashMap::from([(topic, 1)]),
-    )
-    .await?;
+    create_topics(conn, correlation_id, client_id, HashMap::from([(topic, 1)])).await?;
 
     Ok(())
 }

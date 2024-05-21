@@ -1,5 +1,5 @@
 use samsa::prelude::{
-    ConnectionParams, ConnectionParamsKind, ConsumerBuilder, TcpConnection, TopicPartitionsBuilder
+    ConnectionParams, ConnectionParamsKind, ConsumerBuilder, TcpConnection, TopicPartitionsBuilder,
 };
 use tokio_stream::StreamExt;
 

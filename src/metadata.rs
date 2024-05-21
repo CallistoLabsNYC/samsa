@@ -81,11 +81,11 @@ impl<'a, T: BrokerConnection + Clone> ClusterMetadata<T> {
         // let mut set = JoinSet::new();
 
         for broker in self.brokers.iter() {
-                let id: i32 = broker.node_id;
-                let addr = broker.addr()?;
-                let url = self.connection_params.from_url(addr)?;
-                let conn = T::new(url).await?;
-                self.broker_connections.insert(id, conn);
+            let id: i32 = broker.node_id;
+            let addr = broker.addr()?;
+            let url = self.connection_params.from_url(addr)?;
+            let conn = T::new(url).await?;
+            self.broker_connections.insert(id, conn);
         }
 
         Ok(())
@@ -212,12 +212,17 @@ mod test {
     use bytes::Bytes;
 
     use super::*;
-    use crate::{error::KafkaCode,network::{tcp::TcpConnection, ConnectionParams,ConnectionParamsKind}};
+    use crate::{
+        error::KafkaCode,
+        network::{tcp::TcpConnection, ConnectionParams, ConnectionParamsKind},
+    };
 
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
-                connection_params: ConnectionParams(ConnectionParamsKind::TcpParams(vec!["localhost:9092".to_owned()])),
+                connection_params: ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+                    "localhost:9092".to_owned(),
+                ])),
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),

@@ -2,19 +2,16 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
-use std::{
-    io,
-    sync::Arc,
-};
+use std::{io, sync::Arc};
 
 use async_trait::async_trait;
 use bytes::BytesMut;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use std::net::ToSocketAddrs;
-use tokio::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
+use tokio::sync::Mutex;
 use tokio_rustls::{client::TlsStream, rustls, TlsConnector};
 // use tracing::instrument;
 
@@ -23,7 +20,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::{ConnectionParams,ConnectionParamsKind, BrokerConnection};
+use super::{BrokerConnection, ConnectionParams, ConnectionParamsKind};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -137,7 +134,6 @@ impl TlsConnection {
         return Err(Error::IoError(ErrorKind::NotFound));
     }
 
-
     /// Serialize a given request and send to Kafka/Redpanda broker.
     ///
     /// The Kafka protocol specifies that all requests will
@@ -192,10 +188,7 @@ impl TlsConnection {
     /// ```
     async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
-        let mut stream = self
-            .stream
-            .lock()
-            .await;
+        let mut stream = self.stream.lock().await;
 
         let length = stream
             .read_u32()
@@ -240,7 +233,7 @@ impl BrokerConnection for TlsConnection {
     async fn new(p: ConnectionParams) -> Result<Self> {
         match p.0 {
             ConnectionParamsKind::TlsParams(p) => Self::new_(p).await,
-            _ => Err(Error::IncorrectConnectionUsage)
+            _ => Err(Error::IncorrectConnectionUsage),
         }
     }
 }

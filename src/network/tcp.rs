@@ -1,17 +1,17 @@
 use std::io::ErrorKind;
 use std::{io, sync::Arc};
 
+use async_trait::async_trait;
 use bytes::{Buf, BytesMut};
 use tokio::net::TcpStream;
 use tracing::instrument;
-use async_trait::async_trait;
 
 use crate::{
     encode::ToByte,
     error::{Error, Result},
 };
 
-use super::{ConnectionParams,ConnectionParamsKind, BrokerConnection};
+use super::{BrokerConnection, ConnectionParams, ConnectionParamsKind};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -193,7 +193,7 @@ impl BrokerConnection for TcpConnection {
     async fn new(p: ConnectionParams) -> Result<Self> {
         match p.0 {
             ConnectionParamsKind::TcpParams(p) => Self::new_(p).await,
-            _ => Err(Error::IncorrectConnectionUsage)
+            _ => Err(Error::IncorrectConnectionUsage),
         }
     }
 }

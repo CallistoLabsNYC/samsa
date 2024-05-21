@@ -30,7 +30,7 @@ pub enum Error {
     LockError(String),
     NotFound,
     MissingBrokerConfigOptions,
-    IncorrectConnectionUsage
+    IncorrectConnectionUsage,
 }
 
 impl fmt::Display for Error {

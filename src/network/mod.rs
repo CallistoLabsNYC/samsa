@@ -36,8 +36,8 @@
 //! disconnected.
 //!
 use crate::prelude::{encode::ToByte, Error, Result};
-use bytes::BytesMut;
 use async_trait::async_trait;
+use bytes::BytesMut;
 
 pub mod tcp;
 pub mod tls;
@@ -46,9 +46,10 @@ pub mod tls;
 pub trait BrokerConnection {
     async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()>;
     async fn receive_response(&mut self) -> Result<BytesMut>;
-    async fn new(p: ConnectionParams) -> Result<Self> where Self: Sized;
+    async fn new(p: ConnectionParams) -> Result<Self>
+    where
+        Self: Sized;
 }
-
 
 #[derive(Clone, Debug)]
 pub enum ConnectionParamsKind {
@@ -57,7 +58,9 @@ pub enum ConnectionParamsKind {
 }
 
 impl Default for ConnectionParamsKind {
-    fn default() -> Self { ConnectionParamsKind::TcpParams(vec!["localhost:9092".to_owned()]) }
+    fn default() -> Self {
+        ConnectionParamsKind::TcpParams(vec!["localhost:9092".to_owned()])
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -67,9 +70,7 @@ impl ConnectionParams {
     // convenience to grab just 1 broker connection
     pub fn from_url(&self, url: String) -> Result<Self> {
         let p = match &self.0 {
-            ConnectionParamsKind::TcpParams(_) => {
-                ConnectionParamsKind::TcpParams(vec![url])
-            }
+            ConnectionParamsKind::TcpParams(_) => ConnectionParamsKind::TcpParams(vec![url]),
             ConnectionParamsKind::TlsParams(options) => {
                 let cafile = options.cafile.clone();
 

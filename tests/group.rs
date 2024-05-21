@@ -1,7 +1,10 @@
 mod testsupport;
 
 use nom::AsBytes;
-use samsa::prelude::{protocol, BrokerConnection, ConnectionParams, ConnectionParamsKind, Error, KafkaCode, TcpConnection, ROUND_ROBIN_PROTOCOL};
+use samsa::prelude::{
+    protocol, BrokerConnection, ConnectionParams, ConnectionParamsKind, Error, KafkaCode,
+    TcpConnection, ROUND_ROBIN_PROTOCOL,
+};
 
 const CLIENT_ID: &str = "group protocol integration test";
 const CORRELATION_ID: i32 = 1;
@@ -15,7 +18,8 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+    let mut conn =
+        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -30,7 +34,11 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
-    let mut coordinator_conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![coordinator_addr]))).await?;
+    let mut coordinator_conn =
+        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+            coordinator_addr,
+        ])))
+        .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -148,7 +156,8 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+    let conn =
+        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -160,7 +169,11 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
-    let coordinator_conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![coordinator_addr]))).await?;
+    let coordinator_conn =
+        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+            coordinator_addr,
+        ])))
+        .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
