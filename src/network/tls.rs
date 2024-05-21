@@ -131,7 +131,7 @@ impl TlsConnection {
         if let Some(e) = propagated_err {
             return Err(e);
         }
-        
+
         Err(Error::IoError(ErrorKind::NotFound))
     }
 
