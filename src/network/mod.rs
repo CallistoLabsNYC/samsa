@@ -76,8 +76,8 @@ impl ConnectionParams {
 
                 let single_connection_options = options
                     .broker_options
-                    .to_vec()
-                    .into_iter()
+                    .iter()
+                    .cloned()
                     .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url);
                 match single_connection_options {
                     Some(single_connection_options) => {

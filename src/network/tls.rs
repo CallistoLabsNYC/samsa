@@ -131,7 +131,8 @@ impl TlsConnection {
         if let Some(e) = propagated_err {
             return Err(e);
         }
-        return Err(Error::IoError(ErrorKind::NotFound));
+        
+        Err(Error::IoError(ErrorKind::NotFound))
     }
 
     /// Serialize a given request and send to Kafka/Redpanda broker.
