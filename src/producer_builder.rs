@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
@@ -50,7 +51,10 @@ pub struct ProducerBuilder<T: BrokerConnection> {
     attributes: Attributes,
 }
 
-impl<'a, T: BrokerConnection + Clone + Send + Sync + 'static> ProducerBuilder<T> {
+impl<'a, T> ProducerBuilder<T>
+where
+    T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
+{
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(connection_params: ConnectionParams, topics: Vec<String>) -> Result<Self> {
         let cluster_metadata =
@@ -174,7 +178,7 @@ fn into_produce_stream(
     }
 }
 
-async fn producer<T: BrokerConnection + Clone + Send + 'static>(
+async fn producer<T: BrokerConnection + Clone + Debug + Send + 'static>(
     stream: impl Stream<Item = Vec<ProduceMessage>> + Send + 'static,
     output_sender: UnboundedSender<Vec<Option<ProduceResponse>>>,
     cluster_metadata: ClusterMetadata<T>,

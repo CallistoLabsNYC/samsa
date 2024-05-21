@@ -1,6 +1,6 @@
 //! Consumer which cooperates with others to consume data.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use bytes::Bytes;
 use nom::AsBytes;
@@ -38,7 +38,7 @@ pub struct ConsumerGroup<T: BrokerConnection> {
     pub fetch_params: FetchParams,
 }
 
-impl<T: BrokerConnection + Clone> ConsumerGroup<T> {
+impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
     pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> {
         async_stream::stream! {
             let coordinator_conn = self.coordinator_conn.clone();

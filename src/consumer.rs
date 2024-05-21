@@ -1,12 +1,12 @@
 //! Client that consumes records from a cluster.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use async_stream::try_stream;
 use bytes::Bytes;
 use nom::AsBytes;
 use tokio_stream::{Stream, StreamExt};
-// use tracing::instrument;
+use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
@@ -164,8 +164,8 @@ pub struct Consumer<T: BrokerConnection> {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a, T: BrokerConnection + Clone + 'a> Consumer<T> {
-    // #[instrument]
+impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
+    #[instrument]
     async fn consume(&self) -> Result<Vec<protocol::FetchResponse>> {
         // TODO: Push this into the metadata
         let brokers_and_their_topic_partitions = self
@@ -289,7 +289,7 @@ impl<'a, T: BrokerConnection + Clone + 'a> Consumer<T> {
     /// To learn more about offset committing, see the protocol module.
     pub fn into_autocommit_stream(
         self,
-        coordinator_conn: impl BrokerConnection + Clone + 'a,
+        coordinator_conn: impl BrokerConnection + Clone + Debug + 'a,
         group_id: &'a str,
         generation_id: i32,
         member_id: Bytes,
@@ -337,13 +337,13 @@ pub fn into_flat_stream(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::commit_offset
-// #[instrument(level = "debug")]
+#[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn commit_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    mut coordinator_conn: impl BrokerConnection,
+    mut coordinator_conn: impl BrokerConnection + Debug,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -398,7 +398,7 @@ async fn commit_offset_wrapper(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: impl BrokerConnection,
+    coordinator_conn: impl BrokerConnection + Debug,
     generation_id: i32,
     member_id: Bytes,
     offsets: PartitionOffsets,
@@ -423,10 +423,10 @@ async fn commit_offset_wrapper(
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::fetch
-// #[instrument(level = "debug")]
+#[instrument(level = "debug")]
 #[allow(clippy::too_many_arguments)]
 pub async fn fetch(
-    mut broker_conn: impl BrokerConnection,
+    mut broker_conn: impl BrokerConnection + Debug,
     correlation_id: i32,
     client_id: &str,
     max_wait_ms: i32,

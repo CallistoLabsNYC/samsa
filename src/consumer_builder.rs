@@ -9,6 +9,7 @@ use crate::{
 };
 use nom::AsBytes;
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 /// Configure a [`Consumer`].
 ///
@@ -49,7 +50,7 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a, T: BrokerConnection + Clone> ConsumerBuilder<T> {
+impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
         connection_params: ConnectionParams,

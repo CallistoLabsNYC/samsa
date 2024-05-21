@@ -1,6 +1,6 @@
 //! Client that sends records to a cluster.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use bytes::Bytes;
 use tokio::{
@@ -101,7 +101,7 @@ impl Producer {
 
 // vector for the results from each broker
 #[instrument(skip(messages, produce_params, cluster_metadata))]
-pub(crate) async fn flush_producer<T: BrokerConnection + Clone + Send + 'static>(
+pub(crate) async fn flush_producer<T: BrokerConnection + Clone + Debug + Send + 'static>(
     cluster_metadata: &ClusterMetadata<T>,
     produce_params: &ProduceParams,
     messages: Vec<ProduceMessage>,
