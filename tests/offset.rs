@@ -1,10 +1,7 @@
 mod testsupport;
 
 use nom::AsBytes;
-use samsa::prelude::{
-    protocol, BrokerConnection, Error, KafkaCode,
-    TcpConnection,
-};
+use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "offset protocol integration test";
@@ -19,8 +16,7 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut conn =
-        TcpConnection::new(brokers).await?;
+    let mut conn = TcpConnection::new(brokers).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -35,11 +31,7 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
-    let mut coordinator_conn =
-        TcpConnection::new(vec![
-            coordinator_addr,
-        ])
-        .await?;
+    let mut coordinator_conn = TcpConnection::new(vec![coordinator_addr]).await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -105,8 +97,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     if skip {
         return Ok(());
     }
-    let conn =
-        TcpConnection::new(brokers).await?;
+    let conn = TcpConnection::new(brokers).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -118,11 +109,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
-    let coordinator_conn =
-        TcpConnection::new(vec![
-            coordinator_addr,
-        ])
-        .await?;
+    let coordinator_conn = TcpConnection::new(vec![coordinator_addr]).await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;

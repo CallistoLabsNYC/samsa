@@ -1,9 +1,6 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
-use samsa::prelude::{
-    Compression, ProduceMessage, ProducerBuilder,
-    TcpConnection,
-};
+use samsa::prelude::{Compression, ProduceMessage, ProducerBuilder, TcpConnection};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {

@@ -1,7 +1,8 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
 use samsa::prelude::{
-    Compression, ProduceMessage, ProducerBuilder, TlsBrokerOptions, TlsConnection, TlsConnectionOptions
+    Compression, ProduceMessage, ProducerBuilder, TlsBrokerOptions, TlsConnection,
+    TlsConnectionOptions,
 };
 
 #[tokio::main]
@@ -48,20 +49,18 @@ async fn main() -> Result<(), ()> {
     );
 
     tracing::info!("Connecting to cluster");
-    let output_stream = ProducerBuilder::<TlsConnection>::new(
-        options,
-        vec![topic_name.to_string()],
-    )
-    .await
-    .map_err(|err| tracing::error!("{:?}", err))?
-    .compression(Compression::Gzip)
-    .clone()
-    .build_from_stream(tokio_stream::StreamExt::chunks_timeout(
-        stream,
-        200,
-        std::time::Duration::from_secs(3),
-    ))
-    .await;
+    let output_stream =
+        ProducerBuilder::<TlsConnection>::new(options, vec![topic_name.to_string()])
+            .await
+            .map_err(|err| tracing::error!("{:?}", err))?
+            .compression(Compression::Gzip)
+            .clone()
+            .build_from_stream(tokio_stream::StreamExt::chunks_timeout(
+                stream,
+                200,
+                std::time::Duration::from_secs(3),
+            ))
+            .await;
 
     tokio::pin!(output_stream);
     while let Some(message) = output_stream.next().await {

@@ -114,7 +114,8 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
         })?;
         let port = coordinator.port;
         let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn = T::from_addr(self.connection_params.clone(), coordinator_addr).await?;
+        let coordinator_conn =
+            T::from_addr(self.connection_params.clone(), coordinator_addr).await?;
 
         Ok(ConsumerGroup {
             connection_params: self.connection_params,

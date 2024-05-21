@@ -1,6 +1,4 @@
-use samsa::prelude::{
-    ConsumerBuilder, TcpConnection, TopicPartitionsBuilder,
-};
+use samsa::prelude::{ConsumerBuilder, TcpConnection, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]

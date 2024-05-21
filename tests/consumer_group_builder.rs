@@ -1,9 +1,6 @@
 mod testsupport;
 
-use samsa::prelude::{
-    ConsumerGroupBuilder, Error, TcpConnection,
-    TopicPartitions,
-};
+use samsa::prelude::{ConsumerGroupBuilder, Error, TcpConnection, TopicPartitions};
 
 #[tokio::test]
 async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {

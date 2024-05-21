@@ -213,17 +213,12 @@ mod test {
     use bytes::Bytes;
 
     use super::*;
-    use crate::{
-        error::KafkaCode,
-        network::tcp::TcpConnection,
-    };
+    use crate::{error::KafkaCode, network::tcp::TcpConnection};
 
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
-                connection_params: vec![
-                    "localhost:9092".to_owned(),
-                ],
+                connection_params: vec!["localhost:9092".to_owned()],
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),

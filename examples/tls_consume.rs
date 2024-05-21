@@ -1,7 +1,7 @@
-use tokio_stream::StreamExt;
 use samsa::prelude::{
-    ConsumerBuilder, TlsBrokerOptions, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder
+    ConsumerBuilder, TlsBrokerOptions, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
 };
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -40,7 +40,8 @@ async fn main() -> Result<(), ()> {
     )
     .await
     .unwrap()
-    .build().into_flat_stream();
+    .build()
+    .into_flat_stream();
 
     tokio::pin!(s);
 

@@ -1,9 +1,6 @@
 mod testsupport;
 
-use samsa::prelude::{
-    self, protocol, BrokerConnection, Error, KafkaCode,
-    TcpConnection,
-};
+use samsa::prelude::{self, protocol, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "create delete topic integration test";
@@ -15,8 +12,7 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut conn =
-        TcpConnection::new(brokers).await?;
+    let mut conn = TcpConnection::new(brokers).await?;
 
     //
     // Create topic
@@ -56,8 +52,7 @@ async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Erro
     if skip {
         return Ok(());
     }
-    let conn =
-        TcpConnection::new(brokers).await?;
+    let conn = TcpConnection::new(brokers).await?;
 
     //
     // Create topic
