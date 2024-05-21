@@ -11,7 +11,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::{BrokerConnection, ConnectionParams, ConnectionParamsKind};
+use super::BrokerConnection;
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -182,6 +182,8 @@ impl TcpConnection {
 
 #[async_trait]
 impl BrokerConnection for TcpConnection {
+    type ConnConfig = Vec<String>;
+
     async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
         self.send_request_(req).await
     }
@@ -190,10 +192,11 @@ impl BrokerConnection for TcpConnection {
         self.receive_response_().await
     }
 
-    async fn new(p: ConnectionParams) -> Result<Self> {
-        match p.0 {
-            ConnectionParamsKind::TcpParams(p) => Self::new_(p).await,
-            _ => Err(Error::IncorrectConnectionUsage),
-        }
+    async fn new(p: Self::ConnConfig) -> Result<Self> {
+        Self::new_(p).await
+    }
+
+    async fn from_addr(_: Self::ConnConfig, addr: String) -> Result<Self> {
+        Self::new_(vec![addr]).await
     }
 }

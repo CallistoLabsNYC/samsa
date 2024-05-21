@@ -11,7 +11,7 @@ use crate::{
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
     error::{Error, KafkaCode, Result},
-    network::{BrokerConnection, ConnectionParams},
+    network::BrokerConnection,
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
@@ -23,7 +23,7 @@ const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
-    pub connection_params: ConnectionParams,
+    pub connection_params: T::ConnConfig,
     pub coordinator_conn: T,
     pub correlation_id: i32,
     pub client_id: String,

@@ -1,7 +1,7 @@
 mod testsupport;
 
 use samsa::prelude::{
-    self, protocol, BrokerConnection, ConnectionParams, ConnectionParamsKind, Error, KafkaCode,
+    self, protocol, BrokerConnection, Error, KafkaCode,
     TcpConnection,
 };
 use std::collections::HashMap;
@@ -16,7 +16,7 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
         return Ok(());
     }
     let mut conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+        TcpConnection::new(brokers).await?;
 
     //
     // Create topic
@@ -57,7 +57,7 @@ async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Erro
         return Ok(());
     }
     let conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+        TcpConnection::new(brokers).await?;
 
     //
     // Create topic

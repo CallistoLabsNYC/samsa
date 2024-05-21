@@ -6,13 +6,13 @@ use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
-    network::{BrokerConnection, ConnectionParams},
+    network::BrokerConnection,
     protocol::{self, metadata::response::*},
 };
 
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
-    pub connection_params: ConnectionParams,
+    pub connection_params: T::ConnConfig,
     pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
@@ -24,7 +24,7 @@ type TopicPartition = HashMap<String, Vec<i32>>;
 
 impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     pub async fn new(
-        connection_params: ConnectionParams,
+        connection_params: T::ConnConfig,
         client_id: String,
         topics: Vec<String>,
     ) -> Result<ClusterMetadata<T>> {
@@ -85,8 +85,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         for broker in self.brokers.iter() {
             let id: i32 = broker.node_id;
             let addr = broker.addr()?;
-            let url = self.connection_params.from_url(addr)?;
-            let conn = T::new(url).await?;
+            let conn = T::from_addr(self.connection_params.clone(), addr).await?;
             self.broker_connections.insert(id, conn);
         }
 
@@ -216,15 +215,15 @@ mod test {
     use super::*;
     use crate::{
         error::KafkaCode,
-        network::{tcp::TcpConnection, ConnectionParams, ConnectionParamsKind},
+        network::tcp::TcpConnection,
     };
 
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
-                connection_params: ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+                connection_params: vec![
                     "localhost:9092".to_owned(),
-                ])),
+                ],
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),

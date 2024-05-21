@@ -2,7 +2,7 @@ mod testsupport;
 
 use nom::AsBytes;
 use samsa::prelude::{
-    protocol, BrokerConnection, ConnectionParams, ConnectionParamsKind, Error, KafkaCode,
+    protocol, BrokerConnection, Error, KafkaCode,
     TcpConnection,
 };
 use std::collections::HashMap;
@@ -20,7 +20,7 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
         return Ok(());
     }
     let mut conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+        TcpConnection::new(brokers).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -36,9 +36,9 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
     let mut coordinator_conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+        TcpConnection::new(vec![
             coordinator_addr,
-        ])))
+        ])
         .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
@@ -106,7 +106,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
         return Ok(());
     }
     let conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(brokers))).await?;
+        TcpConnection::new(brokers).await?;
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -119,9 +119,9 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     let port = coordinator_res.port;
     let coordinator_addr = format!("{}:{}", host, port);
     let coordinator_conn =
-        TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(vec![
+        TcpConnection::new(vec![
             coordinator_addr,
-        ])))
+        ])
         .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator

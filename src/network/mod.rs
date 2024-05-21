@@ -35,7 +35,9 @@
 //! request that exceeds this limit will result in the socket being
 //! disconnected.
 //!
-use crate::prelude::{encode::ToByte, Error, Result};
+use std::fmt::Debug;
+
+use crate::prelude::{encode::ToByte, Result};
 use async_trait::async_trait;
 use bytes::BytesMut;
 
@@ -44,55 +46,14 @@ pub mod tls;
 
 #[async_trait]
 pub trait BrokerConnection {
+    type ConnConfig: Clone + Debug + Send + Sync;
+
     async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()>;
     async fn receive_response(&mut self) -> Result<BytesMut>;
-    async fn new(p: ConnectionParams) -> Result<Self>
+    async fn new(p: Self::ConnConfig) -> Result<Self>
     where
         Self: Sized;
-}
-
-#[derive(Clone, Debug)]
-pub enum ConnectionParamsKind {
-    TcpParams(Vec<String>),
-    TlsParams(tls::TlsConnectionOptions),
-}
-
-impl Default for ConnectionParamsKind {
-    fn default() -> Self {
-        ConnectionParamsKind::TcpParams(vec!["localhost:9092".to_owned()])
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct ConnectionParams(pub ConnectionParamsKind);
-
-impl ConnectionParams {
-    // convenience to grab just 1 broker connection
-    pub fn from_url(&self, url: String) -> Result<Self> {
-        let p = match &self.0 {
-            ConnectionParamsKind::TcpParams(_) => ConnectionParamsKind::TcpParams(vec![url]),
-            ConnectionParamsKind::TlsParams(options) => {
-                let cafile = options.cafile.clone();
-
-                let single_connection_options = options
-                    .broker_options
-                    .iter()
-                    .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url)
-                    .cloned();
-                match single_connection_options {
-                    Some(single_connection_options) => {
-                        let options = tls::TlsConnectionOptions {
-                            broker_options: vec![single_connection_options],
-                            cafile,
-                        };
-
-                        ConnectionParamsKind::TlsParams(options)
-                    }
-                    None => return Err(Error::MissingBrokerConfigOptions),
-                }
-            }
-        };
-
-        Ok(ConnectionParams(p))
-    }
+    async fn from_addr(p: Self::ConnConfig, addr: String) -> Result<Self>
+    where
+        Self: Sized;
 }

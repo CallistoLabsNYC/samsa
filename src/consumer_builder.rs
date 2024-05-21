@@ -1,6 +1,5 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
 use crate::metadata::ClusterMetadata;
-use crate::network::ConnectionParams;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
@@ -53,7 +52,7 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
 impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        connection_params: ConnectionParams,
+        connection_params: T::ConnConfig,
         assigned_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
         let topics = assigned_topic_partitions

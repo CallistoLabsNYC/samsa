@@ -2,7 +2,7 @@ mod testsupport;
 
 use samsa::prelude::{
     protocol::{self, produce::request::Attributes},
-    BrokerConnection, ConnectionParams, ConnectionParamsKind, Error, KafkaCode, TcpConnection,
+    BrokerConnection, Error, KafkaCode, TcpConnection,
 };
 use std::collections::HashMap;
 
@@ -16,14 +16,11 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(
-        brokers.clone(),
-    )))
-    .await?;
+    let conn = TcpConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
-        ConnectionParams(ConnectionParamsKind::TcpParams(brokers.clone())),
+        brokers.clone(),
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )
@@ -103,14 +100,11 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(ConnectionParams(ConnectionParamsKind::TcpParams(
-        brokers.clone(),
-    )))
-    .await?;
+    let conn = TcpConnection::new(brokers.clone()).await?;
     testsupport::ensure_topic_creation(conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
-        ConnectionParams(ConnectionParamsKind::TcpParams(brokers.clone())),
+        brokers.clone(),
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )

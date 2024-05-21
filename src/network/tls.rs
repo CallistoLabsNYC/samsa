@@ -20,7 +20,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::{BrokerConnection, ConnectionParams, ConnectionParamsKind};
+use super::BrokerConnection;
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -223,6 +223,8 @@ fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
 
 #[async_trait]
 impl BrokerConnection for TlsConnection {
+    type ConnConfig = TlsConnectionOptions;
+
     async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
         self.send_request_(req).await
     }
@@ -231,10 +233,28 @@ impl BrokerConnection for TlsConnection {
         self.receive_response_().await
     }
 
-    async fn new(p: ConnectionParams) -> Result<Self> {
-        match p.0 {
-            ConnectionParamsKind::TlsParams(p) => Self::new_(p).await,
-            _ => Err(Error::IncorrectConnectionUsage),
+    async fn new(p: Self::ConnConfig) -> Result<Self> {
+        Self::new_(p).await
+    }
+
+    async fn from_addr(options: Self::ConnConfig, addr: String) -> Result<Self> {
+        let cafile = options.cafile.clone();
+
+        let single_connection_options = options
+            .broker_options
+            .iter()
+            .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == addr)
+            .cloned();
+        match single_connection_options {
+            Some(single_connection_options) => {
+                let options = TlsConnectionOptions {
+                    broker_options: vec![single_connection_options],
+                    cafile,
+                };
+
+                Self::new_(options).await
+            }
+            None => return Err(Error::MissingBrokerConfigOptions),
         }
     }
 }

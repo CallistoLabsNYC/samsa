@@ -5,7 +5,7 @@ use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::{BrokerConnection, ConnectionParams},
+    network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -14,8 +14,8 @@ const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
 const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
 #[derive(Clone)]
-pub struct ConsumerGroupBuilder {
-    pub connection_params: ConnectionParams,
+pub struct ConsumerGroupBuilder<T: BrokerConnection> {
+    pub connection_params: T::ConnConfig,
     pub correlation_id: i32,
     pub client_id: String,
     pub session_timeout_ms: i32,
@@ -26,10 +26,10 @@ pub struct ConsumerGroupBuilder {
     pub fetch_params: FetchParams,
 }
 
-impl<'a> ConsumerGroupBuilder {
+impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
     /// Start a consumer group builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        connection_params: ConnectionParams,
+        connection_params: T::ConnConfig,
         group_id: String,
         group_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
@@ -99,7 +99,7 @@ impl<'a> ConsumerGroupBuilder {
         self
     }
 
-    pub async fn build<T: BrokerConnection>(self) -> Result<ConsumerGroup<T>> {
+    pub async fn build(self) -> Result<ConsumerGroup<T>> {
         let conn = T::new(self.connection_params.clone()).await?;
         let coordinator =
             find_coordinator(conn, self.correlation_id, &self.client_id, &self.group_id).await?;
@@ -114,7 +114,7 @@ impl<'a> ConsumerGroupBuilder {
         })?;
         let port = coordinator.port;
         let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn = T::new(self.connection_params.from_url(coordinator_addr)?).await?;
+        let coordinator_conn = T::from_addr(self.connection_params.clone(), coordinator_addr).await?;
 
         Ok(ConsumerGroup {
             connection_params: self.connection_params,
