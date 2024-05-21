@@ -54,7 +54,7 @@ pub trait BrokerConnection {
 #[derive(Clone, Debug)]
 pub enum ConnectionParamsKind {
     TcpParams(Vec<String>),
-    TlsParams(tls::ConnectionOptions),
+    TlsParams(tls::TlsConnectionOptions),
 }
 
 impl Default for ConnectionParamsKind {
@@ -77,11 +77,11 @@ impl ConnectionParams {
                 let single_connection_options = options
                     .broker_options
                     .iter()
-                    .cloned()
-                    .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url);
+                    .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == url)
+                    .cloned();
                 match single_connection_options {
                     Some(single_connection_options) => {
-                        let options = tls::ConnectionOptions {
+                        let options = tls::TlsConnectionOptions {
                             broker_options: vec![single_connection_options],
                             cafile,
                         };

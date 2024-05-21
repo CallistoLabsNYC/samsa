@@ -41,7 +41,7 @@ pub struct TlsConnection {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConnectionOptions {
+pub struct TlsConnectionOptions {
     pub broker_options: Vec<TlsBrokerOptions>,
     pub cafile: Option<PathBuf>,
 }
@@ -63,7 +63,7 @@ impl TlsConnection {
     /// let addrs = vec!["localhost:9092"];
     /// let conn = samsa::prelude::BrokerConnection(addrs).await?;
     /// ```
-    pub async fn new_(options: ConnectionOptions) -> Result<Self> {
+    pub async fn new_(options: TlsConnectionOptions) -> Result<Self> {
         tracing::debug!(
             "Starting connection to {} brokers",
             options.broker_options.len()
