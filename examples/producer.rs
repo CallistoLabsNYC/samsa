@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
-use samsa::prelude::{Compression, ProduceMessage, ProducerBuilder};
+use samsa::prelude::{Compression, ConnectionParams, ConnectionParamsKind, ProduceMessage, ProducerBuilder, TcpConnection};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -36,7 +36,7 @@ async fn main() -> Result<(), ()> {
     );
 
     tracing::info!("Connecting to cluster");
-    let output_stream = ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
+    let output_stream = ProducerBuilder::<TcpConnection>::new(ConnectionParams(ConnectionParamsKind::TcpParams(bootstrap_addrs)), vec![topic_name.to_string()])
         .await
         .map_err(|err| tracing::error!("{:?}", err))?
         .compression(Compression::Gzip)

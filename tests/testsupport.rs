@@ -11,13 +11,13 @@ const KAFKA_TOPIC_2: &str = "KAFKA_TOPIC_2";
 
 #[allow(dead_code)]
 pub async fn ensure_topic_creation(
-    conn: &BrokerConnection,
+    conn: impl BrokerConnection,
     topic: &str,
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
     create_topics(
-        conn.clone(),
+        conn,
         correlation_id,
         client_id,
         HashMap::from([(topic, 1)]),

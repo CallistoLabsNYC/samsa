@@ -1,4 +1,6 @@
-use samsa::prelude::{ConsumerBuilder, TopicPartitionsBuilder};
+use samsa::prelude::{
+    ConnectionParams, ConnectionParamsKind, ConsumerBuilder, TcpConnection, TopicPartitionsBuilder
+};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -22,8 +24,8 @@ async fn main() -> Result<(), ()> {
 
     let src_topic = "my-tester".to_string();
 
-    let stream = ConsumerBuilder::new(
-        bootstrap_addrs,
+    let stream = ConsumerBuilder::<TcpConnection>::new(
+        ConnectionParams(ConnectionParamsKind::TcpParams(bootstrap_addrs)),
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0, 1, 2, 3])
             .build(),

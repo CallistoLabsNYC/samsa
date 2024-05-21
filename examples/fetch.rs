@@ -21,7 +21,7 @@ async fn main() -> Result<(), ()> {
 
     let src_topic = "my-topic".to_string();
 
-    let conn = samsa::prelude::BrokerConnection::new(bootstrap_addrs)
+    let conn = samsa::prelude::TcpConnection::new_(bootstrap_addrs)
         .await
         .map_err(|err| tracing::error!("{:?}", err))?;
     let correlation_id = 1;

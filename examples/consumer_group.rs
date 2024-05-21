@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
+use samsa::prelude::{ConnectionParams, ConnectionParamsKind, ConsumerGroupBuilder, TcpConnection, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> Result<(), ()> {
     let src_topic = "my-topic".to_string();
 
     let stream = ConsumerGroupBuilder::new(
-        bootstrap_addrs,
+        ConnectionParams(ConnectionParamsKind::TcpParams(bootstrap_addrs)),
         group_id,
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0, 1, 2, 3])
@@ -34,7 +34,7 @@ async fn main() -> Result<(), ()> {
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
-    .build()
+    .build::<TcpConnection>()
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
     .into_stream()

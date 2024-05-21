@@ -4,11 +4,14 @@ use std::{io, sync::Arc};
 use bytes::{Buf, BytesMut};
 use tokio::net::TcpStream;
 use tracing::instrument;
+use async_trait::async_trait;
 
 use crate::{
     encode::ToByte,
     error::{Error, Result},
 };
+
+use super::{ConnectionParams,ConnectionParamsKind, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -37,7 +40,7 @@ impl TcpConnection {
     /// let bootstrap_addrs = vec!["localhost:9092"];
     /// let conn = samsa::prelude::TcpConnection(bootstrap_addrs).await?;
     /// ```
-    pub async fn new(bootstrap_addrs: Vec<String>) -> Result<Self> {
+    pub async fn new_(bootstrap_addrs: Vec<String>) -> Result<Self> {
         tracing::debug!("Connecting to {}", bootstrap_addrs.join(","));
         let mut propagated_err: Option<Error> = None;
         let mut stream: Option<TcpStream> = None;
@@ -136,7 +139,7 @@ impl TcpConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    pub async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
+    pub async fn send_request_<R: ToByte + Send>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -167,12 +170,30 @@ impl TcpConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    pub async fn receive_response(&mut self) -> Result<BytesMut> {
+    pub async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
 
         let length = size.get_u32();
         tracing::trace!("Reading {} bytes", length);
         self.read(length as usize).await
+    }
+}
+
+#[async_trait]
+impl BrokerConnection for TcpConnection {
+    async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
+        self.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.receive_response_().await
+    }
+
+    async fn new(p: ConnectionParams) -> Result<Self> {
+        match p.0 {
+            ConnectionParamsKind::TcpParams(p) => Self::new_(p).await,
+            _ => Err(Error::IncorrectConnectionUsage)
+        }
     }
 }

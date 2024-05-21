@@ -4,13 +4,15 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::{
     io,
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
+use async_trait::async_trait;
 use bytes::BytesMut;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use std::net::ToSocketAddrs;
+use tokio::sync::Mutex;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio_rustls::{client::TlsStream, rustls, TlsConnector};
@@ -20,6 +22,8 @@ use crate::{
     encode::ToByte,
     error::{Error, Result},
 };
+
+use super::{ConnectionParams,ConnectionParamsKind, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -62,7 +66,7 @@ impl TlsConnection {
     /// let addrs = vec!["localhost:9092"];
     /// let conn = samsa::prelude::BrokerConnection(addrs).await?;
     /// ```
-    pub async fn new(options: ConnectionOptions) -> Result<Self> {
+    pub async fn new_(options: ConnectionOptions) -> Result<Self> {
         tracing::debug!(
             "Starting connection to {} brokers",
             options.broker_options.len()
@@ -150,7 +154,7 @@ impl TlsConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    async fn send_request<R: ToByte>(&mut self, req: &R) -> Result<()> {
+    async fn send_request_<R: ToByte + Send>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -164,7 +168,7 @@ impl TlsConnection {
         tracing::trace!("Sending bytes {}", buffer.len());
         self.stream
             .lock()
-            .map_err(|_| Error::IoError(ErrorKind::Other))?
+            .await
             .write_all(&buffer)
             .await
             .map_err(|e| Error::IoError(e.kind()))?;
@@ -186,12 +190,12 @@ impl TlsConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    async fn receive_response(&mut self) -> Result<BytesMut> {
+    async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut stream = self
             .stream
             .lock()
-            .map_err(|_| Error::IoError(ErrorKind::Other))?;
+            .await;
 
         let length = stream
             .read_u32()
@@ -221,4 +225,22 @@ fn load_keys(path: &Path) -> io::Result<PrivateKeyDer<'static>> {
         .next()
         .unwrap()
         .map(Into::into)
+}
+
+#[async_trait]
+impl BrokerConnection for TlsConnection {
+    async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
+        self.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.receive_response_().await
+    }
+
+    async fn new(p: ConnectionParams) -> Result<Self> {
+        match p.0 {
+            ConnectionParamsKind::TlsParams(p) => Self::new_(p).await,
+            _ => Err(Error::IncorrectConnectionUsage)
+        }
+    }
 }

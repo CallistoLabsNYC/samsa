@@ -11,7 +11,7 @@ use crate::{
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::{BrokerConnection, ConnectionParams},
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
@@ -22,9 +22,9 @@ use crate::{
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
 #[derive(Clone, Debug)]
-pub struct ConsumerGroup {
-    pub bootstrap_addrs: Vec<String>,
-    pub coordinator_conn: BrokerConnection,
+pub struct ConsumerGroup<T: BrokerConnection> {
+    pub connection_params: ConnectionParams,
+    pub coordinator_conn: T,
     pub correlation_id: i32,
     pub client_id: String,
     pub session_timeout_ms: i32,
@@ -38,9 +38,10 @@ pub struct ConsumerGroup {
     pub fetch_params: FetchParams,
 }
 
-impl ConsumerGroup {
+impl<T: BrokerConnection + Clone> ConsumerGroup<T> {
     pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> {
         async_stream::stream! {
+            let coordinator_conn = self.coordinator_conn.clone();
             loop {
                 tracing::info!(
                     "Member {:?} | Joining group {} for generation {}",
@@ -63,7 +64,7 @@ impl ConsumerGroup {
                     .collect();
 
                 let join = join_group(
-                    self.coordinator_conn.clone(),
+                    coordinator_conn.clone(),
                     self.correlation_id,
                     &self.client_id,
                     &self.group_id,
@@ -138,7 +139,7 @@ impl ConsumerGroup {
                     assignments
                 );
                 let sync = sync_group(
-                    self.coordinator_conn.clone(),
+                    coordinator_conn.clone(),
                     self.correlation_id,
                     &self.client_id,
                     &self.group_id,
@@ -191,13 +192,13 @@ impl ConsumerGroup {
                             acc
                         });
 
-                let consumer = ConsumerBuilder::new(self.bootstrap_addrs.clone(), assigned_topic_partitions)
+                let consumer = ConsumerBuilder::<T>::new(self.connection_params.clone(), assigned_topic_partitions)
                     .await?
-                    .seek_to_group(self.coordinator_conn.clone(), &self.group_id)
+                    .seek_to_group(coordinator_conn.clone(), &self.group_id)
                     .await?
                     .build()
                     .into_autocommit_stream(
-                        self.coordinator_conn.clone(),
+                        coordinator_conn.clone(),
                         &self.group_id,
                         self.generation_id,
                         self.member_id.clone(),
@@ -218,7 +219,7 @@ impl ConsumerGroup {
 
                     tracing::info!("Member {:?} | Heartbeat", self.member_id);
                     let hb = heartbeat(
-                        self.coordinator_conn.clone(),
+                        coordinator_conn.clone(),
                         self.correlation_id,
                         &self.client_id,
                         &self.group_id,
@@ -251,7 +252,7 @@ impl ConsumerGroup {
 ///
 /// [protocol spec]: protocol::sync_group
 pub async fn sync_group<'a>(
-    mut conn: BrokerConnection,
+    mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -281,7 +282,7 @@ pub async fn sync_group<'a>(
 /// [protocol spec]: protocol::join_group
 #[allow(clippy::too_many_arguments)]
 pub async fn join_group<'a>(
-    mut conn: BrokerConnection,
+    mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -313,7 +314,7 @@ pub async fn join_group<'a>(
 ///
 /// [protocol spec]: protocol::heartbeat
 pub async fn heartbeat(
-    mut conn: BrokerConnection,
+    mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
@@ -340,7 +341,7 @@ pub async fn heartbeat(
 ///
 /// [protocol spec]: protocol::leave_group
 pub async fn leave_group(
-    mut conn: BrokerConnection,
+    mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
