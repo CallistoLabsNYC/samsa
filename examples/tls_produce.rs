@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
 use samsa::prelude::{
-    Compression, ProduceMessage, ProducerBuilder, TlsBrokerOptions, TlsConnection,
+    Compression, ProduceMessage, ProducerBuilder, TlsConnection, BrokerAddress,
     TlsConnectionOptions,
 };
 
@@ -9,7 +9,7 @@ use samsa::prelude::{
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -23,18 +23,18 @@ async fn main() -> Result<(), ()> {
         .init();
 
     let options = TlsConnectionOptions {
-        broker_options: vec![TlsBrokerOptions {
-            key: "./etc/redpanda/certs/client.key".into(),
-            cert: "./etc/redpanda/certs/client.crt".into(),
+        broker_options: vec![BrokerAddress {
             host: "piggy.callistolabs.cloud".to_owned(),
             port: 9092,
         }],
-        cafile: Some("./etc/redpanda/certs/root.crt".into()),
+        key: "./etc/redpanda/certs/piggy.key".into(),
+        cert: "./etc/redpanda/certs/piggy_callisto_labs_cloud.crt".into(),
+        cafile: Some("./etc/redpanda/certs/trustedroot.crt".into()),
     };
 
     let topic_name = "my-tester";
 
-    let stream = tokio_stream::StreamExt::throttle(
+    let stream = 
         iter(vec![0].into_iter()).cycle().map(|_| {
             let partition_id = 0;
             ProduceMessage {
@@ -44,9 +44,7 @@ async fn main() -> Result<(), ()> {
                 value: Some(Bytes::from_static(b"Value")),
                 headers: vec![],
             }
-        }),
-        std::time::Duration::from_secs(1),
-    );
+        });
 
     tracing::info!("Connecting to cluster");
     let output_stream =

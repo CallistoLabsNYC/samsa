@@ -20,7 +20,10 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+        host: "127.0.0.1".to_owned(),
+        port: 9092,
+    }];
 
     let group_id = "Squad".to_string();
     let src_topic = "my-topic".to_string();

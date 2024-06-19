@@ -18,7 +18,10 @@ async fn main() -> Result<(), ()> {
         .with_target(false)
         // Build the subscriber
         .init();
-    let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+        host: "127.0.0.1".to_owned(),
+        port: 9092,
+    }];
     let topic_name = "my-tester";
 
     let stream = tokio_stream::StreamExt::throttle(

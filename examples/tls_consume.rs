@@ -1,5 +1,5 @@
 use samsa::prelude::{
-    ConsumerBuilder, TlsBrokerOptions, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
+    ConsumerBuilder, BrokerAddress, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
 };
 use tokio_stream::StreamExt;
 
@@ -7,7 +7,7 @@ use tokio_stream::StreamExt;
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -21,13 +21,13 @@ async fn main() -> Result<(), ()> {
         .init();
 
     let options = TlsConnectionOptions {
-        broker_options: vec![TlsBrokerOptions {
-            key: "./etc/redpanda/certs/client.key".into(),
-            cert: "./etc/redpanda/certs/client.crt".into(),
+        broker_options: vec![BrokerAddress {
             host: "piggy.callistolabs.cloud".to_owned(),
             port: 9092,
         }],
-        cafile: Some("./etc/redpanda/certs/root.crt".into()),
+        key: "./etc/redpanda/certs/piggy.key".into(),
+        cert: "./etc/redpanda/certs/piggy_callisto_labs_cloud.crt".into(),
+        cafile: Some("./etc/redpanda/certs/trustedroot.crt".into()),
     };
 
     let src_topic = "my-tester".to_owned();
@@ -35,7 +35,7 @@ async fn main() -> Result<(), ()> {
     let s = ConsumerBuilder::<TlsConnection>::new(
         options,
         TopicPartitionsBuilder::new()
-            .assign(src_topic, vec![0, 1, 2, 3])
+            .assign(src_topic, vec![0])
             .build(),
     )
     .await

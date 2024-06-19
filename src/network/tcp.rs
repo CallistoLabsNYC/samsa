@@ -1,4 +1,5 @@
 use std::io::ErrorKind;
+use std::net::ToSocketAddrs;
 use std::{io, sync::Arc};
 
 use async_trait::async_trait;
@@ -11,7 +12,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::BrokerConnection;
+use super::{BrokerAddress, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -40,12 +41,25 @@ impl TcpConnection {
     /// let bootstrap_addrs = vec!["localhost:9092"];
     /// let conn = samsa::prelude::TcpConnection(bootstrap_addrs).await?;
     /// ```
-    pub async fn new_(bootstrap_addrs: Vec<String>) -> Result<Self> {
-        tracing::debug!("Connecting to {}", bootstrap_addrs.join(","));
+    pub async fn new_(bootstrap_addrs: Vec<BrokerAddress>) -> Result<Self> {
         let mut propagated_err: Option<Error> = None;
         let mut stream: Option<TcpStream> = None;
         for bootstrap_addr in bootstrap_addrs.iter() {
-            match TcpStream::connect(bootstrap_addr).await {
+            tracing::debug!("Connecting to {:?}", bootstrap_addr);
+            let addr = (bootstrap_addr.host.clone(), bootstrap_addr.port)
+                .to_socket_addrs()
+                .map_err(|err| {
+                    tracing::error!(
+                        "Error could not create address from host {} and port {} {:?}",
+                        bootstrap_addr.host,
+                        bootstrap_addr.port,
+                        err
+                    );
+                    Error::MissingBrokerConfigOptions
+                })?
+                .next()
+                .unwrap();
+            match TcpStream::connect(addr).await {
                 Ok(s) => {
                     stream = Some(s);
                     break;
@@ -182,7 +196,7 @@ impl TcpConnection {
 
 #[async_trait]
 impl BrokerConnection for TcpConnection {
-    type ConnConfig = Vec<String>;
+    type ConnConfig = Vec<BrokerAddress>;
 
     async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
         self.send_request_(req).await
@@ -196,7 +210,7 @@ impl BrokerConnection for TcpConnection {
         Self::new_(p).await
     }
 
-    async fn from_addr(_: Self::ConnConfig, addr: String) -> Result<Self> {
+    async fn from_addr(_: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
         Self::new_(vec![addr]).await
     }
 }

@@ -6,7 +6,7 @@ use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
-    network::BrokerConnection,
+    network::{BrokerAddress, BrokerConnection},
     protocol::{self, metadata::response::*},
 };
 
@@ -199,12 +199,21 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
 }
 
 impl Broker {
-    pub fn addr(&self) -> Result<String> {
+    pub fn addr(&self) -> Result<BrokerAddress> {
         let host = std::str::from_utf8(self.host.as_bytes()).map_err(|err| {
             tracing::error!("Error converting from UTF8 {:?}", err);
             Error::DecodingUtf8Error
         })?;
-        Ok(format!("{}:{}", host, self.port))
+        Ok(BrokerAddress {
+            host: host.to_string(),
+            port: self.port.try_into().map_err(|err| {
+                tracing::error!(
+                    "Error decoding Broker connection port from metadata {:?}",
+                    err
+                );
+                Error::MetadataNeedsSync
+            })?,
+        })
     }
 }
 
@@ -213,12 +222,18 @@ mod test {
     use bytes::Bytes;
 
     use super::*;
-    use crate::{error::KafkaCode, network::tcp::TcpConnection};
+    use crate::{
+        error::KafkaCode,
+        network::{tcp::TcpConnection, BrokerAddress},
+    };
 
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
-                connection_params: vec!["localhost:9092".to_owned()],
+                connection_params: vec![BrokerAddress {
+                    host: "localhost".to_owned(),
+                    port: 9092,
+                }],
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),
@@ -299,7 +314,10 @@ mod test {
             host: Bytes::from("localhost"),
             port: 9093,
         };
-        assert_eq!(broker.addr().unwrap(), String::from("localhost:9093"));
+        assert_eq!(broker.addr().unwrap(), BrokerAddress {
+            host: "localhost".to_owned(),
+            port: 9093,
+        });
     }
 
     #[test]

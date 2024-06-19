@@ -20,7 +20,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::BrokerConnection;
+use super::{BrokerAddress, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
 ///
@@ -42,16 +42,10 @@ pub struct TlsConnection {
 
 #[derive(Clone, Debug)]
 pub struct TlsConnectionOptions {
-    pub broker_options: Vec<TlsBrokerOptions>,
-    pub cafile: Option<PathBuf>,
-}
-
-#[derive(Clone, Debug)]
-pub struct TlsBrokerOptions {
-    pub host: String,
-    pub port: u16,
+    pub broker_options: Vec<BrokerAddress>,
     pub key: PathBuf,
     pub cert: PathBuf,
+    pub cafile: Option<PathBuf>,
 }
 
 impl TlsConnection {
@@ -90,8 +84,8 @@ impl TlsConnection {
                 .unwrap();
 
             tracing::debug!("Connecting to {}", broker_option.host);
-            let certs = load_certs(&broker_option.cert).map_err(|e| Error::IoError(e.kind()))?;
-            let key = load_keys(&broker_option.key).map_err(|e| Error::IoError(e.kind()))?;
+            let certs = load_certs(&options.cert).map_err(|e| Error::IoError(e.kind()))?;
+            let key = load_keys(&options.key).map_err(|e| Error::IoError(e.kind()))?;
             tracing::debug!("keys ready");
 
             match TcpStream::connect(addr).await {
@@ -237,24 +231,16 @@ impl BrokerConnection for TlsConnection {
         Self::new_(p).await
     }
 
-    async fn from_addr(options: Self::ConnConfig, addr: String) -> Result<Self> {
+    async fn from_addr(options: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
         let cafile = options.cafile.clone();
 
-        let single_connection_options = options
-            .broker_options
-            .iter()
-            .find(|b_options| format!("{}:{}", b_options.host, b_options.port) == addr)
-            .cloned();
-        match single_connection_options {
-            Some(single_connection_options) => {
                 let options = TlsConnectionOptions {
-                    broker_options: vec![single_connection_options],
+            broker_options: vec![addr],
+            cert: options.cert,
+            key: options.key,
                     cafile,
                 };
 
                 Self::new_(options).await
-            }
-            None => return Err(Error::MissingBrokerConfigOptions),
-        }
     }
 }

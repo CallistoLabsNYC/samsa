@@ -44,6 +44,12 @@ use bytes::BytesMut;
 pub mod tcp;
 pub mod tls;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct BrokerAddress {
+    pub host: String,
+    pub port: u16,
+}
+
 #[async_trait]
 pub trait BrokerConnection {
     type ConnConfig: Clone + Debug + Send + Sync;
@@ -53,7 +59,7 @@ pub trait BrokerConnection {
     async fn new(p: Self::ConnConfig) -> Result<Self>
     where
         Self: Sized;
-    async fn from_addr(p: Self::ConnConfig, addr: String) -> Result<Self>
+    async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self>
     where
         Self: Sized;
 }

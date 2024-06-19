@@ -5,7 +5,7 @@ use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::{BrokerAddress, BrokerConnection},
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -113,9 +113,18 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
             Error::DecodingUtf8Error
         })?;
         let port = coordinator.port;
-        let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn =
-            T::from_addr(self.connection_params.clone(), coordinator_addr).await?;
+        
+        let coordinator_conn = T::from_addr(
+            self.connection_params.clone(),
+            BrokerAddress {
+                host: host.to_string(),
+                port: port.try_into().map_err(|err| {
+                    tracing::error!("Error decoding Broker connection port from metadata {:?}", err); 
+                    Error::MetadataNeedsSync
+                })?,
+            },
+        )
+        .await?;
 
         Ok(ConsumerGroup {
             connection_params: self.connection_params,
