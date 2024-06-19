@@ -27,10 +27,10 @@ pub fn get_brokers() -> Result<(bool, Vec<BrokerAddress>), Error> {
             .split(',')
             .map(|addr| {
                 let addr = str::to_string(addr);
-                let strings: Vec<&str> = addr.split(":").collect();
+                let strings: Vec<&str> = addr.split(':').collect();
 
                 if strings.len() > 2 {
-                    assert!(false, "The broker connection is not well formed");
+                    panic!("The broker connection is not well formed");
                 }
 
                 let host = strings[0].to_owned();
