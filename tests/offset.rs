@@ -39,7 +39,8 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
             );
             Error::MetadataNeedsSync
         })?,
-    }]).await?;
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -116,7 +117,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
-    
+
     let coordinator_conn = TcpConnection::new(vec![BrokerAddress {
         host: host.to_owned(),
         port: port.try_into().map_err(|err| {
@@ -126,7 +127,8 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
             );
             Error::MetadataNeedsSync
         })?,
-    }]).await?;
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;

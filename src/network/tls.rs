@@ -234,13 +234,13 @@ impl BrokerConnection for TlsConnection {
     async fn from_addr(options: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
         let cafile = options.cafile.clone();
 
-                let options = TlsConnectionOptions {
+        let options = TlsConnectionOptions {
             broker_options: vec![addr],
             cert: options.cert,
             key: options.key,
-                    cafile,
-                };
+            cafile,
+        };
 
-                Self::new_(options).await
+        Self::new_(options).await
     }
 }

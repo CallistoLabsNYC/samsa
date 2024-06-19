@@ -314,10 +314,13 @@ mod test {
             host: Bytes::from("localhost"),
             port: 9093,
         };
-        assert_eq!(broker.addr().unwrap(), BrokerAddress {
-            host: "localhost".to_owned(),
-            port: 9093,
-        });
+        assert_eq!(
+            broker.addr().unwrap(),
+            BrokerAddress {
+                host: "localhost".to_owned(),
+                port: 9093,
+            }
+        );
     }
 
     #[test]

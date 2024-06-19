@@ -23,22 +23,22 @@ pub async fn ensure_topic_creation(
 
 pub fn get_brokers() -> Result<(bool, Vec<BrokerAddress>), Error> {
     let brokers = match env::var(KAFKA_BROKERS) {
-        Ok(brokers) => brokers.split(',').map(|addr| {
-            let addr = str::to_string(addr);
-            let strings: Vec<&str> = addr.split(":").collect();
+        Ok(brokers) => brokers
+            .split(',')
+            .map(|addr| {
+                let addr = str::to_string(addr);
+                let strings: Vec<&str> = addr.split(":").collect();
 
-            if strings.len() > 2 {
-                assert!(false, "The broker connection is not well formed");
-            }
+                if strings.len() > 2 {
+                    assert!(false, "The broker connection is not well formed");
+                }
 
-            let host = strings[0].to_owned();
-            let port: u16 = strings[1].parse().unwrap();
+                let host = strings[0].to_owned();
+                let port: u16 = strings[1].parse().unwrap();
 
-            BrokerAddress {
-                host,
-                port
-            }
-        }).collect(),
+                BrokerAddress { host, port }
+            })
+            .collect(),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_BROKERS);
             return Ok((true, vec![]));

@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
 use samsa::prelude::{
-    Compression, ProduceMessage, ProducerBuilder, TlsConnection, BrokerAddress,
+    BrokerAddress, Compression, ProduceMessage, ProducerBuilder, TlsConnection,
     TlsConnectionOptions,
 };
 
@@ -34,17 +34,16 @@ async fn main() -> Result<(), ()> {
 
     let topic_name = "my-tester";
 
-    let stream = 
-        iter(vec![0].into_iter()).cycle().map(|_| {
-            let partition_id = 0;
-            ProduceMessage {
-                topic: topic_name.to_string(),
-                partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value")),
-                headers: vec![],
-            }
-        });
+    let stream = iter(vec![0].into_iter()).cycle().map(|_| {
+        let partition_id = 0;
+        ProduceMessage {
+            topic: topic_name.to_string(),
+            partition_id,
+            key: Some(Bytes::from_static(b"Tester")),
+            value: Some(Bytes::from_static(b"Value")),
+            headers: vec![],
+        }
+    });
 
     tracing::info!("Connecting to cluster");
     let output_stream =

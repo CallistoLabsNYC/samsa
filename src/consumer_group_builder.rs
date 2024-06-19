@@ -113,13 +113,16 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
             Error::DecodingUtf8Error
         })?;
         let port = coordinator.port;
-        
+
         let coordinator_conn = T::from_addr(
             self.connection_params.clone(),
             BrokerAddress {
                 host: host.to_string(),
                 port: port.try_into().map_err(|err| {
-                    tracing::error!("Error decoding Broker connection port from metadata {:?}", err); 
+                    tracing::error!(
+                        "Error decoding Broker connection port from metadata {:?}",
+                        err
+                    );
                     Error::MetadataNeedsSync
                 })?,
             },

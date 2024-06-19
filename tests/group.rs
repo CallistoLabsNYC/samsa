@@ -2,7 +2,8 @@ mod testsupport;
 
 use nom::AsBytes;
 use samsa::prelude::{
-    protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection, ROUND_ROBIN_PROTOCOL
+    protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection,
+    ROUND_ROBIN_PROTOCOL,
 };
 
 const CLIENT_ID: &str = "group protocol integration test";
@@ -40,7 +41,8 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
             );
             Error::MetadataNeedsSync
         })?,
-    }]).await?;
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -169,9 +171,8 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
-    let coordinator_conn = TcpConnection::new(vec![
-        BrokerAddress {
-            host: host.to_owned(),
+    let coordinator_conn = TcpConnection::new(vec![BrokerAddress {
+        host: host.to_owned(),
         port: port.try_into().map_err(|err| {
             tracing::error!(
                 "Error decoding Broker connection port from metadata {:?}",
@@ -179,8 +180,8 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
             );
             Error::MetadataNeedsSync
         })?,
-        }
-    ]).await?;
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;

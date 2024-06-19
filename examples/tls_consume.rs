@@ -1,5 +1,5 @@
 use samsa::prelude::{
-    ConsumerBuilder, BrokerAddress, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
+    BrokerAddress, ConsumerBuilder, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
 };
 use tokio_stream::StreamExt;
 

@@ -459,7 +459,7 @@ pub mod prelude {
     pub use crate::network::{
         tcp::TcpConnection,
         tls::{TlsConnection, TlsConnectionOptions},
-        BrokerConnection, BrokerAddress
+        BrokerAddress, BrokerConnection,
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
