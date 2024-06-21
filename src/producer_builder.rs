@@ -1,8 +1,10 @@
+use std::fmt::Debug;
 use std::time::Duration;
 
 use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
 use tokio_stream::{Stream, StreamExt};
 
+use crate::network::BrokerConnection;
 use crate::prelude::Compression;
 use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
 use crate::protocol::produce::request::Attributes;
@@ -41,19 +43,22 @@ const DEFAULT_BATCH_TIMEOUT_MS: u64 = 1000;
 ///     .await;
 /// ```
 #[derive(Clone)]
-pub struct ProducerBuilder {
-    cluster_metadata: ClusterMetadata,
+pub struct ProducerBuilder<T: BrokerConnection> {
+    cluster_metadata: ClusterMetadata<T>,
     produce_params: ProduceParams,
     max_batch_size: usize,
     batch_timeout_ms: u64,
     attributes: Attributes,
 }
 
-impl<'a> ProducerBuilder {
+impl<'a, T> ProducerBuilder<T>
+where
+    T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
+{
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
-    pub async fn new(bootstrap_addrs: Vec<String>, topics: Vec<String>) -> Result<Self> {
+    pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>) -> Result<Self> {
         let cluster_metadata =
-            ClusterMetadata::new(bootstrap_addrs, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
+            ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
 
         Ok(Self {
             cluster_metadata,
@@ -173,10 +178,10 @@ fn into_produce_stream(
     }
 }
 
-async fn producer(
+async fn producer<T: BrokerConnection + Clone + Debug + Send + 'static>(
     stream: impl Stream<Item = Vec<ProduceMessage>> + Send + 'static,
     output_sender: UnboundedSender<Vec<Option<ProduceResponse>>>,
-    cluster_metadata: ClusterMetadata,
+    cluster_metadata: ClusterMetadata<T>,
     produce_params: ProduceParams,
     attributes: Attributes,
 ) {

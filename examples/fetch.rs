@@ -17,11 +17,14 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+        host: "127.0.0.1".to_owned(),
+        port: 9092,
+    }];
 
     let src_topic = "my-topic".to_string();
 
-    let conn = samsa::prelude::BrokerConnection::new(bootstrap_addrs)
+    let conn = samsa::prelude::TcpConnection::new_(bootstrap_addrs)
         .await
         .map_err(|err| tracing::error!("{:?}", err))?;
     let correlation_id = 1;

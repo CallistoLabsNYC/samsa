@@ -5,7 +5,7 @@ use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::{BrokerAddress, BrokerConnection},
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -14,8 +14,8 @@ const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
 const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
 #[derive(Clone)]
-pub struct ConsumerGroupBuilder {
-    pub bootstrap_addrs: Vec<String>,
+pub struct ConsumerGroupBuilder<T: BrokerConnection> {
+    pub connection_params: T::ConnConfig,
     pub correlation_id: i32,
     pub client_id: String,
     pub session_timeout_ms: i32,
@@ -26,15 +26,15 @@ pub struct ConsumerGroupBuilder {
     pub fetch_params: FetchParams,
 }
 
-impl<'a> ConsumerGroupBuilder {
+impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
     /// Start a consumer group builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        bootstrap_addrs: Vec<String>,
+        connection_params: T::ConnConfig,
         group_id: String,
         group_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
         Ok(Self {
-            bootstrap_addrs,
+            connection_params,
             correlation_id: DEFAULT_CORRELATION_ID,
             client_id: DEFAULT_CLIENT_ID.to_owned(),
             session_timeout_ms: DEFAULT_SESSION_TIMEOUT_MS,
@@ -99,8 +99,8 @@ impl<'a> ConsumerGroupBuilder {
         self
     }
 
-    pub async fn build(self) -> Result<ConsumerGroup> {
-        let conn = BrokerConnection::new(self.bootstrap_addrs.clone()).await?;
+    pub async fn build(self) -> Result<ConsumerGroup<T>> {
+        let conn = T::new(self.connection_params.clone()).await?;
         let coordinator =
             find_coordinator(conn, self.correlation_id, &self.client_id, &self.group_id).await?;
 
@@ -113,11 +113,24 @@ impl<'a> ConsumerGroupBuilder {
             Error::DecodingUtf8Error
         })?;
         let port = coordinator.port;
-        let coordinator_addr = format!("{}:{}", host, port);
-        let coordinator_conn = BrokerConnection::new(vec![coordinator_addr]).await?;
+
+        let coordinator_conn = T::from_addr(
+            self.connection_params.clone(),
+            BrokerAddress {
+                host: host.to_string(),
+                port: port.try_into().map_err(|err| {
+                    tracing::error!(
+                        "Error decoding Broker connection port from metadata {:?}",
+                        err
+                    );
+                    Error::MetadataNeedsSync
+                })?,
+            },
+        )
+        .await?;
 
         Ok(ConsumerGroup {
-            bootstrap_addrs: self.bootstrap_addrs,
+            connection_params: self.connection_params,
             coordinator_conn,
             correlation_id: self.correlation_id,
             client_id: self.client_id,
@@ -140,7 +153,7 @@ impl<'a> ConsumerGroupBuilder {
 ///
 /// [protocol spec]: protocol::find_coordinator
 pub async fn find_coordinator(
-    conn: BrokerConnection,
+    mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,

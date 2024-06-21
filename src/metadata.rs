@@ -1,19 +1,19 @@
 //! Cluster metadata & operations.
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use nom::AsBytes;
-use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
-    network::BrokerConnection,
+    network::{BrokerAddress, BrokerConnection},
     protocol::{self, metadata::response::*},
 };
 
 #[derive(Clone, Default, Debug)]
-pub struct ClusterMetadata {
-    pub broker_connections: HashMap<i32, BrokerConnection>,
+pub struct ClusterMetadata<T: BrokerConnection> {
+    pub connection_params: T::ConnConfig,
+    pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
     pub client_id: String,
@@ -22,21 +22,22 @@ pub struct ClusterMetadata {
 
 type TopicPartition = HashMap<String, Vec<i32>>;
 
-impl<'a> ClusterMetadata {
+impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     pub async fn new(
-        bootstrap_addrs: Vec<String>,
+        connection_params: T::ConnConfig,
         client_id: String,
         topics: Vec<String>,
-    ) -> Result<ClusterMetadata> {
-        tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
+    ) -> Result<ClusterMetadata<T>> {
+        // tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
         let mut metadata = ClusterMetadata {
+            connection_params: connection_params.clone(),
             broker_connections: HashMap::new(),
             brokers: vec![],
             topics: vec![],
             client_id,
             topic_names: topics,
         };
-        let bootstrap_connection = BrokerConnection::new(bootstrap_addrs).await?;
+        let bootstrap_connection = T::new(connection_params).await?;
 
         metadata.fetch(bootstrap_connection).await?;
         metadata.sync().await?;
@@ -79,21 +80,13 @@ impl<'a> ClusterMetadata {
     #[instrument(name = "metadata-sync")]
     pub async fn sync(&mut self) -> Result<()> {
         tracing::debug!("Syncing metadata");
-        let mut set = JoinSet::new();
+        // let mut set = JoinSet::new();
 
         for broker in self.brokers.iter() {
-            let broker = broker.clone();
-            set.spawn(async move {
-                let id = broker.node_id;
-                let addr = broker.addr()?;
-                let conn = BrokerConnection::new(vec![addr]).await?;
-                Ok::<(i32, BrokerConnection), Error>((id, conn))
-            });
-        }
-
-        while let Some(res) = set.join_next().await {
-            let (index, conn) = res.unwrap()?;
-            self.broker_connections.insert(index, conn);
+            let id: i32 = broker.node_id;
+            let addr = broker.addr()?;
+            let conn = T::from_addr(self.connection_params.clone(), addr).await?;
+            self.broker_connections.insert(id, conn);
         }
 
         Ok(())
@@ -108,7 +101,7 @@ impl<'a> ClusterMetadata {
     //         Partition { error_code: KafkaCode::None, partition_index: 2, leader_id: 1, replica_nodes: [1], isr_nodes: [1] },
     //         Partition { error_code: KafkaCode::None, partition_index: 3, leader_id: 2, replica_nodes: [2], isr_nodes: [2] }] }] }
     #[instrument(name = "metadata-fetch")]
-    pub async fn fetch(&mut self, conn: BrokerConnection) -> Result<()> {
+    pub async fn fetch(&mut self, mut conn: T) -> Result<()> {
         tracing::debug!("Fetching metadata");
         let metadata_request =
             protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
@@ -125,37 +118,18 @@ impl<'a> ClusterMetadata {
         Ok(())
     }
 
-    // given we have all the data built out from fetch&sync
-    // map a topic and partition to a broker connection
-    #[allow(dead_code)]
-    pub fn get_connection_for_broker(
-        &self,
-        topic_name: &'a str,
-        partition_id: i32,
-    ) -> Result<&BrokerConnection> {
-        let leader_id = self
-            .get_leader_for_topic_partition(topic_name, partition_id)
-            .ok_or(Error::NoLeaderForTopicPartition(
-                String::from(topic_name),
-                partition_id,
-            ))?;
-
-        self.broker_connections
-            .get(&leader_id)
-            .ok_or(Error::NoConnectionForBroker(leader_id))
-    }
-
     pub fn get_connections_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
-    ) -> Result<Vec<(&BrokerConnection, TopicPartition)>> {
+    ) -> Result<Vec<(T, TopicPartition)>> {
         let leaders = self.get_leaders_for_topic_partitions(topic_partitions)?;
         let mut connections = vec![];
         for (broker_id, assignments) in leaders.iter() {
             let broker_conn = self
                 .broker_connections
                 .get(broker_id)
-                .ok_or(Error::MetadataNeedsSync);
+                .ok_or(Error::MetadataNeedsSync)
+                .map(|c| (*c).clone());
             if let Err(err) = broker_conn {
                 tracing::error!("No broker connection for assignment {:?}", assignments);
                 return Err(err);
@@ -225,12 +199,21 @@ impl<'a> ClusterMetadata {
 }
 
 impl Broker {
-    pub fn addr(&self) -> Result<String> {
+    pub fn addr(&self) -> Result<BrokerAddress> {
         let host = std::str::from_utf8(self.host.as_bytes()).map_err(|err| {
             tracing::error!("Error converting from UTF8 {:?}", err);
             Error::DecodingUtf8Error
         })?;
-        Ok(format!("{}:{}", host, self.port))
+        Ok(BrokerAddress {
+            host: host.to_string(),
+            port: self.port.try_into().map_err(|err| {
+                tracing::error!(
+                    "Error decoding Broker connection port from metadata {:?}",
+                    err
+                );
+                Error::MetadataNeedsSync
+            })?,
+        })
     }
 }
 
@@ -239,11 +222,18 @@ mod test {
     use bytes::Bytes;
 
     use super::*;
-    use crate::error::KafkaCode;
+    use crate::{
+        error::KafkaCode,
+        network::{tcp::TcpConnection, BrokerAddress},
+    };
 
     macro_rules! test_metadata {
         () => {
             ClusterMetadata {
+                connection_params: vec![BrokerAddress {
+                    host: "localhost".to_owned(),
+                    port: 9092,
+                }],
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),
@@ -299,7 +289,7 @@ mod test {
 
     #[test]
     fn test_broker_by_id() {
-        let cluster: ClusterMetadata = test_metadata!();
+        let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
         let id = 1;
 
         let broker = cluster.get_broker_by_id(id);
@@ -309,7 +299,7 @@ mod test {
 
     #[test]
     fn test_partition_by_id() {
-        let cluster: ClusterMetadata = test_metadata!();
+        let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
         let id = 1;
         let partition = cluster.get_topic_partition_by_id("purchases", id);
 
@@ -324,12 +314,18 @@ mod test {
             host: Bytes::from("localhost"),
             port: 9093,
         };
-        assert_eq!(broker.addr().unwrap(), String::from("localhost:9093"));
+        assert_eq!(
+            broker.addr().unwrap(),
+            BrokerAddress {
+                host: "localhost".to_owned(),
+                port: 9093,
+            }
+        );
     }
 
     #[test]
     fn test_partition_leader() {
-        let cluster: ClusterMetadata = test_metadata!();
+        let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
 
         let leader = cluster.get_leader_for_topic_partition("purchases", 1);
 
@@ -344,7 +340,7 @@ mod test {
 
     #[test]
     fn test_get_leaders_for_topic_partitions() {
-        let cluster: ClusterMetadata = test_metadata!();
+        let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
         let mut topic_partitions = HashMap::new();
         topic_partitions.insert(String::from("purchases"), vec![0, 1, 2, 3]);
         let leaders = cluster.get_leaders_for_topic_partitions(&topic_partitions);

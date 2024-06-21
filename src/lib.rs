@@ -456,7 +456,11 @@ pub mod prelude {
     pub use crate::consumer_group_builder::{find_coordinator, ConsumerGroupBuilder};
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::metadata::ClusterMetadata;
-    pub use crate::network::BrokerConnection;
+    pub use crate::network::{
+        tcp::TcpConnection,
+        tls::{TlsConnection, TlsConnectionOptions},
+        BrokerAddress, BrokerConnection,
+    };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
 

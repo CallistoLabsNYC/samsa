@@ -1,6 +1,6 @@
 mod testsupport;
 
-use samsa::prelude::{ConsumerGroupBuilder, Error, TopicPartitions};
+use samsa::prelude::{ConsumerGroupBuilder, Error, TcpConnection, TopicPartitions};
 
 #[tokio::test]
 async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
@@ -8,8 +8,12 @@ async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let builder =
-        ConsumerGroupBuilder::new(brokers, "abc".to_string(), TopicPartitions::default()).await?;
+    let builder = ConsumerGroupBuilder::<TcpConnection>::new(
+        brokers,
+        "abc".to_string(),
+        TopicPartitions::default(),
+    )
+    .await?;
     let _consumer = builder.build();
     Ok(())
 }
@@ -20,8 +24,12 @@ async fn it_can_build_with_ref_to_builder() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let builder =
-        ConsumerGroupBuilder::new(brokers, "abc".to_string(), TopicPartitions::default()).await?;
+    let builder = ConsumerGroupBuilder::<TcpConnection>::new(
+        brokers,
+        "abc".to_string(),
+        TopicPartitions::default(),
+    )
+    .await?;
     let builder_ref = &builder;
     let _consumer = builder_ref.clone().build();
     Ok(())

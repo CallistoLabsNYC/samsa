@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use samsa::prelude::{ConsumerGroupBuilder, TopicPartitionsBuilder};
+use samsa::prelude::{ConsumerGroupBuilder, TcpConnection, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -20,12 +20,15 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+        host: "127.0.0.1".to_owned(),
+        port: 9092,
+    }];
 
     let group_id = "Squad".to_string();
     let src_topic = "my-topic".to_string();
 
-    let stream = ConsumerGroupBuilder::new(
+    let stream = ConsumerGroupBuilder::<TcpConnection>::new(
         bootstrap_addrs,
         group_id,
         TopicPartitionsBuilder::new()

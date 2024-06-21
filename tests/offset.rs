@@ -1,7 +1,7 @@
 mod testsupport;
 
 use nom::AsBytes;
-use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode};
+use samsa::prelude::{protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "offset protocol integration test";
@@ -16,8 +16,8 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers).await?;
-    testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+    let mut conn = TcpConnection::new(brokers).await?;
+    testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
     // Get coordinator for this group
@@ -30,8 +30,17 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
-    let coordinator_addr = format!("{}:{}", host, port);
-    let coordinator_conn = BrokerConnection::new(vec![coordinator_addr]).await?;
+    let mut coordinator_conn = TcpConnection::new(vec![BrokerAddress {
+        host: host.to_owned(),
+        port: port.try_into().map_err(|err| {
+            tracing::error!(
+                "Error decoding Broker connection port from metadata {:?}",
+                err
+            );
+            Error::MetadataNeedsSync
+        })?,
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
@@ -97,8 +106,8 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers).await?;
-    testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+    let conn = TcpConnection::new(brokers).await?;
+    testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
     // Get coordinator for this group
@@ -108,8 +117,18 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
-    let coordinator_addr = format!("{}:{}", host, port);
-    let coordinator_conn = BrokerConnection::new(vec![coordinator_addr]).await?;
+
+    let coordinator_conn = TcpConnection::new(vec![BrokerAddress {
+        host: host.to_owned(),
+        port: port.try_into().map_err(|err| {
+            tracing::error!(
+                "Error decoding Broker connection port from metadata {:?}",
+                err
+            );
+            Error::MetadataNeedsSync
+        })?,
+    }])
+    .await?;
 
     // idk why this helps... maybe redpanda needs a second to accept for the coordinator
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;

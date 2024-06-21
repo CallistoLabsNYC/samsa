@@ -2,7 +2,7 @@ mod testsupport;
 
 use samsa::prelude::{
     protocol::{self, produce::request::Attributes},
-    BrokerConnection, Error, KafkaCode,
+    BrokerConnection, Error, KafkaCode, TcpConnection,
 };
 use std::collections::HashMap;
 
@@ -16,14 +16,18 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+    let conn = TcpConnection::new(brokers.clone()).await?;
+    testsupport::ensure_topic_creation(conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
-    let cluster_metadata =
-        samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
-            .await?;
+    let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
+        brokers.clone(),
+        CLIENT_ID.to_string(),
+        vec![topic.clone()],
+    )
+    .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
-    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
+    let (mut conn, _) =
+        cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0].to_owned();
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");
@@ -96,14 +100,18 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = BrokerConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(&conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+    let conn = TcpConnection::new(brokers.clone()).await?;
+    testsupport::ensure_topic_creation(conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
 
-    let cluster_metadata =
-        samsa::prelude::ClusterMetadata::new(brokers, CLIENT_ID.to_string(), vec![topic.clone()])
-            .await?;
+    let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
+        brokers.clone(),
+        CLIENT_ID.to_string(),
+        vec![topic.clone()],
+    )
+    .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
-    let (conn, _) = cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0];
+    let (conn, _) =
+        cluster_metadata.get_connections_for_topic_partitions(&topic_partition)?[0].to_owned();
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");

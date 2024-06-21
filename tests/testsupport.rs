@@ -1,4 +1,4 @@
-use samsa::prelude::{create_topics, BrokerConnection, Error};
+use samsa::prelude::{create_topics, BrokerAddress, BrokerConnection, Error};
 use std::{collections::HashMap, env};
 
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
@@ -11,25 +11,34 @@ const KAFKA_TOPIC_2: &str = "KAFKA_TOPIC_2";
 
 #[allow(dead_code)]
 pub async fn ensure_topic_creation(
-    conn: &BrokerConnection,
+    conn: impl BrokerConnection,
     topic: &str,
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
-    create_topics(
-        conn.clone(),
-        correlation_id,
-        client_id,
-        HashMap::from([(topic, 1)]),
-    )
-    .await?;
+    create_topics(conn, correlation_id, client_id, HashMap::from([(topic, 1)])).await?;
 
     Ok(())
 }
 
-pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
-    let brokers: Vec<String> = match env::var(KAFKA_BROKERS) {
-        Ok(brokers) => brokers.split(',').map(str::to_string).collect(),
+pub fn get_brokers() -> Result<(bool, Vec<BrokerAddress>), Error> {
+    let brokers = match env::var(KAFKA_BROKERS) {
+        Ok(brokers) => brokers
+            .split(',')
+            .map(|addr| {
+                let addr = str::to_string(addr);
+                let strings: Vec<&str> = addr.split(':').collect();
+
+                if strings.len() > 2 {
+                    panic!("The broker connection is not well formed");
+                }
+
+                let host = strings[0].to_owned();
+                let port: u16 = strings[1].parse().unwrap();
+
+                BrokerAddress { host, port }
+            })
+            .collect(),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_BROKERS);
             return Ok((true, vec![]));
@@ -39,7 +48,7 @@ pub fn get_brokers() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_brokers_and_topic() -> Result<(bool, Vec<String>, String), Error> {
+pub fn get_brokers_and_topic() -> Result<(bool, Vec<BrokerAddress>, String), Error> {
     let (skip, brokers) = get_brokers()?;
     if skip {
         return Ok((skip, vec![], "".to_string()));

@@ -3,12 +3,12 @@ use crate::metadata::ClusterMetadata;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
-    network::{self, BrokerConnection},
+    network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID,
 };
 use nom::AsBytes;
 use std::collections::HashMap;
-use tracing::instrument;
+use std::fmt::Debug;
 
 /// Configure a [`Consumer`].
 ///
@@ -38,9 +38,9 @@ use tracing::instrument;
 /// }
 /// ```
 #[derive(Clone)]
-pub struct ConsumerBuilder {
+pub struct ConsumerBuilder<T: BrokerConnection> {
     /// Keeps track of the brokers and the topic partition info for the cluster.
-    pub(crate) cluster_metadata: ClusterMetadata,
+    pub(crate) cluster_metadata: ClusterMetadata<T>,
     /// Parameters for fetching.
     pub(crate) fetch_params: FetchParams,
     /// Assignment of topic partitions.
@@ -49,10 +49,10 @@ pub struct ConsumerBuilder {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a> ConsumerBuilder {
+impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        bootstrap_addrs: Vec<String>,
+        connection_params: T::ConnConfig,
         assigned_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
         let topics = assigned_topic_partitions
@@ -61,7 +61,7 @@ impl<'a> ConsumerBuilder {
             .collect();
 
         let cluster_metadata =
-            metadata::ClusterMetadata::new(bootstrap_addrs, DEFAULT_CLIENT_ID.to_owned(), topics)
+            metadata::ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics)
                 .await?;
 
         Ok(Self {
@@ -137,7 +137,7 @@ impl<'a> ConsumerBuilder {
     /// offset is intialized to 0.
     pub async fn seek_to_group(
         mut self,
-        coordinator_conn: network::BrokerConnection,
+        coordinator_conn: impl BrokerConnection + Clone,
         group_id: &str,
     ) -> Result<Self> {
         tracing::debug!("Seeking offsets to group {}", group_id);
@@ -246,7 +246,7 @@ impl<'a> ConsumerBuilder {
         self
     }
 
-    pub fn build(self) -> Consumer {
+    pub fn build(self) -> Consumer<T> {
         Consumer {
             cluster_metadata: self.cluster_metadata,
             fetch_params: self.fetch_params,
@@ -257,12 +257,12 @@ impl<'a> ConsumerBuilder {
 }
 
 /// Fetch a set of offsets for a consumer group.
-#[instrument(level = "debug")]
+// #[instrument(level = "debug")]
 pub async fn fetch_offset(
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
-    coordinator_conn: BrokerConnection,
+    mut coordinator_conn: impl BrokerConnection,
     topic_partitions: &TopicPartitions,
 ) -> Result<protocol::OffsetFetchResponse> {
     tracing::debug!(
@@ -287,9 +287,9 @@ pub async fn fetch_offset(
 /// Used to ask for all messages before a certain time (ms). There are two special values. Specify -1 to receive the latest offset (i.e. the offset of the next coming message) and -2 to receive the earliest available offset. This applies to all versions of the API. Note that because offsets are pulled in descending order, asking for the earliest offset will always return you a single element.
 ///
 /// See this [protocol spec](crate::prelude::protocol::list_offsets) for more information.
-#[instrument(level = "debug")]
+// #[instrument(level = "debug")]
 pub async fn list_offsets(
-    broker_conn: &BrokerConnection,
+    mut broker_conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     topic_partitions: &TopicPartitions,

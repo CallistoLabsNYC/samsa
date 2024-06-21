@@ -1,12 +1,15 @@
 use bytes::Bytes;
 use futures::{stream::iter, StreamExt};
-use samsa::prelude::{Compression, ProduceMessage, ProducerBuilder, TcpConnection};
+use samsa::prelude::{
+    BrokerAddress, Compression, ProduceMessage, ProducerBuilder, TlsConnection,
+    TlsConnectionOptions,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -18,29 +21,33 @@ async fn main() -> Result<(), ()> {
         .with_target(false)
         // Build the subscriber
         .init();
-    let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
-        host: "127.0.0.1".to_owned(),
-        port: 9092,
-    }];
+
+    let options = TlsConnectionOptions {
+        broker_options: vec![BrokerAddress {
+            host: "piggy.callistolabs.cloud".to_owned(),
+            port: 9092,
+        }],
+        key: "./etc/redpanda/certs/piggy.key".into(),
+        cert: "./etc/redpanda/certs/piggy_callisto_labs_cloud.crt".into(),
+        cafile: Some("./etc/redpanda/certs/trustedroot.crt".into()),
+    };
+
     let topic_name = "my-tester";
 
-    let stream = tokio_stream::StreamExt::throttle(
-        iter(vec![0].into_iter()).cycle().enumerate().map(|(i, _)| {
-            let partition_id = (i % 4) as i32;
-            ProduceMessage {
-                topic: topic_name.to_string(),
-                partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value")),
-                headers: vec![],
-            }
-        }),
-        std::time::Duration::from_secs(1),
-    );
+    let stream = iter(vec![0].into_iter()).cycle().map(|_| {
+        let partition_id = 0;
+        ProduceMessage {
+            topic: topic_name.to_string(),
+            partition_id,
+            key: Some(Bytes::from_static(b"Tester")),
+            value: Some(Bytes::from_static(b"Value")),
+            headers: vec![],
+        }
+    });
 
     tracing::info!("Connecting to cluster");
     let output_stream =
-        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
+        ProducerBuilder::<TlsConnection>::new(options, vec![topic_name.to_string()])
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
             .compression(Compression::Gzip)
