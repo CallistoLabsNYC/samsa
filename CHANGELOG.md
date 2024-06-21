@@ -1,5 +1,9 @@
 # Samsa Changelog
 
+## [0.1.6] - 2024-06-21
+### Changed
+- [#13](https://github.com/CallistoLabsNYC/samsa/issues/13) Add TLS support
+
 ## [0.1.5] - 2024-05-11
 ### Changed
 - [#58](https://github.com/CallistoLabsNYC/samsa/issues/58) ConsumerGroup cannot stream when caller only has a reference to a wrapper struct
