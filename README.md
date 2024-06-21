@@ -3,6 +3,8 @@ Rust-native Kafka/Redpanda protocol and client implementation.
 
 This crate provides Rust native consumers and producers as well as low level bindings for the Apache Kafka protocol. Unlike crates that use librdkafka in an FFI, users of this crate actually benefit from Rust all the way down; meaning memory safety, safe concurrency, low resource usage, and of course blazing speed.
 
+We are happy to recently include **Gzip compression** and **TLS** support.
+
 [Documentation](https://docs.rs/samsa/latest/samsa/)
 
 # Goals
@@ -115,7 +117,7 @@ while let Some(batch) = stream.next().await {
 ```
 
 ## Examples
-We provide 3 high level [examples](/examples) for those interested in trying `samsa` out. The setup is as follows:
+We provide 3 high level [examples](/examples) for those interested in trying `samsa` out. There are TLS versions as well. The setup is as follows:
 
 1. Use `docker-compose up` to start your redpanda cluster.
 1. Go to http://localhost:8080/topics to view the redpanda console.
@@ -133,6 +135,9 @@ Consume the messages in your topic.
 
 ### ConsumerGroup
 Coordinate a group of 4 consumers. This one is throttled to see the group rebalancing.
+
+### TLS
+We have a replica of the Producer and Consumer examples that utilize the TLS support. You will need a Cluster running with TLS enabled and the correct certificates in this codebase.
 
 1. Run `cargo run --example consumer_group`
 1. Visit http://localhost:8080/groups/Squad to see the lone member.
