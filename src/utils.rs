@@ -30,7 +30,10 @@ pub fn uncompress<T: Read>(src: T) -> Result<Vec<u8>> {
 
     let mut buffer: Vec<u8> = Vec::new();
     d.read_to_end(&mut buffer)
-        .map_err(|e| Error::IoError(e.kind()))?;
+        .map_err(|e| {
+            tracing::error!("Error uncompressing buffer {:?}", e);
+            Error::IoError(e.kind())
+        })?;
     Ok(buffer)
 }
 
