@@ -355,6 +355,7 @@ pub mod prelude {
     //! To use, simply provide the initial bootstrap broker, the group id, and the assignments
     //! to the [`ConsumerGroupBuilder`]. This you can use to configure the fetching parameters as needed.
     //!
+    //!
     //! ### Example
     //! ```rust
     //! use tokio_stream::StreamExt;
@@ -441,6 +442,111 @@ pub mod prelude {
     //! let leave_response = leave_group(
     //!     correlation_id, client_id, group_id, member_id
     //! ).await?;
+    //! ```
+    //!
+    //! ## TLS support
+    //! We provide TLS support to your consumer or producer for secured communication. To enable this, start with specifying the `TlsConnectionOptions`,
+    //! and pass it into an instance of the `ProducerBuilder` or `ConsumerBuilder`.
+    //!
+    //! ### Example for Producer with TLS support:
+    //! ```rust
+    //! let tls_option = TlsConnectionOptions {
+    //!       broker_options: vec!["127.0.0.1:9092".to_string()],
+    //!       key: PathBuf::from("/path_to_key_file"),
+    //!       cert: PathBuf::from("/path_to_cert_file"),
+    //!      cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //!     };
+    //! let topic_name = "my-topic";
+    //! let partition_id = 0;
+    //!
+    //! let message = samsa::prelude::ProduceMessage {
+    //!         topic: topic_name.to_string(),
+    //!         partition_id,
+    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!         value: Some(bytes::Bytes::from_static(b"Value")),
+    //!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+    //!     };
+    //!
+    //! let producer_client = samsa::prelude::ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
+    //!     .await?
+    //!     .batch_timeout_ms(1)
+    //!     .max_batch_size(2)
+    //!     .clone()
+    //!     .build()
+    //!     .await;
+    //!
+    //! producer_client
+    //!     .produce(message)
+    //!     .await;
+    //!
+    //! ```
+    //!
+    //! ### Example for Consumer with TLS support:
+    //! ```rust
+    //! let tls_option = TlsConnectionOptions {
+    //!         broker_options: vec!["127.0.0.1:9092".to_string()],
+    //!         key: PathBuf::from("/path_to_key_file"),
+    //!         cert: PathBuf::from("/path_to_cert_file"),
+    //!         cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //!     };
+    //! let partitions = vec![0];
+    //! let topic_name = "my-topic";
+    //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+    //!     .assign(topic_name, partitions)
+    //!     .build();
+    //!
+    //! let consumer = samsa::prelude::ConsumerBuilder::new(
+    //!     tls_option,
+    //!     assignment,
+    //! )
+    //! .await?
+    //! .build();
+    //!
+    //! let stream = consumer.into_stream();
+    //! // have to pin streams before iterating
+    //! tokio::pin!(stream);
+    //!
+    //! // Stream will do nothing unless consumed.
+    //! while let Some(Ok((batch, offsets))) = stream.next().await {
+    //!     println!("{:?}", batch);
+    //! }
+    //! ```
+    //!
+    //! ## Compression support
+    //! We provide support for compression in the producer using the `Compression` enum. The enum allows to specify what type of compression to use.
+    //!
+    //! ### Example for Producer with TLS and GZIP compression support:
+    //! ```rust
+    //! let tls_option = TlsConnectionOptions {
+    //!       broker_options: vec!["127.0.0.1:9092".to_string()],
+    //!       key: PathBuf::from("/path_to_key_file"),
+    //!       cert: PathBuf::from("/path_to_cert_file"),
+    //!       cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //!     };
+    //! let topic_name = "my-topic";
+    //! let partition_id = 0;
+    //!
+    //! let message = samsa::prelude::ProduceMessage {
+    //!         topic: topic_name.to_string(),
+    //!         partition_id,
+    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!         value: Some(bytes::Bytes::from_static(b"Value")),
+    //!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+    //!     };
+    //!
+    //! let producer_client = samsa::prelude::ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
+    //!     .await?
+    //!     .compression(Compression::Gzip)
+    //!     .batch_timeout_ms(1)
+    //!     .max_batch_size(2)
+    //!     .clone()
+    //!     .build()
+    //!     .await;
+    //!
+    //! producer_client
+    //!     .produce(message)
+    //!     .await;
+    //!
     //! ```
     //!
     pub use crate::admin::{create_topics, delete_topics};
