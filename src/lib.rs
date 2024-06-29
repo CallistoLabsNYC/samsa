@@ -19,6 +19,8 @@
 //!     - [Producer](#producer)
 //!     - [Consumer](#consumer)
 //!     - [Consumer group](#consumer-group)
+//!     - [TLS support](#tls-support)
+//!     - [Compression support](#compression-support)
 //! - [Resources](#resources)
 //!
 //!
@@ -35,7 +37,11 @@
 //!
 //! It is buffered, with both a timeout and volume threshold that clears the buffer when reached. This is how letency and throughout can be tweaked to achieve the desired rates.
 //! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+//! use samsa::prelude::TcpConnection;
+//! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+//!         host: "127.0.0.1:9092".to_owned(),
+//!         port: 9092,
+//!     }];
 //! let topic_name = "my-topic";
 //! let partition_id = 0;
 //!
@@ -44,10 +50,15 @@
 //!         partition_id,
 //!         key: Some(bytes::Bytes::from_static(b"Tester")),
 //!         value: Some(bytes::Bytes::from_static(b"Value")),
-//!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+//!         headers: vec![
+//!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+//!         ]
 //!     };
 //!
-//! let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
+//! let producer_client = samsa::prelude::ProducerBuilder::<TcpConnection>::new(
+//!         bootstrap_addrs,
+//!         vec![topic_name.to_string()]
+//!     )
 //!     .await?
 //!     .batch_timeout_ms(1)
 //!     .max_batch_size(2)
@@ -63,14 +74,18 @@
 //! ### Consumer
 //! A [`Consumer`](prelude::Consumer) is used to fetch messages from the broker. It is an asynchronous iterator that can be configured to auto-commit. To instantiate one, start with a [`ConsumerBuilder`](prelude::ConsumerBuilder).
 //! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+//! use samsa::prelude::TcpConnection;
+//! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+//!         host: "127.0.0.1:9092".to_owned(),
+//!         port: 9092,
+//!     }];
 //! let partitions = vec![0];
-//! let topic_name = "my-topic";
+//! let topic_name = "my-topic".to_string();
 //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
 //!     .assign(topic_name, partitions)
 //!     .build();
 //!
-//! let consumer = samsa::prelude::ConsumerBuilder::new(
+//! let consumer = samsa::prelude::ConsumerBuilder::<TcpConnection>::new(
 //!     bootstrap_addrs,
 //!     assignment,
 //! )
@@ -90,20 +105,25 @@
 //! ### Consumer group
 //! You can set up a [`ConsumerGroup`](prelude::ConsumerGroup) with a group id and assignment. The offsets are commit automatically for the member of the group. To instantiate one, start with a [`ConsumerGroupBuilder`](prelude::ConsumerGroupBuilder).
 //! ```rust
-//! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+//! use samsa::prelude::TcpConnection;
+//! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+//!         host: "127.0.0.1:9092".to_owned(),
+//!         port: 9092,
+//!     }];
 //! let partitions = vec![0];
-//! let topic_name = "my-topic";
+//! let topic_name = "my-topic".to_string();
 //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
 //!     .assign(topic_name, partitions)
 //!     .build();
 //! let group_id = "The Data Team".to_string();
 //!
-//! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
-//!     bootstrap_addrs,
-//!     group_id,
-//!     assignment,
-//! ).await?
-//! .build().await?;
+//! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::<TcpConnection>::new(
+//!         bootstrap_addrs,
+//!         group_id,
+//!         assignment,
+//!     ).await?
+//!     .build()
+//!     .await?;
 //!
 //! let stream = consumer_group_member.into_stream();
 //! // have to pin streams before iterating
@@ -113,6 +133,127 @@
 //! while let Some(batch) = stream.next().await {
 //!     println!("{:?}", batch);
 //! }
+//! ```
+//!
+//! ### TLS support
+//! You can add TLS support to your consumer or producer for secured communication. To enable this, start with specifying the `TlsConnectionOptions`,
+//! and pass it into an instance of the `ProducerBuilder` or `ConsumerBuilder`.
+//!
+//! Example for Producer with TLS support:
+//! ```rust
+//! let tls_option = samsa::prelude::TlsConnectionOptions {
+//!         broker_options: vec![samsa::prelude::BrokerAddress {
+//!           host: "127.0.0.1:9092".to_owned(),
+//!           port: 9092,
+//!         }],
+//!         key: "/path_to_key_file".into(),
+//!         cert: "/path_to_cert_file".into(),
+//!         cafile: Some("/path_to_ca_file".into()),
+//!     };
+//! let topic_name = "my-topic".to_string();
+//! let partition_id = 0;
+//!
+//! let message = samsa::prelude::ProduceMessage {
+//!         topic: topic_name.to_string(),
+//!         partition_id,
+//!         key: Some(bytes::Bytes::from_static(b"Tester")),
+//!         value: Some(bytes::Bytes::from_static(b"Value")),
+//!         headers: vec![
+//!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+//!         ],
+//!     };
+//!
+//! let producer_client = samsa::prelude::ProducerBuilder::<samsa::prelude::TlsConnection>::new(
+//!         tls_option,
+//!         vec![topic_name.to_string()]
+//!     )
+//!     .await?
+//!     .batch_timeout_ms(1)
+//!     .max_batch_size(2)
+//!     .clone()
+//!     .build()
+//!     .await;
+//!
+//! producer_client
+//!     .produce(message)
+//!     .await;
+//!
+//! ```
+//!
+//! Example for Consumer with TLS support:
+//! ```rust
+//! let tls_option = samsa::prelude::TlsConnectionOptions {
+//!         broker_options: vec![samsa::prelude::BrokerAddress {
+//!             host: "127.0.0.1:9092".to_owned(),
+//!             port: 9092,
+//!         }],
+//!         key: "/path_to_key_file".into(),
+//!         cert: "/path_to_cert_file".into(),
+//!         cafile: Some("/path_to_ca_file".into()),
+//!     };
+//! let partitions = vec![0];
+//! let topic_name = "my-topic".to_string();
+//! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+//!     .assign(topic_name, partitions)
+//!     .build();
+//!
+//! let consumer = samsa::prelude::ConsumerBuilder::<samsa::prelude::TlsConnection>::new(
+//!         tls_option,
+//!         assignment,
+//!     )
+//!     .await?
+//!     .build();
+//!
+//! let stream = consumer.into_stream();
+//! // have to pin streams before iterating
+//! tokio::pin!(stream);
+//!
+//! // Stream will do nothing unless consumed.
+//! while let Some(Ok((batch, offsets))) = stream.next().await {
+//!     println!("{:?}", batch);
+//! }
+//! ```
+//!
+//! ### Compression support
+//! We provide support for compression in the producer using the `Compression` enum. The enum allows to specify what type of compression to use.
+//!
+//! Example for Producer with TLS and GZIP compression support:
+//! ```rust
+//! let tls_option = samsa::prelude::TlsConnectionOptions {
+//!         broker_options: vec![samsa::prelude::BrokerAddress {
+//!             host: "127.0.0.1:9092".to_owned(),
+//!             port: 9092,
+//!         }],
+//!         key: "/path_to_key_file".into(),
+//!         cert: "/path_to_cert_file".into(),
+//!         cafile: Some("/path_to_ca_file".into()),
+//!     };
+//! let topic_name = "my-topic".to_string();
+//! let partition_id = 0;
+//!
+//! let message = samsa::prelude::ProduceMessage {
+//!         topic: topic_name.to_string(),
+//!         partition_id,
+//!         key: Some(bytes::Bytes::from_static(b"Tester")),
+//!         value: Some(bytes::Bytes::from_static(b"Value")),
+//!         headers: vec![
+//!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+//!         ],
+//!     };
+//!
+//! let producer_client = samsa::prelude::ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
+//!     .await?
+//!     .compression(samsa::prelude::Compression::Gzip)
+//!     .batch_timeout_ms(1)
+//!     .max_batch_size(2)
+//!     .clone()
+//!     .build()
+//!     .await;
+//!
+//! producer_client
+//!     .produce(message)
+//!     .await;
+//!
 //! ```
 //!
 //!
@@ -174,7 +315,11 @@ pub mod prelude {
     //! needed.
     //! ### Example
     //! ```rust
-    //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    //! use samsa::prelude::TcpConnection;
+    //! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+    //!             host: "127.0.0.1:9092".to_owned(),
+    //!             port: 9092,
+    //!         }];
     //! let topic_name = "my-topic";
     //! let partition_id = 0;
     //!
@@ -183,10 +328,15 @@ pub mod prelude {
     //!         partition_id,
     //!         key: Some(bytes::Bytes::from_static(b"Tester")),
     //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+    //!         headers: vec![
+    //!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!         ]
     //!     };
     //!
-    //! let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
+    //! let producer_client = samsa::prelude::ProducerBuilder::<TcpConnection>::new(
+    //!         bootstrap_addrs,
+    //!         vec![topic_name.to_string()]
+    //!     )
     //!     .await?
     //!     .batch_timeout_ms(1)
     //!     .max_batch_size(2)
@@ -240,14 +390,18 @@ pub mod prelude {
     //! needed.
     //! ### Example
     //! ```rust
-    //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    //! use samsa::prelude::TcpConnection;
+    //! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+    //!         host: "127.0.0.1:9092".to_owned(),
+    //!         port: 9092,
+    //!     }];
     //! let partitions = vec![0];
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     //!     .assign(topic_name, partitions)
     //!     .build();
     //!
-    //! let consumer = samsa::prelude::ConsumerBuilder::new(
+    //! let consumer = samsa::prelude::ConsumerBuilder::<TcpConnection>::new(
     //!     bootstrap_addrs,
     //!     assignment,
     //! )
@@ -276,7 +430,7 @@ pub mod prelude {
     //! use std::collections::HashMap;
     //! use samsa::prelude::list_offsets;
     //! let partitions = vec![0];
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let topic_partitions = samsa::prelude::TopicPartitionsBuilder::new()
     //!     .assign(topic_name, partitions)
     //!     .build();
@@ -359,15 +513,19 @@ pub mod prelude {
     //! ### Example
     //! ```rust
     //! use tokio_stream::StreamExt;
-    //! let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+    //! use samsa::prelude::TcpConnection;
+    //! let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
+    //!         host: "127.0.0.1:9092".to_owned(),
+    //!         port: 9092,
+    //!     }];
     //! let partitions = vec![0];
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     //!     .assign(topic_name, partitions)
     //!     .build();
     //! let group_id = "The Data Team".to_string();
     //!
-    //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::new(
+    //! let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::<TcpConnection>::new(
     //!     bootstrap_addrs,
     //!     group_id,
     //!     assignment,
@@ -450,13 +608,16 @@ pub mod prelude {
     //!
     //! ### Example for Producer with TLS support:
     //! ```rust
-    //! let tls_option = TlsConnectionOptions {
-    //!       broker_options: vec!["127.0.0.1:9092".to_string()],
-    //!       key: PathBuf::from("/path_to_key_file"),
-    //!       cert: PathBuf::from("/path_to_cert_file"),
-    //!      cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //! let tls_option = samsa::prelude::TlsConnectionOptions {
+    //!         broker_options: vec![samsa::prelude::BrokerAddress {
+    //!           host: "127.0.0.1:9092".to_owned(),
+    //!           port: 9092,
+    //!         }],
+    //!         key: "/path_to_key_file".into(),
+    //!         cert: "/path_to_cert_file".into(),
+    //!         cafile: Some("/path_to_ca_file".into()),
     //!     };
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
     //! let message = samsa::prelude::ProduceMessage {
@@ -464,10 +625,15 @@ pub mod prelude {
     //!         partition_id,
     //!         key: Some(bytes::Bytes::from_static(b"Tester")),
     //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+    //!         headers: vec![
+    //!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!         ],
     //!     };
     //!
-    //! let producer_client = samsa::prelude::ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
+    //! let producer_client = samsa::prelude::ProducerBuilder::<samsa::prelude::TlsConnection>::new(
+    //!         tls_option,
+    //!         vec![topic_name.to_string()]
+    //!     )
     //!     .await?
     //!     .batch_timeout_ms(1)
     //!     .max_batch_size(2)
@@ -483,19 +649,22 @@ pub mod prelude {
     //!
     //! ### Example for Consumer with TLS support:
     //! ```rust
-    //! let tls_option = TlsConnectionOptions {
-    //!         broker_options: vec!["127.0.0.1:9092".to_string()],
-    //!         key: PathBuf::from("/path_to_key_file"),
-    //!         cert: PathBuf::from("/path_to_cert_file"),
-    //!         cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //! let tls_option = samsa::prelude::TlsConnectionOptions {
+    //!         broker_options: vec![samsa::prelude::BrokerAddress {
+    //!             host: "127.0.0.1:9092".to_owned(),
+    //!             port: 9092,
+    //!         }],
+    //!         key: "/path_to_key_file".into(),
+    //!         cert: "/path_to_cert_file".into(),
+    //!         cafile: Some("/path_to_ca_file".into()),
     //!     };
     //! let partitions = vec![0];
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     //!     .assign(topic_name, partitions)
     //!     .build();
     //!
-    //! let consumer = samsa::prelude::ConsumerBuilder::new(
+    //! let consumer = samsa::prelude::ConsumerBuilder::<samsa::prelude::TlsConnection>::new(
     //!     tls_option,
     //!     assignment,
     //! )
@@ -517,13 +686,16 @@ pub mod prelude {
     //!
     //! ### Example for Producer with TLS and GZIP compression support:
     //! ```rust
-    //! let tls_option = TlsConnectionOptions {
-    //!       broker_options: vec!["127.0.0.1:9092".to_string()],
-    //!       key: PathBuf::from("/path_to_key_file"),
-    //!       cert: PathBuf::from("/path_to_cert_file"),
-    //!       cafile: Some(PathBuf::from("/path_to_ca_file")),
+    //! let tls_option =samsa::prelude::TlsConnectionOptions {
+    //!         broker_options: vec![samsa::prelude::BrokerAddress {
+    //!             host: "127.0.0.1:9092".to_owned(),
+    //!             port: 9092,
+    //!         }],
+    //!         key: "/path_to_key_file".into(),
+    //!         cert: "/path_to_cert_file".into(),
+    //!         cafile: Some("/path_to_ca_file".into()),
     //!     };
-    //! let topic_name = "my-topic";
+    //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
     //! let message = samsa::prelude::ProduceMessage {
@@ -531,12 +703,14 @@ pub mod prelude {
     //!         partition_id,
     //!         key: Some(bytes::Bytes::from_static(b"Tester")),
     //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
+    //!         headers: vec![
+    //!             samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!         ]
     //!     };
     //!
     //! let producer_client = samsa::prelude::ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
     //!     .await?
-    //!     .compression(Compression::Gzip)
+    //!     .compression(samsa::prelude::Compression::Gzip)
     //!     .batch_timeout_ms(1)
     //!     .max_batch_size(2)
     //!     .clone()
@@ -569,6 +743,7 @@ pub mod prelude {
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
+    pub use crate::protocol::Header;
 
     pub use bytes;
 
