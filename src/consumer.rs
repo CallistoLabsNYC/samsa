@@ -253,7 +253,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
             }
         }
 
-        tracing::info!(
+        tracing::debug!(
             "Read {} records, newest offset {:?}",
             records.len(),
             self.offsets
