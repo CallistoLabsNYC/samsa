@@ -463,6 +463,7 @@ pub mod prelude {
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
+    pub use crate::protocol::Header;
 
     pub use bytes;
 

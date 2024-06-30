@@ -63,9 +63,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
             .find(|b| b.partition_index == partition_id)
     }
 
-    pub fn get_leader_id_for_cluster(
-        &self,
-    ) -> i32 {
+    pub fn get_leader_id_for_cluster(&self) -> i32 {
         self.controller_id
     }
 

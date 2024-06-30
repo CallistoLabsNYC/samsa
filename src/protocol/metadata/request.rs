@@ -8,8 +8,8 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! Metadata Request (Version: 1) => [topics] 
-//!   topics => name 
+//! Metadata Request (Version: 1) => [topics]
+//!   topics => name
 //!     name => STRING
 //! ```
 //!
