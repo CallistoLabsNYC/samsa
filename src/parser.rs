@@ -97,12 +97,7 @@ where
 
 pub fn parse_boolean(s: NomBytes) -> IResult<NomBytes, bool> {
     let (s, b) = take(1_usize)(s)?;
-    let b: bool = if b == NomBytes::from(b"\x00" as &[u8]) {
-        false
-    } else {
-        true
-    };
-
+    let b = b != NomBytes::from(b"\x00" as &[u8]);
     Ok((s, b))
 }
 
