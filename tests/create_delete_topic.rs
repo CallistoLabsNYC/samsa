@@ -1,6 +1,6 @@
 mod testsupport;
 
-use samsa::prelude::{self, protocol, BrokerConnection, Error, KafkaCode, TcpConnection};
+use samsa::prelude::{self, protocol, BrokerConnection, ClusterMetadata, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "create delete topic integration test";
@@ -12,8 +12,9 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut conn = TcpConnection::new(brokers).await?;
+    let mut metadata = ClusterMetadata::<TcpConnection>::new(brokers, "rust".to_string(), vec![]).await?;
 
+    let conn: &mut TcpConnection = metadata.broker_connections.get_mut(&metadata.controller_id).unwrap();
     //
     // Create topic
     //
