@@ -95,6 +95,17 @@ where
     }
 }
 
+pub fn parse_boolean(s: NomBytes) -> IResult<NomBytes, bool> {
+    let (s, b) = take(1_usize)(s)?;
+    let b: bool = if b == NomBytes::from(b"\x00" as &[u8]) {
+        false
+    } else {
+        true
+    };
+
+    Ok((s, b))
+}
+
 pub fn parse_nullable_string(s: NomBytes) -> IResult<NomBytes, Option<Bytes>> {
     let (s, length) = be_i16(s)?;
     if length == -1 {
@@ -157,6 +168,27 @@ mod test {
             parse_string(buf).unwrap().1,
             NomBytes::from(b"\x72\x75\x73\x74" as &[u8]).to_bytes()
         );
+    }
+
+    #[test]
+    fn test_parse_bool_false() {
+        let buf = NomBytes::from(b"\x00" as &[u8]);
+
+        assert_eq!(parse_boolean(buf).unwrap().1, false);
+    }
+
+    #[test]
+    fn test_parse_bool_true() {
+        let buf = NomBytes::from(b"\x01" as &[u8]);
+
+        assert_eq!(parse_boolean(buf).unwrap().1, true);
+    }
+
+    #[test]
+    fn test_parse_bool_two() {
+        let buf = NomBytes::from(b"\x02" as &[u8]);
+
+        assert_eq!(parse_boolean(buf).unwrap().1, true);
     }
 
     #[test]

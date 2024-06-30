@@ -13,20 +13,23 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! Metadata Response (Version: 0) => [brokers] [topics]
-//!   brokers => node_id host port
-//!   node_id => INT32
-//!   host => STRING
-//!   port => INT32
-//! topics => error_code name [partitions]
-//!   error_code => INT16
-//!   name => STRING
-//!   partitions => error_code partition_index leader_id [replica_nodes] [isr_nodes]
+//! Metadata Response (Version: 1) => [brokers] controller_id [topics]
+//!   brokers => node_id host port rack
+//!     node_id => INT32
+//!     host => STRING
+//!     port => INT32
+//!     rack => NULLABLE_STRING
+//!   controller_id => INT32
+//!   topics => error_code name is_internal [partitions]
 //!     error_code => INT16
-//!     partition_index => INT32
-//!     leader_id => INT32
-//!     replica_nodes => INT32
-//!     isr_nodes => INT32
+//!     name => STRING
+//!     is_internal => BOOLEAN
+//!     partitions => error_code partition_index leader_id [replica_nodes] [isr_nodes]
+//!       error_code => INT16
+//!       partition_index => INT32
+//!       leader_id => INT32
+//!       replica_nodes => INT32
+//!       isr_nodes => INT32
 //! ```
 
 use bytes::Bytes;
@@ -50,6 +53,8 @@ pub struct MetadataResponse {
     pub header_response: protocol::HeaderResponse,
     /// Each broker in the response.
     pub brokers: Vec<Broker>,
+    /// The ID of the controller broker.
+    pub controller_id: i32,
     /// Each topic in the response.
     pub topics: Vec<Topic>,
 }
@@ -83,6 +88,7 @@ impl TryFrom<Bytes> for MetadataResponse {
 pub fn parse_metadata_response(s: NomBytes) -> IResult<NomBytes, MetadataResponse> {
     let (s, header_response) = protocol::parse_header_response(s)?;
     let (s, brokers) = parser::parse_array(parse_broker)(s)?;
+    let (s, controller_id) = be_i32(s)?;
     let (s, topics) = parser::parse_array(parse_topic)(s)?;
 
     Ok((
@@ -90,6 +96,7 @@ pub fn parse_metadata_response(s: NomBytes) -> IResult<NomBytes, MetadataRespons
         MetadataResponse {
             header_response,
             brokers,
+            controller_id,
             topics,
         },
     ))
@@ -104,12 +111,15 @@ pub struct Broker {
     pub host: Bytes,
     /// The broker port.
     pub port: i32,
+    /// The rack of the broker, or null if it has not been assigned to a rack.
+    pub rack: Option<Bytes>,
 }
 
 fn parse_broker(s: NomBytes) -> IResult<NomBytes, Broker> {
     let (s, node_id) = be_i32(s)?;
     let (s, host) = parser::parse_string(s)?;
     let (s, port) = be_i32(s)?;
+    let (s, rack) = parser::parse_nullable_string(s)?;
 
     Ok((
         s,
@@ -117,6 +127,7 @@ fn parse_broker(s: NomBytes) -> IResult<NomBytes, Broker> {
             node_id,
             host,
             port,
+            rack,
         },
     ))
 }
@@ -128,6 +139,8 @@ pub struct Topic {
     pub error_code: KafkaCode,
     /// The topic name.
     pub name: Bytes,
+    /// True if the topic is internal.
+    pub is_internal: bool,
     /// Each partition in the topic.
     pub partitions: Vec<Partition>,
 }
@@ -155,6 +168,7 @@ impl Topic {
 fn parse_topic(s: NomBytes) -> IResult<NomBytes, Topic> {
     let (s, error_code) = parser::parse_kafka_code(s)?;
     let (s, name) = parser::parse_string(s)?;
+    let (s, is_internal) = parser::parse_boolean(s)?;
     let (s, partitions) = parser::parse_array(parse_partition)(s)?;
 
     Ok((
@@ -162,6 +176,7 @@ fn parse_topic(s: NomBytes) -> IResult<NomBytes, Topic> {
         Topic {
             error_code,
             name,
+            is_internal,
             partitions,
         },
     ))
