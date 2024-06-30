@@ -174,21 +174,21 @@ mod test {
     fn test_parse_bool_false() {
         let buf = NomBytes::from(b"\x00" as &[u8]);
 
-        assert_eq!(parse_boolean(buf).unwrap().1, false);
+        assert!(!parse_boolean(buf).unwrap().1);
     }
 
     #[test]
     fn test_parse_bool_true() {
         let buf = NomBytes::from(b"\x01" as &[u8]);
 
-        assert_eq!(parse_boolean(buf).unwrap().1, true);
+        assert!(parse_boolean(buf).unwrap().1);
     }
 
     #[test]
     fn test_parse_bool_two() {
         let buf = NomBytes::from(b"\x02" as &[u8]);
 
-        assert_eq!(parse_boolean(buf).unwrap().1, true);
+        assert!(parse_boolean(buf).unwrap().1);
     }
 
     #[test]
