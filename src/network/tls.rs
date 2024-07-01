@@ -145,7 +145,7 @@ impl TlsConnection {
     /// let buf = "test";
     /// conn.send_request(buf).await?;
     /// ```
-    async fn send_request_<R: ToByte + Send>(&mut self, req: &R) -> Result<()> {
+    pub async fn send_request_<R: ToByte + Send>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
         let mut buffer = Vec::with_capacity(4);
@@ -181,7 +181,7 @@ impl TlsConnection {
     /// // receive a message from a kafka broker
     /// let response_bytes = conn.receive_response().await?;
     /// ```
-    async fn receive_response_(&mut self) -> Result<BytesMut> {
+    pub async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut stream = self.stream.lock().await;
 

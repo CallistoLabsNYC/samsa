@@ -47,6 +47,8 @@ pub use self::{
         request::{Header, ProduceRequest},
         response::ProduceResponse,
     },
+    sasl_authenticate::{request::SaslAuthenticationRequest, response::SaslAuthenticationResponse},
+    sasl_handshake::{request::SaslHandshakeRequest, response::SaslHandshakeResponse},
     sync_group::{
         request::{Assignment, MemberAssignment, PartitionAssignment, SyncGroupRequest},
         response::SyncGroupResponse,

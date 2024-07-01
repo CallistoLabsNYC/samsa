@@ -21,7 +21,7 @@ use bytes::Bytes;
 
 use crate::{encode::ToByte, error::Result, protocol::HeaderRequest};
 
-const API_KEY_METADATA: i16 = 17;
+const API_KEY_METADATA: i16 = 36;
 const API_VERSION: i16 = 1;
 
 /// The base Sasl Authentication request object.
@@ -48,12 +48,12 @@ impl<'a> SaslAuthenticationRequest<'a> {
         correlation_id: i32,
         client_id: &'a str,
         auth_bytes: Bytes,
-    ) -> Result<Self> {
+    ) -> Self {
         let header = HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id);
-        Ok(Self {
+        Self {
             header,
             auth_bytes,
-        })
+        }
     }
 }
 

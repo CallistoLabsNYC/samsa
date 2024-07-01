@@ -46,12 +46,12 @@ impl<'a> SaslHandshakeRequest<'a> {
         correlation_id: i32,
         client_id: &'a str,
         mechanism: String,
-    ) -> Result<Self> {
+    ) -> Self {
         let header = HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id);
-        Ok(Self {
+        Self {
             header,
             mechanism,
-        })
+        }
     }
 }
 
