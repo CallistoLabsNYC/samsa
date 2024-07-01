@@ -22,6 +22,8 @@ pub mod list_offsets;
 pub mod metadata;
 pub mod offset_fetch;
 pub mod produce;
+pub mod sasl_authenticate;
+pub mod sasl_handshake;
 pub mod sync_group;
 
 use bytes::BufMut;
