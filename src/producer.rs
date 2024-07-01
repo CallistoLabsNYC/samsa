@@ -111,7 +111,7 @@ pub(crate) async fn flush_producer<T: BrokerConnection + Clone + Debug + Send + 
     tracing::debug!("Producing {} messages", messages.len());
     for message in messages {
         let broker_id = cluster_metadata
-            .get_leader_for_topic_partition(&message.topic, message.partition_id)
+            .get_leader_id_for_topic_partition(&message.topic, message.partition_id)
             .ok_or(Error::NoLeaderForTopicPartition(
                 message.topic.clone(),
                 message.partition_id,

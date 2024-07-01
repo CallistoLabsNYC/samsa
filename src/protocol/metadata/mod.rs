@@ -28,13 +28,14 @@ mod test {
     use bytes::Bytes;
     use nombytes::NomBytes;
 
+    use super::response::*;
     use super::*;
     use crate::{encode::ToByte, error::KafkaCode, protocol};
 
     #[test]
     fn encode() {
         let b = [
-            0, 3, 0, 0, 0, 0, 0, 1, 0, 4, 114, 117, 115, 116, 0, 0, 0, 1, 0, 9, 112, 117, 114, 99,
+            0, 3, 0, 1, 0, 0, 0, 1, 0, 4, 114, 117, 115, 116, 0, 0, 0, 1, 0, 9, 112, 117, 114, 99,
             104, 97, 115, 101, 115,
         ];
         let correlation_id = 1;
@@ -52,15 +53,7 @@ mod test {
 
     #[test]
     fn parse() {
-        let buf = [
-            0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 9, 108, 111, 99, 97, 108, 104, 111, 115, 116, 0,
-            0, 35, 132, 0, 0, 0, 2, 0, 9, 108, 111, 99, 97, 108, 104, 111, 115, 116, 0, 0, 35, 133,
-            0, 0, 0, 1, 0, 0, 0, 9, 112, 117, 114, 99, 104, 97, 115, 101, 115, 0, 0, 0, 4, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1,
-            0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0,
-            2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 0, 0, 1, 0, 0,
-            0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,
-        ];
+        let buf = b"\0\0\0\x01\0\0\0\x02\0\0\0\x01\0\tlocalhost\0\0#\x84\xff\xff\0\0\0\x02\0\tlocalhost\0\0#\x85\xff\xff\0\0\0\x01\0\0\0\x01\0\0\0\tbenchmark\0\0\0\0\x03\0\0\0\0\0\0\0\0\0\x02\0\0\0\x01\0\0\0\x02\0\0\0\x01\0\0\0\x02\0\0\0\0\0\x01\0\0\0\x02\0\0\0\x01\0\0\0\x02\0\0\0\x01\0\0\0\x02\0\0\0\0\0\x02\0\0\0\x01\0\0\0\x01\0\0\0\x01\0\0\0\x01\0\0\0\x01";
         let res = test_metadata();
 
         let (_, parsed) =
@@ -68,49 +61,46 @@ mod test {
         assert_eq!(parsed, res);
     }
 
-    fn test_metadata() -> response::MetadataResponse {
-        response::MetadataResponse {
+    fn test_metadata() -> MetadataResponse {
+        MetadataResponse {
             header_response: protocol::HeaderResponse { correlation_id: 1 },
             brokers: vec![
-                response::Broker {
+                Broker {
                     node_id: 1,
                     host: Bytes::from("localhost"),
                     port: 9092,
+                    rack: None,
                 },
-                response::Broker {
+                Broker {
                     node_id: 2,
                     host: Bytes::from("localhost"),
                     port: 9093,
+                    rack: None,
                 },
             ],
-            topics: vec![response::Topic {
+            controller_id: 1,
+            topics: vec![Topic {
                 error_code: KafkaCode::None,
-                name: Bytes::from("purchases"),
+                name: Bytes::from("benchmark"),
+                is_internal: false,
                 partitions: vec![
-                    response::Partition {
+                    Partition {
                         error_code: KafkaCode::None,
                         partition_index: 0,
                         leader_id: 2,
                         replica_nodes: vec![2],
                         isr_nodes: vec![2],
                     },
-                    response::Partition {
+                    Partition {
                         error_code: KafkaCode::None,
                         partition_index: 1,
-                        leader_id: 1,
-                        replica_nodes: vec![1],
-                        isr_nodes: vec![1],
-                    },
-                    response::Partition {
-                        error_code: KafkaCode::None,
-                        partition_index: 2,
                         leader_id: 2,
                         replica_nodes: vec![2],
                         isr_nodes: vec![2],
                     },
-                    response::Partition {
+                    Partition {
                         error_code: KafkaCode::None,
-                        partition_index: 3,
+                        partition_index: 2,
                         leader_id: 1,
                         replica_nodes: vec![1],
                         isr_nodes: vec![1],
