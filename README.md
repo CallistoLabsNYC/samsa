@@ -22,6 +22,7 @@ We are happy to recently include **Gzip compression** and **TLS** support.
     - [TLS support](#tls-support)
     - [Compression support](#compression-support)
 - [Examples](#examples)
+- [Development setup](#development-setup)
 - [Resources](#resources)
 
 
@@ -283,7 +284,13 @@ We have a replica of the Producer and Consumer examples that utilize the TLS sup
 1. Visit the console to see the new member join.
 1. Repeat 2 more times to see the full group.
 
+## Development setup
+To set up the development environment, you will need the [Rust Toolchain](https://rustup.rs/) and [Docker](https://docs.docker.com/engine/install/). 
 
+- Run `docker-compose up` to spin up a Redpanda cluster.
+
+### Tests
+To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] KAFKA_TOPIC=[tester topic name] cargo test --tests --all-features -- --show-output --test-threads=1`
 
 ## Resources
 - [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)
