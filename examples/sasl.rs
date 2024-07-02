@@ -4,10 +4,15 @@
 //! password. Currently this means 'SCRAM-SHA-2', 'SCRAM-SHA-1', 'PLAIN', and 'LOGIN', preferred
 //! in that order.
 
-use rsasl::prelude::*;
-use samsa::prelude::{protocol::{sasl_handshake::{request::SaslHandshakeRequest, response::SaslHandshakeResponse}, SaslAuthenticationRequest, SaslAuthenticationResponse}, BrokerAddress, TcpConnection, TlsConnection, TlsConnectionOptions};
-use std::io::Cursor;
 use bytes::Bytes;
+use rsasl::prelude::*;
+use samsa::prelude::{
+    protocol::{
+        sasl_handshake::{request::SaslHandshakeRequest, response::SaslHandshakeResponse}, MetadataRequest, MetadataResponse, SaslAuthenticationRequest, SaslAuthenticationResponse
+    },
+    BrokerAddress, TcpConnection, TlsConnection, TlsConnectionOptions,
+};
+use std::io::Cursor;
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -26,17 +31,25 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-
     let username = String::from("admin");
     let password = String::from("pass1234");
     let correlation_id = 1;
     let client_id = "rust";
+    let topics = vec!["my-tester"];
 
     let options = vec![BrokerAddress {
-            host: "piggy.callistolabs.cloud".to_owned(),
-            port: 9092,
-        }];
-        
+        host: "piggy.callistolabs.cloud".to_owned(),
+        port: 9092,
+    }];
+
+    
+
+    let mut conn = TcpConnection::new_(options).await.unwrap();
+    let handshake_request =
+        SaslHandshakeRequest::new(correlation_id, client_id, "SCRAM-SHA-256".to_owned());
+    conn.send_request_(&handshake_request).await.unwrap();
+    let handshake_response = conn.receive_response_().await.unwrap();
+    let handshake_response = SaslHandshakeResponse::try_from(handshake_response.freeze());
 
     // Construct a a config from only the credentials.
     // This takes the authzid, authid/username and password that are to be used.
@@ -49,41 +62,43 @@ async fn main() -> Result<(), ()> {
 
     // There are often more than one Mechanisms offered by the server, `start_suggested` will
     // select the best ones from those available to both sides.
-    let offered = [Mechname::parse(b"PLAIN").unwrap()];
+    let offered = [Mechname::parse(b"SCRAM-SHA-256").unwrap()];
     let mut session = sasl.start_suggested(&offered).unwrap();
 
     // Do the authentication steps.
     let mut out = Cursor::new(Vec::new());
-    // PLAIN is client-first, and thus takes no input data on the first step.
+    // SCRAM-SHA-256 is client-first, and thus takes no input data on the first step.
     let input: Option<&[u8]> = None;
     // Actually generate the authentication data to send to a server
     let state = session.step(input, &mut out).unwrap();
 
-    let mut conn = TcpConnection::new_(options).await.unwrap();
-
-    match state {
-        State::Running => panic!("PLAIN exchange took more than one step"),
-        State::Finished(MessageSent::Yes) => {
-            let buffer = out.into_inner();
-            println!("Encoded bytes: {buffer:?}");
-            println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
+    let buffer = out.into_inner();
+    println!("Encoded bytes: {buffer:?}");
+    println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
 
-            let handshake_request = SaslHandshakeRequest::new(correlation_id, client_id, "PLAIN".to_owned());
-            conn.send_request_(&handshake_request).await.unwrap();
-            let handshake_response = conn.receive_response_().await.unwrap();
-            let handshake_response = SaslHandshakeResponse::try_from(handshake_response.freeze());
+    let authentication_request =
+    SaslAuthenticationRequest::new(correlation_id, client_id, Bytes::from(buffer));
+    conn.send_request_(&authentication_request).await.unwrap();
+    let authentication_response = conn.receive_response_().await.unwrap();
+    let authentication_response =
+        SaslAuthenticationResponse::try_from(authentication_response.freeze());
+    
+    // match state {
+    //     State::Running => panic!("SCRAM-SHA-256 exchange took more than one step"),
+    //     State::Finished(MessageSent::Yes) => {
+    //         panic!("SCRAM-SHA-256 sent the message")
+    //     }
+    //     State::Finished(MessageSent::No) => {
+    //         panic!("SCRAM-SHA-256 exchange produced no output")
+    //     }
+    // }
 
-            let authentication_request = SaslAuthenticationRequest::new(correlation_id, client_id, Bytes::from(buffer));
-            conn.send_request_(&authentication_request).await.unwrap();
-            let authentication_response = conn.receive_response_().await.unwrap();
-            let authentication_response = SaslAuthenticationResponse::try_from(authentication_response.freeze());
-
-        }
-        State::Finished(MessageSent::No) => {
-            panic!("PLAIN exchange produced no output")
-        }
-    }
+    let metadata_request = MetadataRequest::new(correlation_id, client_id, &topics);
+    conn.send_request_(&metadata_request).await.unwrap();
+    let metadata_response = conn.receive_response_().await.unwrap();
+    let metadata_response =
+        MetadataResponse::try_from(metadata_response.freeze());
 
     Ok(())
 }

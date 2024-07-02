@@ -38,7 +38,7 @@ pub struct SaslHandshakeResponse {
     /// The error code, or 0 if there was no error.
     pub error_code: KafkaCode,
     /// The mechanisms enabled in the server.
-    pub mechanisms: Bytes
+    pub mechanisms: Vec<Bytes>
 }
 
 impl TryFrom<Bytes> for SaslHandshakeResponse {
@@ -60,7 +60,7 @@ impl TryFrom<Bytes> for SaslHandshakeResponse {
 pub fn parse_handshake_response(s: NomBytes) -> IResult<NomBytes, SaslHandshakeResponse> {
     let (s, header) = parse_header_response(s)?;
     let (s, error_code) = parser::parse_kafka_code(s)?;
-    let (s, mechanisms) = parser::parse_string(s)?;
+    let (s, mechanisms) = parser::parse_array(parser::parse_string)(s)?;
 
     Ok((s, SaslHandshakeResponse { header, error_code, mechanisms }))
 }

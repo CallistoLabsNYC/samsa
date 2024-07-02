@@ -160,6 +160,8 @@ pub enum KafkaCode {
     TopicAlreadyExists = 36,
     /// This is not the correct controller for this cluster.
     NotController = 41,
+    /// SASL Authentication failed.
+    SaslAuthenticationFailed = 58,
 }
 
 #[cfg(feature = "redpanda")]

@@ -66,7 +66,7 @@ impl TryFrom<Bytes> for SaslAuthenticationResponse {
 pub fn parse_authenticate_response(s: NomBytes) -> IResult<NomBytes, SaslAuthenticationResponse> {
     let (s, header) = parse_header_response(s)?;
     let (s, error_code) = parser::parse_kafka_code(s)?;
-    let (s, error_message) = parser::parse_nullable_bytes(s)?;
+    let (s, error_message) = parser::parse_nullable_string(s)?;
     let (s, auth_bytes) = parser::parse_bytes(s)?;
     let (s, session_lifetime_ms) = be_i64(s)?;
 
