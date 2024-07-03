@@ -6,7 +6,7 @@ use samsa::prelude::{Compression, ProduceMessage, ProducerBuilder, TcpConnection
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::DEBUG)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -18,44 +18,42 @@ async fn main() -> Result<(), ()> {
         .with_target(false)
         // Build the subscriber
         .init();
+
     let bootstrap_addrs = vec![samsa::prelude::BrokerAddress {
         host: "127.0.0.1".to_owned(),
         port: 9092,
     }];
-    let topic_name = "my-tester";
+    let topic_name = "benchmark";
 
-    let stream = tokio_stream::StreamExt::throttle(
-        iter(vec![0].into_iter()).cycle().enumerate().map(|(i, _)| {
-            let partition_id = (i % 4) as i32;
-            ProduceMessage {
-                topic: topic_name.to_string(),
-                partition_id,
-                key: Some(Bytes::from_static(b"Tester")),
-                value: Some(Bytes::from_static(b"Value")),
-                headers: vec![],
-            }
-        }),
-        std::time::Duration::from_secs(1),
-    );
+    let stream = iter(0..5000000).map(|_| ProduceMessage {
+        topic: topic_name.to_string(),
+        partition_id: 0,
+        key: None,
+        value: Some(Bytes::from_static(b"0123456789")),
+        headers: vec![],
+    });
 
     tracing::info!("Connecting to cluster");
     let output_stream =
-        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
+        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()], None)
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
             .compression(Compression::Gzip)
+            // .required_acks(1)
             .clone()
-            .build_from_stream(tokio_stream::StreamExt::chunks_timeout(
-                stream,
-                200,
-                std::time::Duration::from_secs(3),
-            ))
-            .await;
+            .build_from_stream(stream.chunks(200))
+            .await
+            // .chunks(2000)
+            ;
 
+    // let mut counter = 0;
+    tracing::info!("running");
     tokio::pin!(output_stream);
-    while let Some(message) = output_stream.next().await {
-        tracing::info!("Produced {} message", message.len());
+    while let Some(_) = output_stream.next().await {
+        // tracing::info!("Produced {} * 2000 message", message.len());
+        // counter += message[0].len() * 2000;
     }
+    tracing::info!("done");
 
     Ok(())
 }

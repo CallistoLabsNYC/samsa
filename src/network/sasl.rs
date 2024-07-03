@@ -2,12 +2,17 @@ use crate::prelude::{
     protocol::{
         SaslAuthenticationRequest, SaslAuthenticationResponse, SaslHandshakeRequest,
         SaslHandshakeResponse,
-    },
-    BrokerConnection, Result,
+    }, BrokerConnection, Error, KafkaCode, Result
 };
 use bytes::Bytes;
 use rsasl::prelude::*;
 use std::io::Cursor;
+
+#[derive(Clone, Debug)]
+pub struct SaslConfig {
+    pub username: String,
+    pub password: String
+}
 
 pub async fn sasl_handshake(
     mut broker_conn: impl BrokerConnection,
@@ -38,14 +43,16 @@ pub async fn do_sasl(
     broker_conn: impl BrokerConnection + Clone,
     correlation_id: i32,
     client_id: &str,
-    username: String,
-    password: String,
+    config: SaslConfig
 ) -> Result<()> {
     let mechanism = String::from("SCRAM-SHA-256");
     let handshake_response =
         sasl_handshake(broker_conn.clone(), correlation_id, client_id, mechanism).await?;
+    if handshake_response.error_code != KafkaCode::None {
+        return Err(Error::KafkaError(handshake_response.error_code))
+    }
 
-    let config = SASLConfig::with_credentials(None, username, password).unwrap();
+    let config = SASLConfig::with_credentials(None, config.username, config.password).unwrap();
     let sasl = rsasl::prelude::SASLClient::new(config);
 
     // There are often more than one Mechanisms offered by the server, `start_suggested` will

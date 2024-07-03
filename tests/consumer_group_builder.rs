@@ -12,6 +12,7 @@ async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
         brokers,
         "abc".to_string(),
         TopicPartitions::default(),
+        None
     )
     .await?;
     let _consumer = builder.build();
@@ -28,6 +29,7 @@ async fn it_can_build_with_ref_to_builder() -> Result<(), Box<Error>> {
         brokers,
         "abc".to_string(),
         TopicPartitions::default(),
+        None,
     )
     .await?;
     let builder_ref = &builder;

@@ -19,7 +19,7 @@
 
 use bytes::Bytes;
 
-use crate::{encode::ToByte, error::Result, protocol::HeaderRequest};
+use crate::{encode::ToByte, protocol::HeaderRequest};
 
 const API_KEY_METADATA: i16 = 36;
 const API_VERSION: i16 = 1;

@@ -17,7 +17,7 @@
 //!
 //! Note that we are using version 1 of this API
 
-use crate::{encode::ToByte, error::Result, protocol::HeaderRequest};
+use crate::{encode::ToByte, protocol::HeaderRequest};
 
 const API_KEY_METADATA: i16 = 17;
 const API_VERSION: i16 = 1;

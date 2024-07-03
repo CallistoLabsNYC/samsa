@@ -1,5 +1,5 @@
+use futures::stream::StreamExt;
 use samsa::prelude::{ConsumerBuilder, TcpConnection, TopicPartitionsBuilder};
-use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -23,24 +23,26 @@ async fn main() -> Result<(), ()> {
         port: 9092,
     }];
 
-    let src_topic = "my-tester".to_string();
+    let src_topic = "benchmark".to_string();
 
     let stream = ConsumerBuilder::<TcpConnection>::new(
         bootstrap_addrs,
         TopicPartitionsBuilder::new()
-            .assign(src_topic, vec![0, 1, 2, 3])
+            .assign(src_topic, vec![0, 1])
             .build(),
+        None
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
     .build()
-    .into_stream()
-    .throttle(std::time::Duration::from_secs(1));
+    .into_stream();
 
     tokio::pin!(stream);
-
+    tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        tracing::info!("{:?}", message);
+        if message.unwrap().0.len() == 0 {
+            tracing::info!("done!");
+        }
     }
 
     Ok(())

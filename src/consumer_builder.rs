@@ -1,10 +1,11 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
 use crate::metadata::ClusterMetadata;
+use crate::network::sasl::SaslConfig;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
     network::BrokerConnection,
-    protocol, DEFAULT_CLIENT_ID,
+    protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 use nom::AsBytes;
 use std::collections::HashMap;
@@ -54,15 +55,21 @@ impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     pub async fn new(
         connection_params: T::ConnConfig,
         assigned_topic_partitions: TopicPartitions,
+        sasl_config: Option<SaslConfig>,
     ) -> Result<Self> {
         let topics = assigned_topic_partitions
             .keys()
             .map(|topic_name| topic_name.to_owned())
             .collect();
 
-        let cluster_metadata =
-            metadata::ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics)
-                .await?;
+        let cluster_metadata = metadata::ClusterMetadata::new(
+            connection_params,
+            DEFAULT_CORRELATION_ID,
+            DEFAULT_CLIENT_ID.to_owned(),
+            topics,
+            sasl_config,
+        )
+        .await?;
 
         Ok(Self {
             cluster_metadata,

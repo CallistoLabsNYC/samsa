@@ -47,7 +47,7 @@ async fn main() -> Result<(), ()> {
 
     tracing::info!("Connecting to cluster");
     let output_stream =
-        ProducerBuilder::<TlsConnection>::new(options, vec![topic_name.to_string()])
+        ProducerBuilder::<TlsConnection>::new(options, vec![topic_name.to_string()], None)
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
             .compression(Compression::Gzip)

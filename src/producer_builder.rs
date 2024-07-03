@@ -4,11 +4,13 @@ use std::time::Duration;
 use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
 use tokio_stream::{Stream, StreamExt};
 
+use crate::network::sasl::SaslConfig;
 use crate::network::BrokerConnection;
 use crate::prelude::Compression;
 use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
 use crate::protocol::produce::request::Attributes;
 use crate::protocol::ProduceResponse;
+use crate::DEFAULT_CORRELATION_ID;
 use crate::{error::Result, metadata::ClusterMetadata, DEFAULT_CLIENT_ID};
 
 const DEFAULT_MAX_BATCH_SIZE: usize = 100;
@@ -56,9 +58,9 @@ where
     T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
 {
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
-    pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>) -> Result<Self> {
+    pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>, sasl_config: Option<SaslConfig>) -> Result<Self> {
         let cluster_metadata =
-            ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
+            ClusterMetadata::new(connection_params, DEFAULT_CORRELATION_ID, DEFAULT_CLIENT_ID.to_owned(), topics, sasl_config.clone()).await?;
 
         Ok(Self {
             cluster_metadata,

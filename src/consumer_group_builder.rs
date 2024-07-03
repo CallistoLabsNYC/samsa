@@ -5,7 +5,7 @@ use crate::{
     consumer::{FetchParams, TopicPartitions},
     consumer_group::ConsumerGroup,
     error::{Error, KafkaCode, Result},
-    network::{BrokerAddress, BrokerConnection},
+    network::{sasl::SaslConfig, BrokerAddress, BrokerConnection},
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 
@@ -24,6 +24,7 @@ pub struct ConsumerGroupBuilder<T: BrokerConnection> {
     pub retention_time_ms: i64,
     pub group_topic_partitions: TopicPartitions,
     pub fetch_params: FetchParams,
+    pub sasl_config: Option<SaslConfig>
 }
 
 impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
@@ -32,6 +33,7 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
         connection_params: T::ConnConfig,
         group_id: String,
         group_topic_partitions: TopicPartitions,
+        sasl_config: Option<SaslConfig>
     ) -> Result<Self> {
         Ok(Self {
             connection_params,
@@ -43,6 +45,7 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
             retention_time_ms: DEFAULT_RETENTION_TIME_MS,
             group_topic_partitions,
             fetch_params: FetchParams::new(),
+            sasl_config
         })
     }
 
@@ -143,6 +146,7 @@ impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
             member_id: Bytes::from_static(b""),
             generation_id: 0,
             assignment: None,
+            sasl_config: self.sasl_config
         })
     }
 }

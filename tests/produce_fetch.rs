@@ -21,8 +21,10 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
+        None
     )
     .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);
@@ -105,8 +107,10 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
+        None
     )
     .await?;
     let topic_partition = HashMap::from([(topic.to_string(), vec![PARTITION_ID])]);

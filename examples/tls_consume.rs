@@ -37,6 +37,7 @@ async fn main() -> Result<(), ()> {
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0])
             .build(),
+        None,
     )
     .await
     .unwrap()

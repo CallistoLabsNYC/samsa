@@ -11,7 +11,7 @@ use crate::{
     consumer::{ConsumeMessage, FetchParams, TopicPartitions},
     consumer_builder::ConsumerBuilder,
     error::{Error, KafkaCode, Result},
-    network::BrokerConnection,
+    network::{sasl::SaslConfig, BrokerConnection},
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
@@ -36,6 +36,7 @@ pub struct ConsumerGroup<T: BrokerConnection> {
     pub retention_time_ms: i64,
     pub group_topic_partitions: TopicPartitions,
     pub fetch_params: FetchParams,
+    pub sasl_config: Option<SaslConfig>
 }
 
 impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
@@ -192,7 +193,7 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
                             acc
                         });
 
-                let consumer = ConsumerBuilder::<T>::new(self.connection_params.clone(), assigned_topic_partitions)
+                let consumer = ConsumerBuilder::<T>::new(self.connection_params.clone(), assigned_topic_partitions, self.sasl_config.clone())
                     .await?
                     .seek_to_group(coordinator_conn.clone(), &self.group_id)
                     .await?
