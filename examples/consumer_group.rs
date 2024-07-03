@@ -34,7 +34,7 @@ async fn main() -> Result<(), ()> {
         TopicPartitionsBuilder::new()
             .assign(src_topic, vec![0, 1, 2, 3])
             .build(),
-        None
+        None,
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?

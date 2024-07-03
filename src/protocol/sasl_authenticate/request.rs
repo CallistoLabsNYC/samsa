@@ -11,7 +11,7 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! SaslAuthenticate Request (Version: 1) => auth_bytes 
+//! SaslAuthenticate Request (Version: 1) => auth_bytes
 //!   auth_bytes => BYTES
 //! ```
 //!
@@ -44,16 +44,9 @@ pub struct SaslAuthenticationRequest<'a> {
 
 impl<'a> SaslAuthenticationRequest<'a> {
     /// Create a new SASL Authentication Request
-    pub fn new(
-        correlation_id: i32,
-        client_id: &'a str,
-        auth_bytes: Bytes,
-    ) -> Self {
+    pub fn new(correlation_id: i32, client_id: &'a str, auth_bytes: Bytes) -> Self {
         let header = HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id);
-        Self {
-            header,
-            auth_bytes,
-        }
+        Self { header, auth_bytes }
     }
 }
 

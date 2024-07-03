@@ -36,7 +36,7 @@ pub struct ConsumerGroup<T: BrokerConnection> {
     pub retention_time_ms: i64,
     pub group_topic_partitions: TopicPartitions,
     pub fetch_params: FetchParams,
-    pub sasl_config: Option<SaslConfig>
+    pub sasl_config: Option<SaslConfig>,
 }
 
 impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {

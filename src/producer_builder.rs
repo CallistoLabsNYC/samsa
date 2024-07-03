@@ -58,9 +58,19 @@ where
     T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
 {
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
-    pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>, sasl_config: Option<SaslConfig>) -> Result<Self> {
-        let cluster_metadata =
-            ClusterMetadata::new(connection_params, DEFAULT_CORRELATION_ID, DEFAULT_CLIENT_ID.to_owned(), topics, sasl_config.clone()).await?;
+    pub async fn new(
+        connection_params: T::ConnConfig,
+        topics: Vec<String>,
+        sasl_config: Option<SaslConfig>,
+    ) -> Result<Self> {
+        let cluster_metadata = ClusterMetadata::new(
+            connection_params,
+            DEFAULT_CORRELATION_ID,
+            DEFAULT_CLIENT_ID.to_owned(),
+            topics,
+            sasl_config.clone(),
+        )
+        .await?;
 
         Ok(Self {
             cluster_metadata,

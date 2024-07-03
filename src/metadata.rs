@@ -6,7 +6,10 @@ use tracing::instrument;
 
 use crate::{
     error::{Error, Result},
-    network::{sasl::{do_sasl, SaslConfig}, BrokerAddress, BrokerConnection},
+    network::{
+        sasl::{do_sasl, SaslConfig},
+        BrokerAddress, BrokerConnection,
+    },
     protocol::{self, metadata::response::*},
 };
 
@@ -19,7 +22,7 @@ pub struct ClusterMetadata<T: BrokerConnection> {
     pub correlation_id: i32,
     pub client_id: String,
     pub topic_names: Vec<String>,
-    pub sasl_config: Option<SaslConfig>
+    pub sasl_config: Option<SaslConfig>,
 }
 
 type TopicPartition = HashMap<String, Vec<i32>>;
@@ -30,7 +33,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         correlation_id: i32,
         client_id: String,
         topics: Vec<String>,
-        sasl_config: Option<SaslConfig>
+        sasl_config: Option<SaslConfig>,
     ) -> Result<ClusterMetadata<T>> {
         // tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
         let mut metadata = ClusterMetadata {
@@ -41,13 +44,19 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
             correlation_id,
             client_id,
             topic_names: topics,
-            sasl_config: sasl_config.clone()
+            sasl_config: sasl_config.clone(),
         };
         let bootstrap_connection = T::new(connection_params).await?;
 
         if let Some(config) = sasl_config.clone() {
             tracing::info!("Connecting with SASL on bootstrap");
-            do_sasl(bootstrap_connection.clone(), correlation_id, &metadata.client_id, config).await?;
+            do_sasl(
+                bootstrap_connection.clone(),
+                correlation_id,
+                &metadata.client_id,
+                config,
+            )
+            .await?;
         }
 
         metadata.fetch(bootstrap_connection).await?;

@@ -4,12 +4,10 @@
 //! password. Currently this means 'SCRAM-SHA-2', 'SCRAM-SHA-1', 'PLAIN', and 'LOGIN', preferred
 //! in that order.
 
-use samsa::prelude::{
-    ProduceMessage, BrokerAddress, ProducerBuilder, SaslConfig, TcpConnection 
-};
+use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, TcpConnection};
 
-use futures::stream::{iter, StreamExt};
 use bytes::Bytes;
+use futures::stream::{iter, StreamExt};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -49,16 +47,18 @@ async fn main() -> Result<(), ()> {
     });
 
     tracing::info!("Connecting to cluster");
-    let output_stream =
-        ProducerBuilder::<TcpConnection>::new(options, vec![topic_name.to_string()], Some(sasl_config))
-            .await
-            .map_err(|err| tracing::error!("{:?}", err))?
-            // .compression(Compression::Gzip)
-            // .required_acks(1)
-            .clone()
-            .build_from_stream(stream.chunks(200))
-            .await
-            ;
+    let output_stream = ProducerBuilder::<TcpConnection>::new(
+        options,
+        vec![topic_name.to_string()],
+        Some(sasl_config),
+    )
+    .await
+    .map_err(|err| tracing::error!("{:?}", err))?
+    // .compression(Compression::Gzip)
+    // .required_acks(1)
+    .clone()
+    .build_from_stream(stream.chunks(200))
+    .await;
 
     tracing::info!("running");
     tokio::pin!(output_stream);

@@ -162,13 +162,15 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     }
     let topic = "group-integration-test".to_owned();
     let conn = TcpConnection::new(brokers).await?;
-    testsupport::ensure_topic_creation(conn.clone(), &topic.clone(), CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn.clone(), &topic.clone(), CORRELATION_ID, CLIENT_ID)
+        .await?;
 
     //
     // Get coordinator for this group
     //
     let coordinator_res =
-        samsa::prelude::find_coordinator(conn.clone(), CORRELATION_ID, CLIENT_ID, GROUP_ID2).await?;
+        samsa::prelude::find_coordinator(conn.clone(), CORRELATION_ID, CLIENT_ID, GROUP_ID2)
+            .await?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -282,7 +284,6 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     )
     .await?;
     assert_eq!(leave_group_response.error_code, KafkaCode::None);
-
 
     testsupport::cleanup_topic(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
