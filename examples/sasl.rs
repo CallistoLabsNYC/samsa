@@ -31,20 +31,20 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let username = String::from("admin");
+    let username = String::from("myuser");
     let password = String::from("pass1234");
+    let topics = vec!["atopic"];
+
     let correlation_id = 1;
     let client_id = "rust";
-    let topics = vec!["my-tester"];
 
     let options = vec![BrokerAddress {
         host: "piggy.callistolabs.cloud".to_owned(),
         port: 9092,
     }];
 
-    
-
     let mut conn = TcpConnection::new_(options).await.unwrap();
+
     let handshake_request =
         SaslHandshakeRequest::new(correlation_id, client_id, "SCRAM-SHA-256".to_owned());
     conn.send_request_(&handshake_request).await.unwrap();
@@ -71,6 +71,15 @@ async fn main() -> Result<(), ()> {
     let input: Option<&[u8]> = None;
     // Actually generate the authentication data to send to a server
     let state = session.step(input, &mut out).unwrap();
+    match state {
+        State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
+        State::Finished(MessageSent::Yes) => {
+            tracing::info!("SCRAM-SHA-256 sent the message")
+        }
+        State::Finished(MessageSent::No) => {
+            tracing::info!("SCRAM-SHA-256 exchange produced no output")
+        }
+    }
 
     let buffer = out.into_inner();
     println!("Encoded bytes: {buffer:?}");
@@ -82,17 +91,32 @@ async fn main() -> Result<(), ()> {
     conn.send_request_(&authentication_request).await.unwrap();
     let authentication_response = conn.receive_response_().await.unwrap();
     let authentication_response =
-        SaslAuthenticationResponse::try_from(authentication_response.freeze());
+        SaslAuthenticationResponse::try_from(authentication_response.freeze()).unwrap();
     
-    // match state {
-    //     State::Running => panic!("SCRAM-SHA-256 exchange took more than one step"),
-    //     State::Finished(MessageSent::Yes) => {
-    //         panic!("SCRAM-SHA-256 sent the message")
-    //     }
-    //     State::Finished(MessageSent::No) => {
-    //         panic!("SCRAM-SHA-256 exchange produced no output")
-    //     }
-    // }
+    
+
+    let mut out = Cursor::new(Vec::new());
+    let state = session.step(Some(authentication_response.auth_bytes.to_vec().as_ref()), &mut out).unwrap();
+    match state {
+        State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
+        State::Finished(MessageSent::Yes) => {
+            tracing::info!("SCRAM-SHA-256 sent the message")
+        }
+        State::Finished(MessageSent::No) => {
+            tracing::info!("SCRAM-SHA-256 exchange produced no output")
+        }
+    }
+    let buffer = out.into_inner();
+    println!("Encoded bytes: {buffer:?}");
+    println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
+
+    let authentication_request =
+    SaslAuthenticationRequest::new(correlation_id, client_id, Bytes::from(buffer));
+    conn.send_request_(&authentication_request).await.unwrap();
+    let authentication_response = conn.receive_response_().await.unwrap();
+    let authentication_response =
+        SaslAuthenticationResponse::try_from(authentication_response.freeze()).unwrap();
+
 
     let metadata_request = MetadataRequest::new(correlation_id, client_id, &topics);
     conn.send_request_(&metadata_request).await.unwrap();
