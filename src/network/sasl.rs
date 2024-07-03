@@ -34,8 +34,8 @@ pub async fn sasl_authentication(
     SaslAuthenticationResponse::try_from(authentication_response.freeze())
 }
 
-pub async fn sasl(
-    broker_conn: impl BrokerConnection + Copy,
+pub async fn do_sasl(
+    broker_conn: impl BrokerConnection + Clone,
     correlation_id: i32,
     client_id: &str,
     username: String,
@@ -43,7 +43,7 @@ pub async fn sasl(
 ) -> Result<()> {
     let mechanism = String::from("SCRAM-SHA-256");
     let handshake_response =
-        sasl_handshake(broker_conn, correlation_id, client_id, mechanism).await?;
+        sasl_handshake(broker_conn.clone(), correlation_id, client_id, mechanism).await?;
 
     let config = SASLConfig::with_credentials(None, username, password).unwrap();
     let sasl = rsasl::prelude::SASLClient::new(config);
@@ -72,7 +72,7 @@ pub async fn sasl(
     println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
     let authentication_response =
-        sasl_authentication(broker_conn, correlation_id, client_id, Bytes::from(buffer)).await?;
+        sasl_authentication(broker_conn.clone(), correlation_id, client_id, Bytes::from(buffer)).await?;
 
     let mut out = Cursor::new(Vec::new());
     let state = session

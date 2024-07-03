@@ -740,6 +740,7 @@ pub mod prelude {
         tcp::TcpConnection,
         tls::{TlsConnection, TlsConnectionOptions},
         BrokerAddress, BrokerConnection,
+        sasl::do_sasl,
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
