@@ -5,7 +5,7 @@ use samsa::prelude::{ConsumerBuilder, TcpConnection, TopicPartitionsBuilder};
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::INFO)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -28,12 +28,14 @@ async fn main() -> Result<(), ()> {
     let stream = ConsumerBuilder::<TcpConnection>::new(
         bootstrap_addrs,
         TopicPartitionsBuilder::new()
-            .assign(src_topic, vec![0, 1])
+            .assign(src_topic, vec![0])
             .build(),
         None,
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
+    .max_bytes(1000000)
+    .max_partition_bytes(1000000)
     .build()
     .into_stream();
 

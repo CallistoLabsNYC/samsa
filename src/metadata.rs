@@ -88,7 +88,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     ) -> Option<i32> {
         let partition = self.get_topic_partition_by_id(topic_name, partition_id)?;
         let leader = self.get_broker_by_id(partition.leader_id)?;
-        tracing::debug!(
+        tracing::trace!(
             "Leader is {:?} for topic {} and partition {}",
             leader,
             topic_name,

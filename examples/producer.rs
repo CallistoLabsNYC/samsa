@@ -6,7 +6,7 @@ use samsa::prelude::{Compression, ProduceMessage, ProducerBuilder, TcpConnection
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -38,10 +38,10 @@ async fn main() -> Result<(), ()> {
         ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()], None)
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
-            .compression(Compression::Gzip)
+            // .compression(Compression::Gzip)
             // .required_acks(1)
             .clone()
-            .build_from_stream(stream.chunks(200))
+            .build_from_stream(stream.chunks(5000))
             .await
             // .chunks(2000)
             ;

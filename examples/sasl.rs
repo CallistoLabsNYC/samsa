@@ -4,16 +4,18 @@
 //! password. Currently this means 'SCRAM-SHA-2', 'SCRAM-SHA-1', 'PLAIN', and 'LOGIN', preferred
 //! in that order.
 
+use std::time::Duration;
+
 use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, TcpConnection};
 
 use bytes::Bytes;
-use futures::stream::{iter, StreamExt};
+use tokio_stream::{iter, StreamExt};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -44,7 +46,7 @@ async fn main() -> Result<(), ()> {
         key: None,
         value: Some(Bytes::from_static(b"0123456789")),
         headers: vec![],
-    });
+    }).chunks_timeout(200, Duration::from_secs(1)).throttle(Duration::from_secs(1));
 
     tracing::info!("Connecting to cluster");
     let output_stream = ProducerBuilder::<TcpConnection>::new(
@@ -57,7 +59,7 @@ async fn main() -> Result<(), ()> {
     // .compression(Compression::Gzip)
     // .required_acks(1)
     .clone()
-    .build_from_stream(stream.chunks(200))
+    .build_from_stream(stream)
     .await;
 
     tracing::info!("running");

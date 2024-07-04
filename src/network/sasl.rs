@@ -7,7 +7,7 @@ use crate::prelude::{
 };
 use bytes::Bytes;
 use rsasl::prelude::*;
-use std::io::Cursor;
+use std::{io::Cursor, time::Duration};
 
 #[derive(Clone, Debug)]
 pub struct SaslConfig {
@@ -124,5 +124,6 @@ pub async fn do_sasl(
     println!("Encoded bytes: {buffer:?}");
     println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
+    // tokio::time::sleep(Duration::from_millis(100)).await;
     Ok(())
 }
