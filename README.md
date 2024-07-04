@@ -114,7 +114,7 @@ let topic_name = "my-topic".to_string();
 let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     .assign(topic_name, partitions)
     .build();
-let group_id = "The Data Boyz".to_string();
+let group_id = "The Data Engineering Teamt ".to_string();
 
 let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::<samsa::prelude::TcpConnection>::new(
         bootstrap_addrs,
