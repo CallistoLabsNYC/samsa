@@ -89,7 +89,7 @@ impl TcpConnection {
                 .readable()
                 .await
                 .map_err(|e| Error::IoError(e.kind()))?;
-            
+
             // Try to read data, this may still fail with `WouldBlock`
             // if the readiness event is a false positive.
             match self.stream.try_read(&mut buf[index..]) {
