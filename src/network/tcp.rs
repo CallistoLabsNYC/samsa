@@ -130,7 +130,7 @@ impl TcpConnection {
             match self.stream.try_write(&buf[index..]) {
                 Ok(n) => {
                     index += n;
-                    tracing::trace!("Write {} bytes", n);
+                    tracing::trace!("Wrote {} bytes", n);
                     if index != size {
                         tracing::trace!("Going back to write more, {} bytes left", size - index);
                     } else {
