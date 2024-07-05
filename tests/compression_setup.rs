@@ -1,7 +1,9 @@
 mod testsupport;
 
-use samsa::prelude::protocol::produce::request::Attributes;
-use samsa::prelude::{protocol, BrokerConnection, Compression, Error, TcpConnection, KafkaCode};
+use samsa::prelude::{
+    protocol::{self, produce::request::Attributes},
+    BrokerConnection, Compression, Error, KafkaCode, TcpConnection,
+};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "writing and reading using compression setup";
@@ -60,8 +62,14 @@ async fn writing_using_compression_setup() -> Result<(), Box<Error>> {
     let produce_response = protocol::ProduceResponse::try_from(bytes)?;
 
     assert_eq!(produce_response.responses.len(), 1);
-    assert_eq!(produce_response.responses[0].name, bytes::Bytes::from(topic.clone()));
-    assert_eq!(produce_response.responses[0].partition_responses[0].error_code, KafkaCode::None);
+    assert_eq!(
+        produce_response.responses[0].name,
+        bytes::Bytes::from(topic.clone())
+    );
+    assert_eq!(
+        produce_response.responses[0].partition_responses[0].error_code,
+        KafkaCode::None
+    );
 
     Ok(())
 }
