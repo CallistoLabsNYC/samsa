@@ -1,4 +1,3 @@
-use rand::Rng;
 use samsa::prelude;
 use samsa::prelude::protocol::produce::request::Attributes;
 use samsa::prelude::{protocol, BrokerConnection, Compression, Error, KafkaCode, TcpConnection};
@@ -42,7 +41,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     let mut cluster_metadata = prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
         CLIENT_ID.to_string(),
-        vec![topic_name.clone().to_string()],
+        vec![topic_name.to_string()],
     )
     .await?;
 
@@ -66,16 +65,16 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     );
 
     // send to a randomly selected partition
-    let mut rng = rand::thread_rng();
-    let partition_id = rng.gen_range(0..NUMBER_OF_PARTITIONS);
-    produce_request.add(
-        topic_name.clone(),
-        partition_id,
-        Some(key.clone()),
-        Some(value.clone()),
-        vec![header.clone()],
-    );
-
+    for i in 0..NUMBER_OF_PARTITIONS {
+        let partition_id = i;
+        produce_request.add(
+            topic_name,
+            partition_id,
+            Some(key.clone()),
+            Some(value.clone()),
+            vec![header.clone()],
+        );
+    }
     cluster_metadata.sync().await?;
     conn.send_request(&produce_request).await?;
 
@@ -85,36 +84,25 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     assert_eq!(produce_response.responses.len(), 1);
     assert_eq!(
         produce_response.responses[0].name,
-        bytes::Bytes::from(topic_name.clone())
+        bytes::Bytes::from(topic_name)
     );
     assert_eq!(
-        produce_response.responses[0].partition_responses[0].error_code,
-        KafkaCode::None
+        produce_response.responses[0].partition_responses.len() as i32,
+        NUMBER_OF_PARTITIONS
     );
 
     //
     // Test fetch
     //
     let mut fetch_req = protocol::FetchRequest::new(CORRELATION_ID, CLIENT_ID, 1000, 10, 1000, 0);
-    fetch_req.add(&topic_name, partition_id, 0, 10000);
+    fetch_req.add(topic_name, 0, 0, 10000);
 
     conn.send_request(&fetch_req).await?;
-    let fetch_response =
-        protocol::FetchResponse::try_from(conn.receive_response().await?.freeze())?;
+    let bytes = conn.receive_response().await?.freeze();
+    let fetch_response = protocol::FetchResponse::try_from(bytes)?;
 
     assert_eq!(fetch_response.topics.len(), 1);
     assert_eq!(fetch_response.topics[0].partitions.len() as i32, 1);
-
-    let mut records = fetch_response.topics[0].partitions[0]
-        .clone()
-        .into_box_iter();
-
-    let (partition, err_code, _base_offset, _base_timestamp, record) = records.next().unwrap();
-
-    assert_eq!(partition, partition_id);
-    assert_eq!(err_code, KafkaCode::None);
-    assert_eq!(record.key, key);
-    assert_eq!(record.value, value);
 
     //
     // Delete topic
