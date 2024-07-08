@@ -35,6 +35,13 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     let stream = iter(0..1000000);
     let mut stream = stream.ready_chunks(CHUNK_SIZE);
 
+    let key = bytes::Bytes::from("testing testing...");
+    let value = bytes::Bytes::from("123!");
+    let header = protocol::Header::new(
+        String::from("Header key"),
+        bytes::Bytes::from("Header value"),
+    );
+
     while let Some(chunk) = stream.next().await {
         let mut produce_request = protocol::ProduceRequest::new(
             1,
@@ -45,30 +52,30 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
         );
 
         for _ in chunk {
-            let key = bytes::Bytes::from("testing testing...");
-            let value = bytes::Bytes::from("123!");
-            let header = protocol::Header::new(
-                String::from("Header key"),
-                bytes::Bytes::from("Header value"),
+            produce_request.add(
+                &topic,
+                PARTITION_ID,
+                Some(key.clone()),
+                Some(value.clone()),
+                vec![header.clone()],
             );
-            produce_request.add(&topic, PARTITION_ID, Some(key), Some(value), vec![header]);
         }
 
         conn.send_request(&produce_request).await?;
+
+        let bytes = conn.receive_response().await?.freeze();
+        let produce_response = protocol::ProduceResponse::try_from(bytes)?;
+
+        assert_eq!(produce_response.responses.len(), 1);
+        assert_eq!(
+            produce_response.responses[0].name,
+            bytes::Bytes::from(topic.clone())
+        );
+        assert_eq!(
+            produce_response.responses[0].partition_responses[0].error_code,
+            KafkaCode::None
+        );
     }
-
-    let bytes = conn.receive_response().await?.freeze();
-    let produce_response = protocol::ProduceResponse::try_from(bytes)?;
-
-    assert_eq!(produce_response.responses.len(), 1);
-    assert_eq!(
-        produce_response.responses[0].name,
-        bytes::Bytes::from(topic.clone())
-    );
-    assert_eq!(
-        produce_response.responses[0].partition_responses[0].error_code,
-        KafkaCode::None
-    );
 
     //
     // Test fetch (read)
@@ -80,7 +87,23 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     let bytes = conn.receive_response().await?.freeze();
     let fetch_response = protocol::FetchResponse::try_from(bytes)?;
 
-    dbg!(&fetch_response);
+    assert_eq!(fetch_response.topics.len(), 1);
+    assert_eq!(fetch_response.topics[0].partitions.len(), 1);
+    assert_eq!(
+        fetch_response.topics[0].partitions[0].error_code,
+        KafkaCode::None
+    );
+
+    let mut records = fetch_response.topics[0].partitions[0]
+        .clone()
+        .into_box_iter();
+
+    let (partition, err_code, _base_offset, _base_timestamp, record) = records.next().unwrap();
+
+    assert_eq!(partition, 0);
+    assert_eq!(err_code, KafkaCode::None);
+    assert_eq!(record.key, key);
+    assert_eq!(record.value, value);
 
     Ok(())
 }
