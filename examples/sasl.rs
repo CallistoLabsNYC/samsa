@@ -6,7 +6,9 @@
 
 use std::time::Duration;
 
-use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, SaslTcpConfig, SaslTcpConnection};
+use samsa::prelude::{
+    BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, SaslTcpConfig, SaslTcpConnection,
+};
 
 use bytes::Bytes;
 use tokio_stream::{iter, StreamExt};
@@ -36,12 +38,10 @@ async fn main() -> Result<(), ()> {
 
     let options = SaslTcpConfig {
         tcp_config,
-        sasl_config
+        sasl_config,
     };
 
     let topic_name = "atopic";
-
-    
 
     let stream = iter(0..5000000)
         .map(|_| ProduceMessage {

@@ -88,21 +88,22 @@ pub async fn do_sasl(
         })
         .collect::<Result<Vec<&Mechname>>>()?;
     tracing::debug!("mechanisms {:?}", mechanisms);
-    
 
     let mut session = sasl.start_suggested(&mechanisms).unwrap();
     let selected_mechanism = session.get_mechname();
     tracing::debug!("Using {:?} for our SASL Mechanism", selected_mechanism);
 
     let mut data: Option<Vec<u8>> = None;
-    
+
     // stepping the authentication exchange to completion
     while {
         let mut out = Cursor::new(Vec::new());
         // each call to step writes the generated auth data into the provided writer.
         // Normally this data would then have to be sent to the other party, but this goes
         // beyond the scope of this example
-        let state = session.step(data.as_deref(), &mut out).expect("step errored!");
+        let state = session
+            .step(data.as_deref(), &mut out)
+            .expect("step errored!");
 
         data = Some(out.into_inner());
 

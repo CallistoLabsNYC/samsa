@@ -31,7 +31,7 @@ pub enum Error {
     NotFound,
     MissingBrokerConfigOptions,
     IncorrectConnectionUsage,
-    InvalidSaslMechanism
+    InvalidSaslMechanism,
 }
 
 impl fmt::Display for Error {
