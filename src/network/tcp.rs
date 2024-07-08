@@ -82,6 +82,8 @@ impl TcpConnection {
 
     #[instrument(name = "network-read", level = "trace")]
     async fn read(&mut self, size: usize) -> Result<BytesMut> {
+        let mut buf = BytesMut::zeroed(size);
+        let mut index = 0_usize;
         loop {
             // Wait for the socket to be readable
             self.stream
@@ -89,14 +91,17 @@ impl TcpConnection {
                 .await
                 .map_err(|e| Error::IoError(e.kind()))?;
 
-            let mut buf = BytesMut::zeroed(size);
-
             // Try to read data, this may still fail with `WouldBlock`
             // if the readiness event is a false positive.
-            match self.stream.try_read(&mut buf) {
+            match self.stream.try_read(&mut buf[index..]) {
                 Ok(n) => {
+                    index += n;
                     tracing::trace!("Read {} bytes", n);
-                    return Ok(buf);
+                    if index != size {
+                        tracing::trace!("Going back to read more, {} bytes left", size - index);
+                    } else {
+                        return Ok(buf);
+                    }
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                     tracing::trace!("WouldBlock on read");
@@ -112,6 +117,8 @@ impl TcpConnection {
 
     #[instrument(name = "network-write", level = "trace")]
     async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        let size = buf.len();
+        let mut index = 0_usize;
         loop {
             // Wait for the socket to be writable
             self.stream
@@ -121,13 +128,18 @@ impl TcpConnection {
 
             // Try to write data, this may still fail with `WouldBlock`
             // if the readiness event is a false positive.
-            match self.stream.try_write(buf) {
+            match self.stream.try_write(&buf[index..]) {
                 Ok(n) => {
+                    index += n;
                     tracing::trace!("Wrote {} bytes", n);
-                    return Ok(n);
+                    if index != size {
+                        tracing::trace!("Going back to write more, {} bytes left", size - index);
+                    } else {
+                        return Ok(n);
+                    }
                 }
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    tracing::trace!("WouldBlock on read");
+                    tracing::trace!("WouldBlock on write");
                     continue;
                 }
                 Err(e) => {
