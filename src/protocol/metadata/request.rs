@@ -8,9 +8,9 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! Metadata Request (Version: 0) => [topics]
+//! Metadata Request (Version: 1) => [topics]
 //!   topics => name
-//!   name => STRING
+//!     name => STRING
 //! ```
 //!
 //! Note we are using version 0 of the request.
@@ -24,7 +24,7 @@ use crate::{
 };
 
 const API_KEY_METADATA: i16 = 3;
-const API_VERSION: i16 = 0;
+const API_VERSION: i16 = 1;
 
 /// The base Metadata request object.
 ///

@@ -18,6 +18,7 @@ pub struct ClusterMetadata<T: BrokerConnection> {
     pub topics: Vec<Topic>,
     pub client_id: String,
     pub topic_names: Vec<String>,
+    pub controller_id: i32,
 }
 
 type TopicPartition = HashMap<String, Vec<i32>>;
@@ -31,6 +32,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         // tracing::info!("Conencting to cluster at {}", bootstrap_addrs.join(","));
         let mut metadata = ClusterMetadata {
             connection_params: connection_params.clone(),
+            controller_id: -1,
             broker_connections: HashMap::new(),
             brokers: vec![],
             topics: vec![],
@@ -61,7 +63,11 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
             .find(|b| b.partition_index == partition_id)
     }
 
-    pub fn get_leader_for_topic_partition(
+    pub fn get_leader_id_for_cluster(&self) -> i32 {
+        self.controller_id
+    }
+
+    pub fn get_leader_id_for_topic_partition(
         &self,
         topic_name: &'a str,
         partition_id: i32,
@@ -114,6 +120,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
 
         self.topics = metadata_response.topics;
         self.brokers = metadata_response.brokers;
+        self.controller_id = metadata_response.controller_id;
 
         Ok(())
     }
@@ -143,10 +150,8 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         Ok(connections)
     }
 
-    // Given topics and partitions
-    // get back a map where
-    // broker connection is the key
-    // and value is a list of tuples of (topic, partitions)
+    /// Given topics and partitions, get back a map where broker connection is the key
+    /// and value is a list of tuples of (topic, partitions)
     pub fn get_leaders_for_topic_partitions(
         &'a self,
         topic_partitions: &TopicPartition,
@@ -164,7 +169,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
             })
             // Attach each partition with its appropriate broker
             .map(|(new_topic_name, new_partition)| {
-                match self.get_leader_for_topic_partition(&new_topic_name, *new_partition) {
+                match self.get_leader_id_for_topic_partition(&new_topic_name, *new_partition) {
                     Some(broker_id) => Ok((new_topic_name, new_partition, broker_id)),
                     None => Err(Error::MetadataNeedsSync),
                 }
@@ -237,21 +242,25 @@ mod test {
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
                 client_id: String::from("client_id"),
+                controller_id: 1,
                 brokers: vec![
                     Broker {
                         node_id: 1,
                         host: Bytes::from("localhost"),
                         port: 9092,
+                        rack: None,
                     },
                     Broker {
                         node_id: 2,
                         host: Bytes::from("localhost"),
                         port: 9093,
+                        rack: None,
                     },
                 ],
                 topics: vec![Topic {
                     error_code: KafkaCode::None,
                     name: Bytes::from("purchases"),
+                    is_internal: false,
                     partitions: vec![
                         Partition {
                             error_code: KafkaCode::None,
@@ -313,6 +322,7 @@ mod test {
             node_id: 2,
             host: Bytes::from("localhost"),
             port: 9093,
+            rack: None,
         };
         assert_eq!(
             broker.addr().unwrap(),
@@ -327,12 +337,12 @@ mod test {
     fn test_partition_leader() {
         let cluster: ClusterMetadata<TcpConnection> = test_metadata!();
 
-        let leader = cluster.get_leader_for_topic_partition("purchases", 1);
+        let leader = cluster.get_leader_id_for_topic_partition("purchases", 1);
 
         assert!(leader.is_some());
         assert_eq!(leader.unwrap(), 1);
 
-        let leader = cluster.get_leader_for_topic_partition("purchases", 0);
+        let leader = cluster.get_leader_id_for_topic_partition("purchases", 0);
 
         assert!(leader.is_some());
         assert_eq!(leader.unwrap(), 2);
