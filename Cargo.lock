@@ -1418,6 +1418,7 @@ dependencies = [
  "nombytes",
  "num-derive",
  "num-traits",
+ "rand",
  "random_word",
  "reqwest",
  "rustls-pemfile 2.1.2",
