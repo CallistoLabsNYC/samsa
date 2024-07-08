@@ -12,6 +12,7 @@ use crate::{
     error::{Error, Result},
 };
 
+use super::sasl::{do_sasl, SaslConfig};
 use super::{BrokerAddress, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
@@ -212,5 +213,52 @@ impl BrokerConnection for TcpConnection {
 
     async fn from_addr(_: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
         Self::new_(vec![addr]).await
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SaslTcpConfig {
+    tcp_config: Vec<BrokerAddress>,
+    sasl_config: SaslConfig,
+}
+
+pub struct SaslTcpConnection {
+    tcp_conn: TcpConnection,
+}
+
+#[async_trait]
+impl BrokerConnection for SaslTcpConnection {
+    type ConnConfig = SaslTcpConfig;
+
+    async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
+        self.tcp_conn.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.tcp_conn.receive_response_().await
+    }
+
+    async fn new(p: Self::ConnConfig) -> Result<Self> {
+        let conn = TcpConnection::new_(p.tcp_config).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tcp_conn: conn })
+    }
+
+    async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
+        let conn = TcpConnection::new_(vec![addr]).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tcp_conn: conn })
     }
 }

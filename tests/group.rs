@@ -156,18 +156,21 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
 
 #[tokio::test]
 async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> {
-    let (skip, brokers, topic) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }
+    let topic = "group-integration-test".to_owned();
     let conn = TcpConnection::new(brokers).await?;
-    testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn.clone(), &topic.clone(), CORRELATION_ID, CLIENT_ID)
+        .await?;
 
     //
     // Get coordinator for this group
     //
     let coordinator_res =
-        samsa::prelude::find_coordinator(conn, CORRELATION_ID, CLIENT_ID, GROUP_ID2).await?;
+        samsa::prelude::find_coordinator(conn.clone(), CORRELATION_ID, CLIENT_ID, GROUP_ID2)
+            .await?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -249,7 +252,7 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     assert_eq!(
         sync_response.assignment.partition_assignments[0],
         protocol::sync_group::response::PartitionAssignment {
-            topic_name: bytes::Bytes::from(topic),
+            topic_name: bytes::Bytes::from(topic.clone()),
             partitions: vec![PARTITION_ID]
         }
     );

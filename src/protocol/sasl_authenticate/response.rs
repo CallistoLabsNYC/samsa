@@ -8,7 +8,7 @@
 //!
 //! ### Protocol Defs
 //! ```text
-//! SaslAuthenticate Response (Version: 1) => error_code error_message auth_bytes session_lifetime_ms 
+//! SaslAuthenticate Response (Version: 1) => error_code error_message auth_bytes session_lifetime_ms
 //!   error_code => INT16
 //!   error_message => NULLABLE_STRING
 //!   auth_bytes => BYTES
@@ -18,7 +18,7 @@
 //! Note we are using version 1 for the response.
 
 use bytes::Bytes;
-use nom::{IResult, number::complete::be_i64};
+use nom::{number::complete::be_i64, IResult};
 use nombytes::NomBytes;
 
 use crate::{
@@ -70,5 +70,14 @@ pub fn parse_authenticate_response(s: NomBytes) -> IResult<NomBytes, SaslAuthent
     let (s, auth_bytes) = parser::parse_bytes(s)?;
     let (s, session_lifetime_ms) = be_i64(s)?;
 
-    Ok((s, SaslAuthenticationResponse { header, error_code, error_message, auth_bytes, session_lifetime_ms }))
+    Ok((
+        s,
+        SaslAuthenticationResponse {
+            header,
+            error_code,
+            error_message,
+            auth_bytes,
+            session_lifetime_ms,
+        },
+    ))
 }

@@ -11,13 +11,13 @@
 //!
 //! ### Protocol Def
 //! ```text
-//! SaslHandshake Request (Version: 1) => mechanism 
+//! SaslHandshake Request (Version: 1) => mechanism
 //!   mechanism => STRING
 //! ```
 //!
 //! Note that we are using version 1 of this API
 
-use crate::{encode::ToByte, error::Result, protocol::HeaderRequest};
+use crate::{encode::ToByte, protocol::HeaderRequest};
 
 const API_KEY_METADATA: i16 = 17;
 const API_VERSION: i16 = 1;
@@ -42,16 +42,9 @@ pub struct SaslHandshakeRequest<'a> {
 
 impl<'a> SaslHandshakeRequest<'a> {
     /// Create a new SASL Handshake Request
-    pub fn new(
-        correlation_id: i32,
-        client_id: &'a str,
-        mechanism: String,
-    ) -> Self {
+    pub fn new(correlation_id: i32, client_id: &'a str, mechanism: String) -> Self {
         let header = HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id);
-        Self {
-            header,
-            mechanism,
-        }
+        Self { header, mechanism }
     }
 }
 

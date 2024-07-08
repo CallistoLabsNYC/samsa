@@ -4,20 +4,18 @@
 //! password. Currently this means 'SCRAM-SHA-2', 'SCRAM-SHA-1', 'PLAIN', and 'LOGIN', preferred
 //! in that order.
 
+use std::time::Duration;
+
+use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, TcpConnection};
+
 use bytes::Bytes;
-use rsasl::prelude::*;
-use samsa::prelude::{
-    do_sasl, protocol::{
-        sasl_handshake::{request::SaslHandshakeRequest, response::SaslHandshakeResponse}, MetadataRequest, MetadataResponse, SaslAuthenticationRequest, SaslAuthenticationResponse
-    }, BrokerAddress, TcpConnection, TlsConnection, TlsConnectionOptions
-};
-use std::io::Cursor;
+use tokio_stream::{iter, StreamExt};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
         // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::DEBUG)
         .compact()
         // Display source code file paths
         .with_file(true)
@@ -30,27 +28,43 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let username = String::from("myuser");
-    let password = String::from("pass1234");
-    let topics = vec!["atopic"];
+    let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
 
-    let correlation_id = 1;
-    let client_id = "rust";
+    let topic_name = "atopic";
 
     let options = vec![BrokerAddress {
         host: "piggy.callistolabs.cloud".to_owned(),
         port: 9092,
     }];
 
-    let mut conn = TcpConnection::new_(options).await.unwrap();
+    let stream = iter(0..5000000)
+        .map(|_| ProduceMessage {
+            topic: topic_name.to_string(),
+            partition_id: 0,
+            key: None,
+            value: Some(Bytes::from_static(b"0123456789")),
+            headers: vec![],
+        })
+        .chunks_timeout(2000, Duration::from_secs(1));
 
-    do_sasl(conn.clone(), correlation_id, client_id, username, password).await.unwrap();
+    tracing::info!("Connecting to cluster");
+    let output_stream =
+        ProducerBuilder::<TcpConnection>::new(options, vec![topic_name.to_string()])
+            .await
+            .map_err(|err| tracing::error!("{:?}", err))?
+            // .compression(Compression::Gzip)
+            // .required_acks(1)
+            .clone()
+            .build_from_stream(stream)
+            .await;
 
-    let metadata_request = MetadataRequest::new(correlation_id, client_id, &topics);
-    conn.send_request_(&metadata_request).await.unwrap();
-    let metadata_response = conn.receive_response_().await.unwrap();
-    let metadata_response =
-        MetadataResponse::try_from(metadata_response.freeze());
+    tracing::info!("running");
+    tokio::pin!(output_stream);
+    while let Some(_) = output_stream.next().await {
+        // tracing::info!("Produced {} * 2000 message", message.len());
+        // counter += message[0].len() * 2000;
+    }
+    tracing::info!("done");
 
     Ok(())
 }

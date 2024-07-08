@@ -20,6 +20,8 @@ use crate::{
     error::{Error, Result},
 };
 
+use super::sasl::do_sasl;
+use super::sasl::SaslConfig;
 use super::{BrokerAddress, BrokerConnection};
 
 /// Reference counted TCP connection to a Kafka/Redpanda broker.
@@ -242,5 +244,60 @@ impl BrokerConnection for TlsConnection {
         };
 
         Self::new_(options).await
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct SaslTlsConfig {
+    tls_config: TlsConnectionOptions,
+    sasl_config: SaslConfig,
+}
+
+pub struct SaslTlsConnection {
+    tls_conn: TlsConnection,
+}
+
+#[async_trait]
+impl BrokerConnection for SaslTlsConnection {
+    type ConnConfig = SaslTlsConfig;
+
+    async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
+        self.tls_conn.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.tls_conn.receive_response_().await
+    }
+
+    async fn new(p: Self::ConnConfig) -> Result<Self> {
+        let conn = TlsConnection::new_(p.tls_config).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tls_conn: conn })
+    }
+
+    async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
+        let cafile = p.tls_config.cafile.clone();
+
+        let options = TlsConnectionOptions {
+            broker_options: vec![addr],
+            cert: p.tls_config.cert,
+            key: p.tls_config.key,
+            cafile,
+        };
+        let conn = TlsConnection::new_(options).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tls_conn: conn })
     }
 }

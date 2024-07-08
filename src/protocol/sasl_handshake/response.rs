@@ -8,7 +8,7 @@
 //!
 //! ### Protocol Defs
 //! ```text
-//! SaslHandshake Response (Version: 1) => error_code [mechanisms] 
+//! SaslHandshake Response (Version: 1) => error_code [mechanisms]
 //!   error_code => INT16
 //!   mechanisms => STRING
 //! ```
@@ -38,7 +38,7 @@ pub struct SaslHandshakeResponse {
     /// The error code, or 0 if there was no error.
     pub error_code: KafkaCode,
     /// The mechanisms enabled in the server.
-    pub mechanisms: Vec<Bytes>
+    pub mechanisms: Vec<Bytes>,
 }
 
 impl TryFrom<Bytes> for SaslHandshakeResponse {
@@ -46,12 +46,11 @@ impl TryFrom<Bytes> for SaslHandshakeResponse {
 
     fn try_from(s: Bytes) -> Result<Self> {
         tracing::trace!("Parsing SaslHandshakeResponse {:?}", s);
-        let (_, handshake) =
-            parse_handshake_response(NomBytes::new(s.clone())).map_err(|err| {
-                tracing::error!("ERROR: Failed parsing SaslHandshakeResponse {:?}", err);
-                tracing::error!("ERROR: SaslHandshakeResponse Bytes {:?}", s);
-                Error::ParsingError(s)
-            })?;
+        let (_, handshake) = parse_handshake_response(NomBytes::new(s.clone())).map_err(|err| {
+            tracing::error!("ERROR: Failed parsing SaslHandshakeResponse {:?}", err);
+            tracing::error!("ERROR: SaslHandshakeResponse Bytes {:?}", s);
+            Error::ParsingError(s)
+        })?;
         tracing::trace!("Parsed SaslHandshakeResponse {:?}", handshake);
         Ok(handshake)
     }
@@ -62,5 +61,12 @@ pub fn parse_handshake_response(s: NomBytes) -> IResult<NomBytes, SaslHandshakeR
     let (s, error_code) = parser::parse_kafka_code(s)?;
     let (s, mechanisms) = parser::parse_array(parser::parse_string)(s)?;
 
-    Ok((s, SaslHandshakeResponse { header, error_code, mechanisms }))
+    Ok((
+        s,
+        SaslHandshakeResponse {
+            header,
+            error_code,
+            mechanisms,
+        },
+    ))
 }

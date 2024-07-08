@@ -1,13 +1,40 @@
-use crate::prelude::{
-    protocol::{
-        SaslAuthenticationRequest, SaslAuthenticationResponse, SaslHandshakeRequest,
-        SaslHandshakeResponse,
+use crate::{
+    prelude::{
+        protocol::{
+            SaslAuthenticationRequest, SaslAuthenticationResponse, SaslHandshakeRequest,
+            SaslHandshakeResponse,
+        },
+        BrokerConnection, Error, KafkaCode, Result,
     },
-    BrokerConnection, Result,
+    DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 use bytes::Bytes;
 use rsasl::prelude::*;
 use std::io::Cursor;
+
+#[derive(Clone, Debug)]
+pub struct SaslConfig {
+    pub username: String,
+    pub password: String,
+    pub correlation_id: i32,
+    pub client_id: String,
+}
+
+impl SaslConfig {
+    pub fn new(
+        username: String,
+        password: String,
+        correlation_id: Option<i32>,
+        client_id: Option<String>,
+    ) -> Self {
+        SaslConfig {
+            username,
+            password,
+            correlation_id: correlation_id.unwrap_or(DEFAULT_CORRELATION_ID),
+            client_id: client_id.unwrap_or(DEFAULT_CLIENT_ID.to_owned()),
+        }
+    }
+}
 
 pub async fn sasl_handshake(
     mut broker_conn: impl BrokerConnection,
@@ -38,14 +65,16 @@ pub async fn do_sasl(
     broker_conn: impl BrokerConnection + Clone,
     correlation_id: i32,
     client_id: &str,
-    username: String,
-    password: String,
+    config: SaslConfig,
 ) -> Result<()> {
     let mechanism = String::from("SCRAM-SHA-256");
     let handshake_response =
         sasl_handshake(broker_conn.clone(), correlation_id, client_id, mechanism).await?;
+    if handshake_response.error_code != KafkaCode::None {
+        return Err(Error::KafkaError(handshake_response.error_code));
+    }
 
-    let config = SASLConfig::with_credentials(None, username, password).unwrap();
+    let config = SASLConfig::with_credentials(None, config.username, config.password).unwrap();
     let sasl = rsasl::prelude::SASLClient::new(config);
 
     // There are often more than one Mechanisms offered by the server, `start_suggested` will
@@ -71,15 +100,17 @@ pub async fn do_sasl(
     println!("Encoded bytes: {buffer:?}");
     println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
-    let authentication_response =
-        sasl_authentication(broker_conn.clone(), correlation_id, client_id, Bytes::from(buffer)).await?;
+    let authentication_response = sasl_authentication(
+        broker_conn.clone(),
+        correlation_id,
+        client_id,
+        Bytes::from(buffer),
+    )
+    .await?;
 
     let mut out = Cursor::new(Vec::new());
     let state = session
-        .step(
-            Some(&authentication_response.auth_bytes.to_vec()),
-            &mut out,
-        )
+        .step(Some(&authentication_response.auth_bytes.to_vec()), &mut out)
         .unwrap();
     match state {
         State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
@@ -94,14 +125,12 @@ pub async fn do_sasl(
     println!("Encoded bytes: {buffer:?}");
     println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
-    let authentication_response = sasl_authentication(broker_conn, correlation_id, client_id, Bytes::from(buffer)).await?;
+    let authentication_response =
+        sasl_authentication(broker_conn, correlation_id, client_id, Bytes::from(buffer)).await?;
 
     let mut out = Cursor::new(Vec::new());
     let state = session
-        .step(
-            Some(&authentication_response.auth_bytes.to_vec()),
-            &mut out,
-        )
+        .step(Some(&authentication_response.auth_bytes.to_vec()), &mut out)
         .unwrap();
     match state {
         State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
