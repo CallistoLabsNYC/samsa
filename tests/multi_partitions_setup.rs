@@ -1,6 +1,6 @@
 use samsa::prelude;
 use samsa::prelude::protocol::produce::request::Attributes;
-use samsa::prelude::{protocol, BrokerConnection, Compression, Error, KafkaCode, TcpConnection};
+use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
 mod testsupport;
@@ -53,7 +53,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         1000,
         CORRELATION_ID,
         CLIENT_ID,
-        Attributes::new(Some(Compression::Gzip)),
+        Attributes::new(None),
     );
 
     let key = bytes::Bytes::from("testing testing...");

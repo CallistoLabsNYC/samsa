@@ -1,6 +1,6 @@
 use futures::StreamExt;
 use samsa::prelude::protocol::produce::request::Attributes;
-use samsa::prelude::{protocol, BrokerConnection, Compression, Error, KafkaCode, TcpConnection};
+use samsa::prelude::{protocol, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 use tokio_stream::iter;
 
@@ -48,7 +48,7 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
             1000,
             CORRELATION_ID,
             CLIENT_ID,
-            Attributes::new(Some(Compression::Gzip)),
+            Attributes::new(None),
         );
 
         for _ in chunk {
