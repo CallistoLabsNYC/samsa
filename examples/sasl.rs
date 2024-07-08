@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, TcpConnection};
+use samsa::prelude::{BrokerAddress, ProduceMessage, ProducerBuilder, SaslConfig, SaslTcpConfig, SaslTcpConnection};
 
 use bytes::Bytes;
 use tokio_stream::{iter, StreamExt};
@@ -28,14 +28,20 @@ async fn main() -> Result<(), ()> {
         // Build the subscriber
         .init();
 
-    let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
-
-    let topic_name = "atopic";
-
-    let options = vec![BrokerAddress {
+    let tcp_config = vec![BrokerAddress {
         host: "piggy.callistolabs.cloud".to_owned(),
         port: 9092,
     }];
+    let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
+
+    let options = SaslTcpConfig {
+        tcp_config,
+        sasl_config
+    };
+
+    let topic_name = "atopic";
+
+    
 
     let stream = iter(0..5000000)
         .map(|_| ProduceMessage {
@@ -49,7 +55,7 @@ async fn main() -> Result<(), ()> {
 
     tracing::info!("Connecting to cluster");
     let output_stream =
-        ProducerBuilder::<TcpConnection>::new(options, vec![topic_name.to_string()])
+        ProducerBuilder::<SaslTcpConnection>::new(options, vec![topic_name.to_string()])
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
             // .compression(Compression::Gzip)

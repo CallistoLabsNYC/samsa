@@ -249,10 +249,11 @@ impl BrokerConnection for TlsConnection {
 
 #[derive(Clone, Debug)]
 pub struct SaslTlsConfig {
-    tls_config: TlsConnectionOptions,
-    sasl_config: SaslConfig,
+    pub tls_config: TlsConnectionOptions,
+    pub sasl_config: SaslConfig,
 }
 
+#[derive(Clone, Debug)]
 pub struct SaslTlsConnection {
     tls_conn: TlsConnection,
 }

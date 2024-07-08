@@ -230,10 +230,11 @@ impl BrokerConnection for TcpConnection {
 
 #[derive(Clone, Debug)]
 pub struct SaslTcpConfig {
-    tcp_config: Vec<BrokerAddress>,
-    sasl_config: SaslConfig,
+    pub tcp_config: Vec<BrokerAddress>,
+    pub sasl_config: SaslConfig,
 }
 
+#[derive(Clone, Debug)]
 pub struct SaslTcpConnection {
     tcp_conn: TcpConnection,
 }
