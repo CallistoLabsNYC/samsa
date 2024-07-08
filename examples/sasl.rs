@@ -66,7 +66,7 @@ async fn main() -> Result<(), ()> {
 
     tracing::info!("running");
     tokio::pin!(output_stream);
-    while let Some(_) = output_stream.next().await {
+    while (output_stream.next().await).is_some() {
         // tracing::info!("Produced {} * 2000 message", message.len());
         // counter += message[0].len() * 2000;
     }

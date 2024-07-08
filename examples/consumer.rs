@@ -41,7 +41,7 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(stream);
     tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        if message.unwrap().0.len() == 0 {
+        if message.unwrap().0.is_empty() {
             tracing::info!("done!");
         }
     }
