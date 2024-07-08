@@ -76,74 +76,48 @@ pub async fn do_sasl(
 
     let config = SASLConfig::with_credentials(None, config.username, config.password).unwrap();
     let sasl = rsasl::prelude::SASLClient::new(config);
+    let mechanisms = handshake_response
+        .mechanisms
+        .iter()
+        .map(|mech| {
+            tracing::debug!("{:?}", mech);
+            Mechname::parse(mech).map_err(|e| {
+                tracing::error!("{:?}", e);
+                Error::InvalidSaslMechanism
+            })
+        })
+        .collect::<Result<Vec<&Mechname>>>()?;
+    tracing::debug!("mechanisms {:?}", mechanisms);
+    
 
-    // There are often more than one Mechanisms offered by the server, `start_suggested` will
-    // select the best ones from those available to both sides.
-    let offered = [Mechname::parse(b"SCRAM-SHA-256").unwrap()];
-    let mut session = sasl.start_suggested(&offered).unwrap();
+    let mut session = sasl.start_suggested(&mechanisms).unwrap();
+    let selected_mechanism = session.get_mechname();
+    tracing::debug!("Using {:?} for our SASL Mechanism", selected_mechanism);
 
-    // Do the authentication steps.
-    let mut out = Cursor::new(Vec::new());
-    let input: Option<&[u8]> = None;
-    let state = session.step(input, &mut out).unwrap();
-    match state {
-        State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
-        State::Finished(MessageSent::Yes) => {
-            tracing::info!("SCRAM-SHA-256 sent the message")
-        }
-        State::Finished(MessageSent::No) => {
-            tracing::info!("SCRAM-SHA-256 exchange produced no output")
-        }
+    let mut data: Option<Vec<u8>> = None;
+    
+    // stepping the authentication exchange to completion
+    while {
+        let mut out = Cursor::new(Vec::new());
+        // each call to step writes the generated auth data into the provided writer.
+        // Normally this data would then have to be sent to the other party, but this goes
+        // beyond the scope of this example
+        let state = session.step(data.as_deref(), &mut out).expect("step errored!");
+
+        data = Some(out.into_inner());
+
+        // returns `true` if step needs to be called again with another batch of data
+        state.is_running()
+    } {
+        let authentication_response = sasl_authentication(
+            broker_conn.clone(),
+            correlation_id,
+            client_id,
+            Bytes::from(data.unwrap()),
+        )
+        .await?;
+        data = Some(authentication_response.auth_bytes.to_vec());
     }
-
-    let buffer = out.into_inner();
-    println!("Encoded bytes: {buffer:?}");
-    println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
-
-    let authentication_response = sasl_authentication(
-        broker_conn.clone(),
-        correlation_id,
-        client_id,
-        Bytes::from(buffer),
-    )
-    .await?;
-
-    let mut out = Cursor::new(Vec::new());
-    let state = session
-        .step(Some(&authentication_response.auth_bytes.to_vec()), &mut out)
-        .unwrap();
-    match state {
-        State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
-        State::Finished(MessageSent::Yes) => {
-            tracing::info!("SCRAM-SHA-256 sent the message")
-        }
-        State::Finished(MessageSent::No) => {
-            tracing::info!("SCRAM-SHA-256 exchange produced no output")
-        }
-    }
-    let buffer = out.into_inner();
-    println!("Encoded bytes: {buffer:?}");
-    println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
-
-    let authentication_response =
-        sasl_authentication(broker_conn, correlation_id, client_id, Bytes::from(buffer)).await?;
-
-    let mut out = Cursor::new(Vec::new());
-    let state = session
-        .step(Some(&authentication_response.auth_bytes.to_vec()), &mut out)
-        .unwrap();
-    match state {
-        State::Running => tracing::info!("SCRAM-SHA-256 exchange took more than one step"),
-        State::Finished(MessageSent::Yes) => {
-            tracing::info!("SCRAM-SHA-256 sent the message")
-        }
-        State::Finished(MessageSent::No) => {
-            tracing::info!("SCRAM-SHA-256 exchange produced no output")
-        }
-    }
-    let buffer = out.into_inner();
-    println!("Encoded bytes: {buffer:?}");
-    println!("As string: {:?}", std::str::from_utf8(buffer.as_ref()));
 
     Ok(())
 }
