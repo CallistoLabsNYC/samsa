@@ -48,13 +48,8 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     //
     // Test producing (writing)
     //
-    let mut produce_request = protocol::ProduceRequest::new(
-        1,
-        1000,
-        CORRELATION_ID,
-        CLIENT_ID,
-        Attributes::new(None),
-    );
+    let mut produce_request =
+        protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID, Attributes::new(None));
 
     let key = bytes::Bytes::from("testing testing...");
     let value = bytes::Bytes::from("123!");

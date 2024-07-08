@@ -1,9 +1,9 @@
-use samsa::prelude;
-use samsa::prelude::{BrokerConnection, Compression, Error, KafkaCode, protocol, TcpConnection};
-use std::collections::HashMap;
 use futures::StreamExt;
-use tokio_stream::iter;
+use samsa::prelude;
 use samsa::prelude::protocol::produce::request::Attributes;
+use samsa::prelude::{protocol, BrokerConnection, Compression, Error, KafkaCode, TcpConnection};
+use std::collections::HashMap;
+use tokio_stream::iter;
 
 mod testsupport;
 
