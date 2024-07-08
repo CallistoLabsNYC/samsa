@@ -76,6 +76,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         vec![header.clone()],
     );
 
+    cluster_metadata.sync().await?;
     conn.send_request(&produce_request).await?;
 
     let bytes = conn.receive_response().await?.freeze();
