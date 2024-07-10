@@ -59,7 +59,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         bytes::Bytes::from("Header value"),
     );
 
-    // send to a randomly selected partition
+    // send a message to the 8 partitions
     for i in 0..NUMBER_OF_PARTITIONS {
         let partition_id = i;
         produce_request.add(
