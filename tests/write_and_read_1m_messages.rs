@@ -42,7 +42,11 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
             .await;
     tokio::pin!(output_stream);
     // producing
-    while output_stream.next().await.is_some() {}
+    while let Some(message) = output_stream.next().await {
+        let res = message[0].as_ref().unwrap();
+        assert_eq!(res.responses.len(), 1);
+        assert_eq!(res.responses[0].name, bytes::Bytes::from(topic));
+    }
     // done
 
     //

@@ -46,7 +46,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     //
     let stream = iter(0..1_000_000).map(|i| ProduceMessage {
         topic: topic_name.to_string(),
-        partition_id: i % 4, // should give a number between 0 and 10 each time
+        partition_id: i % 10, // should give a number between 0 and 10 each time
         key: None,
         value: Some(bytes::Bytes::from_static(b"0123456789")),
         headers: vec![],
