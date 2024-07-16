@@ -33,6 +33,7 @@ tokio-stream = "0.1.14"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
 webpki-roots = "0.26.1"
+rand = "0.8.5"
 
 [dev-dependencies]
 criterion = "0.3"
