@@ -2,7 +2,7 @@ use futures::stream::iter;
 use futures::StreamExt;
 use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    BrokerConnection, Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
+    Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
     ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
 };
 use std::collections::HashMap;

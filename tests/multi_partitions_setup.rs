@@ -5,7 +5,7 @@ use futures::StreamExt;
 
 use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    BrokerConnection, ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder,
+    ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder,
     TcpConnection, TopicPartitionsBuilder,
 };
 

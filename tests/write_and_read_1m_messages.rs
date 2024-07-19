@@ -2,7 +2,7 @@ use futures::stream::iter;
 use futures::StreamExt;
 use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    BrokerConnection, Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder,
+    Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder,
     TcpConnection, TopicPartitionsBuilder,
 };
 
