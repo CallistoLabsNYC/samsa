@@ -66,7 +66,10 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     while let Some(message) = output_stream.next().await {
         let res = message[0].as_ref().unwrap();
         assert_eq!(res.responses.len(), 1);
-        assert_eq!(res.responses[0].name, bytes::Bytes::from(topic_name.clone()));
+        assert_eq!(
+            res.responses[0].name,
+            bytes::Bytes::from(topic_name.clone())
+        );
         assert_eq!(
             res.responses[0].partition_responses[0].error_code,
             KafkaCode::None

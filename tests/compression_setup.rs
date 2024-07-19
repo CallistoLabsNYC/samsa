@@ -37,14 +37,13 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
         headers: vec![],
     });
 
-    let output_stream =
-        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
-            .await?
-            .required_acks(1)
-            .compression(Compression::Gzip)
-            .clone()
-            .build_from_stream(stream.chunks(5))
-            .await;
+    let output_stream = ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
+        .await?
+        .required_acks(1)
+        .compression(Compression::Gzip)
+        .clone()
+        .build_from_stream(stream.chunks(5))
+        .await;
     tokio::pin!(output_stream);
     // producing
     while let Some(message) = output_stream.next().await {

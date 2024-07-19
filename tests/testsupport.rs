@@ -1,6 +1,6 @@
 use samsa::prelude::{create_topics, BrokerAddress, BrokerConnection, Error};
-use std::{collections::HashMap, env};
 use std::panic::Location;
+use std::{collections::HashMap, env};
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
 const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
@@ -102,7 +102,7 @@ pub fn get_topic_2() -> Result<(bool, String), Error> {
 #[allow(dead_code)]
 pub fn create_topic_from_file_path(caller_path: &str) -> Result<String, Error> {
     let file_name = match std::path::Path::new(caller_path)
-        .file_stem()// using `file_stem` to remove any extension
+        .file_stem() // using `file_stem` to remove any extension
         .and_then(std::ffi::OsStr::to_str)
     {
         Some(topic) => topic,
