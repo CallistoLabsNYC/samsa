@@ -1,5 +1,6 @@
 use futures::stream::iter;
 use futures::StreamExt;
+use samsa::prelude;
 
 use samsa::prelude::{
     BrokerConnection, Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
@@ -23,7 +24,8 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
 
     // set up tcp connection options
     let conn = TcpConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(conn, topic.as_str(), CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn.clone(), topic.as_str(), CORRELATION_ID, CLIENT_ID)
+        .await?;
 
     //
     // Test producing
@@ -80,6 +82,18 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
             break;
         }
     }
+
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }

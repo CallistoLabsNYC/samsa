@@ -22,7 +22,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
         return Ok(());
     }
     let conn = TcpConnection::new(brokers.clone()).await?;
-    let topic_name = "tester-topic";
+    let topic_name = testsupport::create_topic_from_file_path(file!())?;
 
     //
     // Create topic with 1O partitions
@@ -31,7 +31,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        HashMap::from([(topic_name, NUMBER_OF_PARTITIONS)]),
+        HashMap::from([(topic_name.as_str(), NUMBER_OF_PARTITIONS)]),
     )
     .await?;
 
@@ -44,8 +44,9 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     //
     // Test producing (writing) for 1 million topics
     //
-    let stream = iter(0..1_000_000).map(|i| ProduceMessage {
-        topic: topic_name.to_string(),
+    let inner_topic = topic_name.clone();
+    let stream = iter(0..1_000_000).map(move |i| ProduceMessage {
+        topic: inner_topic.clone(),
         partition_id: i % 10, // should give a number between 0 and 10 each time
         key: None,
         value: Some(bytes::Bytes::from_static(b"0123456789")),
@@ -86,6 +87,18 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     }
 
     assert_eq!(counter, 1_000_000);
+
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic_name.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }

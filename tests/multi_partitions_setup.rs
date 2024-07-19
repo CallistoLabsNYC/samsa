@@ -96,10 +96,22 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         // assert topic name
         let res = message.unwrap().0;
         if !res.is_empty() {
-            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name));
+            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name.clone()));
             break;
         }
     }
+
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic_name.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }

@@ -1,6 +1,7 @@
 mod testsupport;
 
-use samsa::prelude::{protocol, Error, TcpConnection};
+use samsa::prelude;
+use samsa::prelude::{protocol, Error, KafkaCode, TcpConnection};
 
 const CLIENT_ID: &str = "metadata protocol integration test";
 const CORRELATION_ID: i32 = 1;
@@ -23,6 +24,19 @@ async fn it_can_get_metadata() -> Result<(), Box<Error>> {
     assert_eq!(metadata.brokers.len(), 2);
     assert_eq!(metadata.topics.len(), 1);
 
-    assert_eq!(metadata.topics[0].name, bytes::Bytes::from(topic));
+    assert_eq!(metadata.topics[0].name, bytes::Bytes::from(topic.clone()));
+
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
+
     Ok(())
 }
