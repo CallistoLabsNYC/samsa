@@ -2,8 +2,8 @@ use futures::stream::iter;
 use futures::StreamExt;
 use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder,
-    TcpConnection, TopicPartitionsBuilder,
+    Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder, TcpConnection,
+    TopicPartitionsBuilder,
 };
 
 mod testsupport;
