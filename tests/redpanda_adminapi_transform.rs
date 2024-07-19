@@ -1,9 +1,8 @@
 mod testsupport;
 
 use random_word::Lang;
-use samsa::prelude;
 use samsa::prelude::redpanda::adminapi::{AdminAPI, TransformMetadataIn, TransformMetadataOut};
-use samsa::prelude::{Error, KafkaCode};
+use samsa::prelude::{Error};
 
 #[tokio::test]
 async fn it_returns_not_found_when_deleting_non_existing() -> Result<(), Box<Error>> {
