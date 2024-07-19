@@ -1,7 +1,7 @@
 mod testsupport;
 
 use samsa::prelude;
-use samsa::prelude::{protocol, Error, KafkaCode, TcpConnection};
+use samsa::prelude::{protocol, Error, TcpConnection};
 
 const CLIENT_ID: &str = "metadata protocol integration test";
 const CORRELATION_ID: i32 = 1;
