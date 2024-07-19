@@ -118,7 +118,10 @@ pub struct Topic {
 
 impl Topic {
     pub fn record_count(&self) -> usize {
-        self.partitions.iter().map(|batch| batch.record_count()).sum()
+        self.partitions
+            .iter()
+            .map(|batch| batch.record_count())
+            .sum()
     }
 }
 
@@ -149,7 +152,10 @@ impl Partition {
     }
 
     pub fn record_count(&self) -> usize {
-        self.record_batch.iter().map(|batch| batch.record_count()).sum()
+        self.record_batch
+            .iter()
+            .map(|batch| batch.record_count())
+            .sum()
     }
 }
 

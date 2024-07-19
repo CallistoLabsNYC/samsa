@@ -314,9 +314,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     /// Returns a tuple of a RecordBatch and the max offsets
     /// for the topic-partitions. Useful for manual commiting.
     #[must_use = "stream does nothingby itself"]
-    pub fn into_stream(
-        mut self,
-    ) -> impl Stream<Item = Result<Vec<protocol::FetchResponse>>> {
+    pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<protocol::FetchResponse>>> {
         async_stream::stream! {
             loop {
                 yield self.next_batch().await;

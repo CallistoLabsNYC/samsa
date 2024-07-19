@@ -19,7 +19,7 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    
+
     let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
