@@ -290,7 +290,7 @@ To set up the development environment, you will need the [Rust Toolchain](https:
 - Run `docker-compose up` to spin up a Redpanda cluster.
 
 ### Tests
-To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] KAFKA_TOPIC=[tester topic name] cargo test --tests --all-features -- --show-output --test-threads=1`
+To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] cargo test --tests --all-features -- --show-output --test-threads=1`
 
 ## Resources
 - [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)

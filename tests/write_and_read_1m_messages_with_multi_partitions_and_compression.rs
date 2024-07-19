@@ -58,6 +58,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
             .await?
             .compression(Compression::Gzip)
             .required_acks(1)
+            .max_batch_size(50000)
             .clone()
             .build_from_stream(stream.chunks(CHUNK_SIZE))
             .await;
@@ -70,17 +71,19 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     let stream = ConsumerBuilder::<TcpConnection>::new(
         brokers.clone(),
         TopicPartitionsBuilder::new()
-            .assign(topic_name.to_string(), vec![0])
+            .assign(topic_name.to_string(), vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
             .build(),
     )
     .await?
+    .max_bytes(2000000)
+    .max_partition_bytes(200000)
     .build()
     .into_stream();
 
     let mut counter = 0;
     tokio::pin!(stream);
-    while let Some(_message) = stream.next().await {
-        counter += 1;
+    while let Some(message) = stream.next().await {
+        counter += message.unwrap().0.len();
         if counter == 1_000_000 {
             break;
         }
