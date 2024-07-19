@@ -1,5 +1,6 @@
 mod testsupport;
 
+use samsa::prelude;
 use samsa::prelude::{protocol, Error, TcpConnection};
 
 const CLIENT_ID: &str = "metadata protocol integration test";
@@ -23,6 +24,18 @@ async fn it_can_get_metadata() -> Result<(), Box<Error>> {
     assert_eq!(metadata.brokers.len(), 2);
     assert_eq!(metadata.topics.len(), 1);
 
-    assert_eq!(metadata.topics[0].name, bytes::Bytes::from(topic));
+    assert_eq!(metadata.topics[0].name, bytes::Bytes::from(topic.clone()));
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
+
     Ok(())
 }

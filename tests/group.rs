@@ -1,6 +1,7 @@
 mod testsupport;
 
 use nom::AsBytes;
+use samsa::prelude;
 use samsa::prelude::{
     protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection,
     ROUND_ROBIN_PROTOCOL,
@@ -113,7 +114,7 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     assert_eq!(
         sync_response.assignment.partition_assignments[0],
         protocol::sync_group::response::PartitionAssignment {
-            topic_name: bytes::Bytes::from(topic),
+            topic_name: bytes::Bytes::from(topic.clone()),
             partitions: vec![PARTITION_ID]
         }
     );
@@ -151,6 +152,18 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
 
     assert_eq!(leave_group_response.error_code, KafkaCode::None);
 
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
+
     Ok(())
 }
 
@@ -167,7 +180,8 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     // Get coordinator for this group
     //
     let coordinator_res =
-        samsa::prelude::find_coordinator(conn, CORRELATION_ID, CLIENT_ID, GROUP_ID2).await?;
+        samsa::prelude::find_coordinator(conn.clone(), CORRELATION_ID, CLIENT_ID, GROUP_ID2)
+            .await?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -249,7 +263,7 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     assert_eq!(
         sync_response.assignment.partition_assignments[0],
         protocol::sync_group::response::PartitionAssignment {
-            topic_name: bytes::Bytes::from(topic),
+            topic_name: bytes::Bytes::from(topic.clone()),
             partitions: vec![PARTITION_ID]
         }
     );
@@ -281,6 +295,17 @@ async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> 
     )
     .await?;
     assert_eq!(leave_group_response.error_code, KafkaCode::None);
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
 
     Ok(())
 }

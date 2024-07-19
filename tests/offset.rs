@@ -1,6 +1,7 @@
 mod testsupport;
 
 use nom::AsBytes;
+use samsa::prelude;
 use samsa::prelude::{protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection};
 use std::collections::HashMap;
 
@@ -97,6 +98,18 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
         OFFSET
     );
 
+    //
+    // Delete topic
+    //
+    let delete_res = prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
+    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
+
     Ok(())
 }
 
@@ -113,7 +126,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     // Get coordinator for this group
     //
     let coordinator_res =
-        samsa::prelude::find_coordinator(conn, CORRELATION_ID, CLIENT_ID, GROUP_ID).await?;
+        samsa::prelude::find_coordinator(conn.clone(), CORRELATION_ID, CLIENT_ID, GROUP_ID).await?;
     assert_eq!(coordinator_res.error_code, KafkaCode::None);
     let host = std::str::from_utf8(coordinator_res.host.as_bytes()).unwrap();
     let port = coordinator_res.port;
@@ -160,7 +173,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     //
     // Test offset fetch
     //
-    let topic_partitions = HashMap::from([(topic, vec![PARTITION_ID])]);
+    let topic_partitions = HashMap::from([(topic.clone(), vec![PARTITION_ID])]);
     let offset_fetch_response = samsa::prelude::fetch_offset(
         CORRELATION_ID,
         CLIENT_ID,
@@ -181,6 +194,17 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
         offset_fetch_response.topics[0].partitions[0].committed_offset,
         OFFSET
     );
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
 
     Ok(())
 }

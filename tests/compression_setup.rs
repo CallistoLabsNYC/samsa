@@ -1,5 +1,6 @@
 use futures::stream::iter;
 use futures::StreamExt;
+use samsa::prelude;
 
 use samsa::prelude::{
     BrokerConnection, Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
@@ -18,31 +19,32 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     if skip {
         return Ok(());
     }
-    let topic = "tester-compression-setup";
+    let topic = testsupport::create_topic_from_file_path(file!())?;
 
     // set up tcp connection options
     let conn = TcpConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(conn, topic, CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn.clone(), topic.as_str(), CORRELATION_ID, CLIENT_ID)
+        .await?;
 
     //
     // Test producing
     //
-    let stream = iter(0..5).map(|_| ProduceMessage {
-        topic: topic.to_string(),
+    let inner_topic = topic.clone();
+    let stream = iter(0..5).map(move |_| ProduceMessage {
+        topic: inner_topic.clone(),
         partition_id: PARTITION_ID,
         key: None,
         value: Some(bytes::Bytes::from_static(b"0123456789")),
         headers: vec![],
     });
 
-    let output_stream =
-        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.to_string()])
-            .await?
-            .required_acks(1)
-            .compression(Compression::Gzip)
-            .clone()
-            .build_from_stream(stream.chunks(5))
-            .await;
+    let output_stream = ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
+        .await?
+        .required_acks(1)
+        .compression(Compression::Gzip)
+        .clone()
+        .build_from_stream(stream.chunks(5))
+        .await;
     tokio::pin!(output_stream);
     // producing
     while let Some(message) = output_stream.next().await {
@@ -79,6 +81,17 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
             break;
         }
     }
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
 
     Ok(())
 }

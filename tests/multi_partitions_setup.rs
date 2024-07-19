@@ -23,7 +23,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         return Ok(());
     }
     let conn = TcpConnection::new(brokers.clone()).await?;
-    let topic_name = "tester-creation-partition";
+    let topic_name = testsupport::create_topic_from_file_path(file!())?;
 
     //
     // Create topic with 10 partitions
@@ -32,7 +32,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        HashMap::from([(topic_name, NUMBER_OF_PARTITIONS)]),
+        HashMap::from([(topic_name.as_str(), NUMBER_OF_PARTITIONS)]),
     )
     .await?;
 
@@ -45,8 +45,9 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     //
     // Test producing (writing)
     //
-    let stream = iter(0..NUMBER_OF_PARTITIONS).map(|i| ProduceMessage {
-        topic: topic_name.to_string(),
+    let inner_topic = topic_name.clone();
+    let stream = iter(0..NUMBER_OF_PARTITIONS).map(move |i| ProduceMessage {
+        topic: inner_topic.clone(),
         partition_id: i,
         key: None,
         value: Some(bytes::Bytes::from_static(b"0123456789")),
@@ -54,7 +55,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     });
 
     let output_stream =
-        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic_name.to_string()])
+        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic_name.clone()])
             .await?
             .required_acks(1)
             .clone()
@@ -65,7 +66,10 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     while let Some(message) = output_stream.next().await {
         let res = message[0].as_ref().unwrap();
         assert_eq!(res.responses.len(), 1);
-        assert_eq!(res.responses[0].name, bytes::Bytes::from(topic_name));
+        assert_eq!(
+            res.responses[0].name,
+            bytes::Bytes::from(topic_name.clone())
+        );
         assert_eq!(
             res.responses[0].partition_responses[0].error_code,
             KafkaCode::None
@@ -92,10 +96,21 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         // assert topic name
         let res = message.unwrap().0;
         if !res.is_empty() {
-            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name));
+            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name.clone()));
             break;
         }
     }
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic_name.as_str()],
+    )
+    .await?;
 
     Ok(())
 }
