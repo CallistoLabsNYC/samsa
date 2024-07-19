@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use futures::stream::iter;
 use futures::StreamExt;
 
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
     BrokerConnection, ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder,
     TcpConnection, TopicPartitionsBuilder,
@@ -22,7 +22,11 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(brokers.clone()).await?;
+    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
     let topic_name = testsupport::create_topic_from_file_path(file!())?;
 
     //
@@ -89,7 +93,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     )
     .await?
     .build()
-    .into_stream();
+    .into_processed_stream();
 
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {

@@ -196,7 +196,50 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok(responses)
     }
 
-    pub async fn next_batch(&mut self) -> Result<(Vec<ConsumeMessage>, PartitionOffsets)> {
+    pub async fn next_batch(&mut self) -> Result<Vec<protocol::FetchResponse>> {
+        let responses = self.consume().await?;
+        // for each group of broker reponses
+        for response in responses.iter() {
+            for topic in response.topics.iter() {
+                // is this really the best way to do this?
+                // is it efficient? maybe need to tweak types
+                // Bytes is common so there will be loads of examples somewhere
+                let topic_name = std::str::from_utf8(topic.name.as_bytes()).map_err(|err| {
+                    tracing::error!("Error converting from UTF8 {:?}", err);
+                    Error::DecodingUtf8Error
+                })?;
+
+                // this is a sneaky way to use data that we own :)
+                let topic_name = self
+                    .cluster_metadata
+                    .topic_names
+                    .iter()
+                    .find(|my_topic| **my_topic == topic_name)
+                    .unwrap();
+                for partition in topic.partitions.iter() {
+                    // TODO: handle kafka error code here
+                    /*
+                     * OFFSET_OUT_OF_RANGE (1)
+                     * UNKNOWN_TOPIC_OR_PARTITION (3)
+                     * NOT_LEADER_FOR_PARTITION (6)
+                     * REPLICA_NOT_AVAILABLE (9)
+                     * UNKNOWN (-1)
+                     */
+                    for record_batch in partition.record_batch.iter() {
+                        let base_offset = record_batch.base_offset;
+                        self.offsets.insert(
+                            (topic_name.to_owned(), partition.id),
+                            base_offset + (record_batch.record_count() as i64),
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(responses)
+    }
+
+    pub async fn flatten(&mut self) -> Result<(Vec<ConsumeMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
         let mut records = vec![];
 
@@ -273,10 +316,21 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     #[must_use = "stream does nothingby itself"]
     pub fn into_stream(
         mut self,
-    ) -> impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>> {
+    ) -> impl Stream<Item = Result<Vec<protocol::FetchResponse>>> {
         async_stream::stream! {
             loop {
                 yield self.next_batch().await;
+            }
+        }
+    }
+
+    #[must_use = "stream does nothingby itself"]
+    pub fn into_processed_stream(
+        mut self,
+    ) -> impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>> {
+        async_stream::stream! {
+            loop {
+                yield self.flatten().await;
             }
         }
     }
@@ -297,7 +351,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     ) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
-            for await stream_message in self.into_stream() {
+            for await stream_message in self.into_processed_stream() {
                 let (messages, offsets) = stream_message?;
                 yield messages;
                 commit_offset_wrapper(
@@ -316,7 +370,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
 
     /// Break the batched messages into individual elements.
     pub fn into_flat_stream(self) -> impl Stream<Item = ConsumeMessage> {
-        into_flat_stream(self.into_stream())
+        into_flat_stream(self.into_processed_stream())
     }
 }
 
