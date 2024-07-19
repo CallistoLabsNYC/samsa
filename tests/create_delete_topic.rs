@@ -59,8 +59,14 @@ async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Erro
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(brokers).await?;
 
+    let mut metadata =
+        ClusterMetadata::<TcpConnection>::new(brokers, "rust".to_string(), vec![]).await?;
+
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
     //
     // Create topic
     //
