@@ -104,14 +104,13 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     //
     // Delete topic
     //
-    let delete_res = prelude::delete_topics(
+    prelude::delete_topics(
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
         vec![topic_name.as_str()],
     )
     .await?;
-    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }

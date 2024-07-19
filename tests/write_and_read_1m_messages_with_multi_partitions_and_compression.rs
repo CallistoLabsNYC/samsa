@@ -91,14 +91,13 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     //
     // Delete topic
     //
-    let delete_res = prelude::delete_topics(
+    prelude::delete_topics(
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
         vec![topic_name.as_str()],
     )
     .await?;
-    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }

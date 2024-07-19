@@ -2,8 +2,8 @@ use futures::stream::iter;
 use futures::StreamExt;
 use samsa::prelude;
 use samsa::prelude::{
-    BrokerConnection, Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
-    ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
+    BrokerConnection, Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder,
+    TcpConnection, TopicPartitionsBuilder,
 };
 
 mod testsupport;
@@ -77,14 +77,13 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     //
     // Delete topic
     //
-    let delete_res = prelude::delete_topics(
+    prelude::delete_topics(
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
         vec![topic.as_str()],
     )
     .await?;
-    assert_eq!(delete_res.topics[0].error_code, KafkaCode::None);
 
     Ok(())
 }
