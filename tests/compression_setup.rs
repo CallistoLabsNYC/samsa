@@ -19,8 +19,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     if skip {
         return Ok(());
     }
-    let topic = testsupport::create_topic_from_file_path(file!())?; //
-    dbg!(&topic);
+    let topic = testsupport::create_topic_from_file_path(file!())?;
 
     // set up tcp connection options
     let conn = TcpConnection::new(brokers.clone()).await?;

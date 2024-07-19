@@ -88,9 +88,9 @@ pub fn get_topic(caller_path: &str) -> Result<(bool, String), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_topic_2() -> Result<(bool, String), Error> {
-    let topic = match env::var(KAFKA_TOPIC_2) {
-        Ok(topic) => topic,
+pub fn get_topic_2(caller_path: &str) -> Result<(bool, String), Error> {
+    let topic = match create_topic_from_file_path(caller_path) {
+        Ok(topic) => format!("{}-2", topic),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC_2);
             return Ok((true, "".to_string()));
