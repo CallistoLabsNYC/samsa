@@ -18,17 +18,19 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     if skip {
         return Ok(());
     }
-    let topic = "tester-compression-setup";
+    let topic = testsupport::create_topic_from_file_path(file!())?; //
+    dbg!(&topic);
 
     // set up tcp connection options
     let conn = TcpConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(conn, topic, CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn, topic.as_str(), CORRELATION_ID, CLIENT_ID).await?;
 
     //
     // Test producing
     //
-    let stream = iter(0..5).map(|_| ProduceMessage {
-        topic: topic.to_string(),
+    let inner_topic = topic.clone();
+    let stream = iter(0..5).map(move |_| ProduceMessage {
+        topic: inner_topic.clone(),
         partition_id: PARTITION_ID,
         key: None,
         value: Some(bytes::Bytes::from_static(b"0123456789")),
@@ -36,7 +38,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     });
 
     let output_stream =
-        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.to_string()])
+        ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
             .await?
             .required_acks(1)
             .compression(Compression::Gzip)

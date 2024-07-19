@@ -24,7 +24,7 @@ async fn it_can_write_then_read() -> Result<(), Error> {
     if skip {
         return Ok(());
     }
-    let (skip, topic) = testsupport::get_topic()?;
+    let (skip, topic) = testsupport::get_topic(file!())?;
     if skip {
         return Ok(());
     }
