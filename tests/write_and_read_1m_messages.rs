@@ -73,7 +73,7 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     let mut counter = 0;
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
-        let new_count: usize = message.unwrap().iter().map(|res| res.record_count()).sum();
+        let new_count: usize = message.unwrap().0.count();
         counter += new_count;
         if counter >= 1_000_000 {
             break;

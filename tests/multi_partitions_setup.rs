@@ -93,15 +93,18 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     )
     .await?
     .build()
-    .into_processed_stream();
+    .into_stream();
 
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
         // assert topic name
-        let res = message.unwrap().0;
-        if !res.is_empty() {
-            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name.clone()));
-            break;
+        let mut res = message.unwrap().0;
+        match res.next() {
+            None => break,
+            Some(r) => {
+                assert_eq!(r.topic_name, topic_name.to_string());
+                assert_eq!(r.value, bytes::Bytes::from_static(b"0123456789"));
+            }
         }
     }
 

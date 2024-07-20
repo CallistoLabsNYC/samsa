@@ -39,7 +39,7 @@ pub struct ConsumerGroup<T: BrokerConnection> {
 }
 
 impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
-    pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> {
+    pub fn into_stream(mut self) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> {
         async_stream::stream! {
             let coordinator_conn = self.coordinator_conn.clone();
             loop {
