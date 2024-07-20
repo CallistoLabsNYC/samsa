@@ -196,7 +196,9 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok(responses)
     }
 
-    pub async fn next_batch(&mut self) -> Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)> {
+    pub async fn next_batch(
+        &mut self,
+    ) -> Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
         // for each group of broker reponses
         for response in responses.iter() {
@@ -275,7 +277,9 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     /// Returns a tuple of a RecordBatch and the max offsets
     /// for the topic-partitions. Useful for manual commiting.
     #[must_use = "stream does nothingby itself"]
-    pub fn into_stream(mut self) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
+    pub fn into_stream(
+        mut self,
+    ) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
         async_stream::stream! {
             loop {
                 yield self.next_batch().await;

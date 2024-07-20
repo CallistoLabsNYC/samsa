@@ -1,5 +1,8 @@
 use futures::stream::{iter, StreamExt};
-use samsa::prelude::{ConsumeMessage, ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection, TopicPartitionsBuilder};
+use samsa::prelude::{
+    ConsumeMessage, ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection,
+    TopicPartitionsBuilder,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -23,7 +26,7 @@ async fn main() -> Result<(), ()> {
         port: 9092,
     }];
 
-    let topic = "small";
+    let topic = "benchmark";
 
     // let stream = iter(0..100).map(move |_| ProduceMessage {
     //     topic: topic.to_string(),
@@ -61,16 +64,16 @@ async fn main() -> Result<(), ()> {
     )
     .await
     .unwrap()
-    .max_bytes(2000)
-    .max_partition_bytes(1000)
+    .max_bytes(20000000)
+    .max_partition_bytes(10000000)
     .build()
     .into_stream();
 
     // let mut counter = 0;
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
-        let messages = message.unwrap().0.map(|m| m.offset).collect::<Vec<usize>>();
-        tracing::info!("{:?}", messages) 
+        // let messages = message.unwrap().0.map(|m| m.offset).collect::<Vec<usize>>();
+        tracing::info!("a")
     }
 
     Ok(())
