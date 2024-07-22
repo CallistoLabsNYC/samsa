@@ -16,6 +16,7 @@ use crate::{
         self,
         join_group::request::{Metadata, Protocol},
         Assignment,
+        sync_group::response::MemberAssignment
     },
 };
 
@@ -32,7 +33,7 @@ pub struct ConsumerGroup<T: BrokerConnection> {
     pub group_id: String,
     pub member_id: Bytes,
     pub generation_id: i32,
-    pub assignment: Option<protocol::sync_group::response::MemberAssignment>,
+    pub assignment: Option<MemberAssignment>,
     pub retention_time_ms: i64,
     pub group_topic_partitions: TopicPartitions,
     pub fetch_params: FetchParams,
