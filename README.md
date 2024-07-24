@@ -114,7 +114,7 @@ let topic_name = "my-topic".to_string();
 let assignment = samsa::prelude::TopicPartitionsBuilder::new()
     .assign(topic_name, partitions)
     .build();
-let group_id = "The Data Boyz".to_string();
+let group_id = "The Data Engineering Team".to_string();
 
 let consumer_group_member = samsa::prelude::ConsumerGroupBuilder::<samsa::prelude::TcpConnection>::new(
         bootstrap_addrs,
@@ -290,7 +290,7 @@ To set up the development environment, you will need the [Rust Toolchain](https:
 - Run `docker-compose up` to spin up a Redpanda cluster.
 
 ### Tests
-To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] KAFKA_TOPIC=[tester topic name] cargo test --tests --all-features -- --show-output --test-threads=1`
+To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] cargo test --tests --all-features -- --show-output --test-threads=1`
 
 ## Resources
 - [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)

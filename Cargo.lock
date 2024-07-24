@@ -1528,6 +1528,7 @@ dependencies = [
  "nombytes",
  "num-derive",
  "num-traits",
+ "rand",
  "random_word",
  "reqwest",
  "rsasl",

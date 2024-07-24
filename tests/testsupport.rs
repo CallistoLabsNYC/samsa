@@ -1,6 +1,6 @@
 use samsa::prelude::{create_topics, BrokerAddress, BrokerConnection, Error};
+use std::panic::Location;
 use std::{collections::HashMap, env};
-
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
 const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
@@ -48,12 +48,15 @@ pub fn get_brokers() -> Result<(bool, Vec<BrokerAddress>), Error> {
 }
 
 #[allow(dead_code)]
+#[track_caller]
 pub fn get_brokers_and_topic() -> Result<(bool, Vec<BrokerAddress>, String), Error> {
+    let caller_path = Location::caller().file();
+
     let (skip, brokers) = get_brokers()?;
     if skip {
         return Ok((skip, vec![], "".to_string()));
     }
-    let (skip, topic) = get_topic()?;
+    let (skip, topic) = get_topic(caller_path)?;
     if skip {
         return Ok((skip, vec![], "".to_string()));
     }
@@ -73,8 +76,8 @@ pub fn get_redpanda_admin_urls() -> Result<(bool, Vec<String>), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_topic() -> Result<(bool, String), Error> {
-    let topic = match env::var(KAFKA_TOPIC) {
+pub fn get_topic(caller_path: &str) -> Result<(bool, String), Error> {
+    let topic = match create_topic_from_file_path(caller_path) {
         Ok(topic) => topic,
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC);
@@ -85,13 +88,29 @@ pub fn get_topic() -> Result<(bool, String), Error> {
 }
 
 #[allow(dead_code)]
-pub fn get_topic_2() -> Result<(bool, String), Error> {
-    let topic = match env::var(KAFKA_TOPIC_2) {
-        Ok(topic) => topic,
+pub fn get_topic_2(caller_path: &str) -> Result<(bool, String), Error> {
+    let topic = match create_topic_from_file_path(caller_path) {
+        Ok(topic) => format!("{}-2", topic),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC_2);
             return Ok((true, "".to_string()));
         }
     };
     Ok((false, topic))
+}
+
+#[allow(dead_code)]
+pub fn create_topic_from_file_path(caller_path: &str) -> Result<String, Error> {
+    let file_name = match std::path::Path::new(caller_path)
+        .file_stem() // using `file_stem` to remove any extension
+        .and_then(std::ffi::OsStr::to_str)
+    {
+        Some(topic) => topic,
+        None => {
+            tracing::warn!("Skipping test because could not read file directory");
+            return Ok("".to_string());
+        }
+    };
+
+    Ok(format!("{}-integration", file_name))
 }

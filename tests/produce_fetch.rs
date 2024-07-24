@@ -1,5 +1,6 @@
 mod testsupport;
 
+use samsa::prelude;
 use samsa::prelude::{
     protocol::{self, produce::request::Attributes},
     BrokerConnection, Error, KafkaCode, TcpConnection,
@@ -188,6 +189,17 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
     assert_eq!(err_code, KafkaCode::None);
     assert_eq!(record.key, key);
     assert_eq!(record.value, value);
+
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic.as_str()],
+    )
+    .await?;
 
     Ok(())
 }
