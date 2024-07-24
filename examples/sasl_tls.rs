@@ -1,5 +1,6 @@
 use samsa::prelude::{
-    BrokerAddress, ConsumerBuilder, SaslConfig, SaslTlsConfig, SaslTlsConnection, TlsConnectionOptions, TopicPartitionsBuilder
+    BrokerAddress, ConsumerBuilder, SaslConfig, SaslTlsConfig, SaslTlsConnection,
+    TlsConnectionOptions, TopicPartitionsBuilder,
 };
 use tokio_stream::StreamExt;
 
@@ -47,7 +48,9 @@ async fn main() -> Result<(), ()> {
     )
     .await
     .unwrap()
-    .seek_to_timestamp(1719263688).await.unwrap()
+    .seek_to_timestamp(1719263688)
+    .await
+    .unwrap()
     .build()
     .into_stream();
 
@@ -59,4 +62,3 @@ async fn main() -> Result<(), ()> {
 
     Ok(())
 }
-
