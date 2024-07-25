@@ -737,8 +737,9 @@ pub mod prelude {
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::metadata::ClusterMetadata;
     pub use crate::network::{
-        tcp::TcpConnection,
-        tls::{TlsConnection, TlsConnectionOptions},
+        sasl::{do_sasl, SaslConfig},
+        tcp::{SaslTcpConfig, SaslTcpConnection, TcpConnection},
+        tls::{SaslTlsConfig, SaslTlsConnection, TlsConnection, TlsConnectionOptions},
         BrokerAddress, BrokerConnection,
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};

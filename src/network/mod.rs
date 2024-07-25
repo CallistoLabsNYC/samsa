@@ -41,6 +41,7 @@ use crate::prelude::{encode::ToByte, Result};
 use async_trait::async_trait;
 use bytes::BytesMut;
 
+pub mod sasl;
 pub mod tcp;
 pub mod tls;
 

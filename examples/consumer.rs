@@ -1,7 +1,6 @@
 use futures::stream::{iter, StreamExt};
 use samsa::prelude::{
-    ConsumeMessage, ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection,
-    TopicPartitionsBuilder,
+    ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
 };
 
 #[tokio::main]
@@ -28,22 +27,25 @@ async fn main() -> Result<(), ()> {
 
     let topic = "benchmark";
 
-    let stream = iter(0..100).map(move |_| ProduceMessage {
-        topic: topic.to_string(),
-        partition_id: 0,
-        key: None,
-        value: Some(bytes::Bytes::from_static(b"0123456789")),
-        headers: vec![],
-    }).chunks(50);
+    let stream = iter(0..100)
+        .map(move |_| ProduceMessage {
+            topic: topic.to_string(),
+            partition_id: 0,
+            key: None,
+            value: Some(bytes::Bytes::from_static(b"0123456789")),
+            headers: vec![],
+        })
+        .chunks(50);
 
-    let output_stream = ProducerBuilder::<TcpConnection>::new(bootstrap_addrs.clone(), vec![topic.to_string()])
-        .await
-        .unwrap()
-        .max_batch_size(1)
-        .required_acks(1)
-        .clone()
-        .build_from_stream(stream)
-        .await;
+    let output_stream =
+        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs.clone(), vec![topic.to_string()])
+            .await
+            .unwrap()
+            .max_batch_size(1)
+            .required_acks(1)
+            .clone()
+            .build_from_stream(stream)
+            .await;
 
     tokio::pin!(output_stream);
     // producing
@@ -63,17 +65,19 @@ async fn main() -> Result<(), ()> {
             .build(),
     )
     .await
-    .unwrap()
-    .max_bytes(20000000)
-    .max_partition_bytes(10000000)
+    .map_err(|err| tracing::error!("{:?}", err))?
+    .max_bytes(1000000)
+    .max_partition_bytes(500000)
     .build()
     .into_stream();
 
     // let mut counter = 0;
     tokio::pin!(stream);
+    tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        // let messages = message.unwrap().0.map(|m| m.offset).collect::<Vec<usize>>();
-        tracing::info!("a")
+        if message.unwrap().0.count() == 0 {
+            tracing::info!("done!");
+        }
     }
 
     Ok(())

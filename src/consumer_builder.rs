@@ -4,7 +4,7 @@ use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
     network::BrokerConnection,
-    protocol, DEFAULT_CLIENT_ID,
+    protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
 use nom::AsBytes;
 use std::collections::HashMap;
@@ -60,9 +60,13 @@ impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
             .map(|topic_name| topic_name.to_owned())
             .collect();
 
-        let cluster_metadata =
-            metadata::ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics)
-                .await?;
+        let cluster_metadata = metadata::ClusterMetadata::new(
+            connection_params,
+            DEFAULT_CORRELATION_ID,
+            DEFAULT_CLIENT_ID.to_owned(),
+            topics,
+        )
+        .await?;
 
         Ok(Self {
             cluster_metadata,

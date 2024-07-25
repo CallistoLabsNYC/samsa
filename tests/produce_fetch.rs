@@ -17,7 +17,13 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
         .get_mut(&metadata.controller_id)
@@ -26,6 +32,7 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )
@@ -110,6 +117,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )
