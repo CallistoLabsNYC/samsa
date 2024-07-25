@@ -1,9 +1,9 @@
 use futures::stream::iter;
 use futures::StreamExt;
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    BrokerConnection, Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder,
-    TcpConnection, TopicPartitionsBuilder,
+    Compression, ConsumerBuilder, Error, ProduceMessage, ProducerBuilder, TcpConnection,
+    TopicPartitionsBuilder,
 };
 
 mod testsupport;
@@ -19,7 +19,11 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
         return Ok(());
     }
     let topic = testsupport::create_topic_from_file_path(file!())?;
-    let conn = TcpConnection::new(brokers.clone()).await?;
+    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -69,8 +73,9 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     let mut counter = 0;
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
-        counter += message.unwrap().0.len();
-        if counter == 1_000_000 {
+        let new_count: usize = message.unwrap().0.count();
+        counter += new_count;
+        if counter >= 1_000_000 {
             break;
         }
     }

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use samsa::prelude::{ConsumerGroupBuilder, TcpConnection, TopicPartitionsBuilder};
+use samsa::prelude::{ConsumeMessage, ConsumerGroupBuilder, TcpConnection, TopicPartitionsBuilder};
 use tokio_stream::StreamExt;
 
 #[tokio::main]
@@ -46,7 +46,8 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(stream);
 
     while let Some(message) = stream.next().await {
-        tracing::info!("{:?}", message);
+        let messages: Vec<ConsumeMessage> = message.unwrap().collect();
+        tracing::info!("{:?}", messages);
     }
     Ok(())
 }

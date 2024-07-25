@@ -86,6 +86,12 @@ pub struct FetchResponse {
     pub topics: Vec<Topic>,
 }
 
+impl FetchResponse {
+    pub fn record_count(&self) -> usize {
+        self.topics.iter().map(|batch| batch.record_count()).sum()
+    }
+}
+
 // this helps us cast the server response into this type
 impl TryFrom<Bytes> for FetchResponse {
     type Error = Error;
@@ -110,6 +116,15 @@ pub struct Topic {
     pub partitions: Vec<Partition>,
 }
 
+impl Topic {
+    pub fn record_count(&self) -> usize {
+        self.partitions
+            .iter()
+            .map(|batch| batch.record_count())
+            .sum()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Partition {
     pub id: i32,
@@ -118,6 +133,30 @@ pub struct Partition {
     pub last_stable_offset: i64,
     pub aborted_transactions: Vec<AbortedTransactions>,
     pub record_batch: Vec<RecordBatch>,
+}
+
+impl Partition {
+    // this should probably be a type?
+    pub fn into_box_iter(self) -> Box<impl Iterator<Item = (i32, KafkaCode, i64, i64, Record)>> {
+        Box::new(self.record_batch.into_iter().flat_map(move |batch| {
+            batch.records.into_iter().map(move |record| {
+                (
+                    self.id,
+                    self.error_code,
+                    batch.base_offset,
+                    batch.base_timestamp,
+                    record,
+                )
+            })
+        }))
+    }
+
+    pub fn record_count(&self) -> usize {
+        self.record_batch
+            .iter()
+            .map(|batch| batch.record_count())
+            .sum()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -143,6 +182,12 @@ pub struct RecordBatch {
     pub records: Vec<Record>,
 }
 
+impl RecordBatch {
+    pub fn record_count(&self) -> usize {
+        self.records.len()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Record {
     pub length: usize,
@@ -162,23 +207,6 @@ pub struct Header {
     pub header_key: Bytes,
     pub header_value_length: usize,
     pub value: Bytes,
-}
-
-impl Partition {
-    // this should probably be a type?
-    pub fn into_box_iter(self) -> Box<impl Iterator<Item = (i32, KafkaCode, i64, i64, Record)>> {
-        Box::new(self.record_batch.into_iter().flat_map(move |batch| {
-            batch.records.into_iter().map(move |record| {
-                (
-                    self.id,
-                    self.error_code,
-                    batch.base_offset,
-                    batch.base_timestamp,
-                    record,
-                )
-            })
-        }))
-    }
 }
 
 pub fn parse_fetch_response(s: NomBytes) -> IResult<NomBytes, FetchResponse> {
