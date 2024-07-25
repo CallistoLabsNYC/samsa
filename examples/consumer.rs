@@ -1,7 +1,6 @@
 use futures::stream::{iter, StreamExt};
 use samsa::prelude::{
-    ConsumeMessage, ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection,
-    TopicPartitionsBuilder,
+    ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
 };
 
 #[tokio::main]
@@ -66,17 +65,19 @@ async fn main() -> Result<(), ()> {
             .build(),
     )
     .await
-    .unwrap()
-    .max_bytes(20000000)
-    .max_partition_bytes(10000000)
+    .map_err(|err| tracing::error!("{:?}", err))?
+    .max_bytes(1000000)
+    .max_partition_bytes(500000)
     .build()
     .into_stream();
 
     // let mut counter = 0;
     tokio::pin!(stream);
+    tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        // let messages = message.unwrap().0.map(|m| m.offset).collect::<Vec<usize>>();
-        tracing::info!("a")
+        if message.unwrap().0.count() == 0 {
+            tracing::info!("done!");
+        }
     }
 
     Ok(())

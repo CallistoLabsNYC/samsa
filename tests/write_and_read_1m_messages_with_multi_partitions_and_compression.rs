@@ -21,7 +21,13 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     if skip {
         return Ok(());
     }
-    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
         .get_mut(&metadata.controller_id)

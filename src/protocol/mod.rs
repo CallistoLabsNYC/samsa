@@ -22,6 +22,8 @@ pub mod list_offsets;
 pub mod metadata;
 pub mod offset_fetch;
 pub mod produce;
+pub mod sasl_authenticate;
+pub mod sasl_handshake;
 pub mod sync_group;
 
 use bytes::BufMut;
@@ -45,6 +47,8 @@ pub use self::{
         request::{Header, ProduceRequest},
         response::ProduceResponse,
     },
+    sasl_authenticate::{request::SaslAuthenticationRequest, response::SaslAuthenticationResponse},
+    sasl_handshake::{request::SaslHandshakeRequest, response::SaslHandshakeResponse},
     sync_group::{
         request::{Assignment, MemberAssignment, PartitionAssignment, SyncGroupRequest},
         response::SyncGroupResponse,

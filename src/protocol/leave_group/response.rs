@@ -3,7 +3,7 @@
 //! ### Example
 //! ```rust
 //! let response_bytes = conn.receive_response().await?;
-//! let leave_response = protocol::HeartbeatResponse::try_from(response_bytes.freeze());
+//! let leave_response = protocol::LeaveGroupResponse::try_from(response_bytes.freeze());
 //! ```
 //!
 //! ### Protocol Defs
@@ -29,7 +29,7 @@ use crate::{
 /// ### Example
 /// ```rust
 /// let response_bytes = conn.receive_response().await?;
-/// let leave_response = protocol::HeartbeatResponse::try_from(response_bytes.freeze());
+/// let leave_response = protocol::LeaveGroupResponse::try_from(response_bytes.freeze());
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct LeaveGroupResponse {
