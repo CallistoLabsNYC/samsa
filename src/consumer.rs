@@ -28,7 +28,7 @@ pub struct ConsumeMessage {
     pub value: Bytes,
     pub offset: usize,
     pub timestamp: usize,
-    pub topic_name: Bytes,
+    pub topic_name: String,
     pub partition_index: i32,
 }
 
@@ -196,13 +196,13 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok(responses)
     }
 
-    pub async fn next_batch(&mut self) -> Result<(Vec<ConsumeMessage>, PartitionOffsets)> {
+    pub async fn next_batch(
+        &mut self,
+    ) -> Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
-        let mut records = vec![];
-
         // for each group of broker reponses
-        for response in responses {
-            for topic in response.topics {
+        for response in responses.iter() {
+            for topic in response.topics.iter() {
                 // is this really the best way to do this?
                 // is it efficient? maybe need to tweak types
                 // Bytes is common so there will be loads of examples somewhere
@@ -218,7 +218,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                     .iter()
                     .find(|my_topic| **my_topic == topic_name)
                     .unwrap();
-                for partition in topic.partitions {
+                for partition in topic.partitions.iter() {
                     // TODO: handle kafka error code here
                     /*
                      * OFFSET_OUT_OF_RANGE (1)
@@ -227,43 +227,49 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                      * REPLICA_NOT_AVAILABLE (9)
                      * UNKNOWN (-1)
                      */
-                    for record_batch in partition.record_batch {
+                    for record_batch in partition.record_batch.iter() {
                         let base_offset = record_batch.base_offset;
-                        let base_timestamp = record_batch.base_timestamp;
-
-                        for record in record_batch.records {
-                            let new_offset = (record.offset_delta / 2) + (base_offset as usize);
-
-                            self.offsets.insert(
-                                (topic_name.to_owned(), partition.id),
-                                record.offset_delta as i64 + base_offset + 1,
-                            );
-
-                            records.push(ConsumeMessage {
-                                key: record.key,
-                                value: record.value,
-                                offset: new_offset,
-                                timestamp: base_timestamp as usize + record.timestamp_delta,
-                                topic_name: topic.name.clone(),
-                                partition_index: partition.id,
-                            });
-                        }
+                        self.offsets.insert(
+                            (topic_name.to_owned(), partition.id),
+                            base_offset + (record_batch.record_count() as i64),
+                        );
                     }
                 }
             }
         }
 
-        tracing::debug!(
-            "Read {} records, newest offset {:?}",
-            records.len(),
-            self.offsets
-        );
+        let iterators = responses.into_iter().flat_map(|response| {
+            response.topics.into_iter().flat_map(|topic| {
+                let topic_name = std::string::String::from_utf8(topic.name.to_vec()).unwrap();
+                topic.partitions.into_iter().flat_map(move |partition| {
+                    let topic_name = topic_name.clone();
 
-        // gotta clone here, this will be difficult
-        // because it is big, but we can't do a ref
-        // because we will mutate it underneath and
-        // rust will definitely get mad at us
-        Ok((records, self.offsets.clone()))
+                    let partition_id = partition.id;
+                    partition.record_batch.into_iter().flat_map(move |batch| {
+                        let topic_name = topic_name.clone();
+
+                        let base_timestamp = batch.base_timestamp;
+                        let base_offset = batch.base_offset;
+                        batch.records.into_iter().map(move |record| {
+                            let topic_name = topic_name.clone();
+
+                            let new_offset = (record.offset_delta / 2) + (base_offset as usize);
+
+                            ConsumeMessage {
+                                key: record.key.clone(),
+                                value: record.value.clone(),
+                                offset: new_offset,
+                                timestamp: base_timestamp as usize + record.timestamp_delta,
+                                topic_name: topic_name.clone(),
+                                partition_index: partition_id,
+                            }
+                        })
+                    })
+                })
+            })
+        });
+
+        Ok((iterators, self.offsets.clone()))
     }
 
     /// Convert consumer into an asynchronous iterator.
@@ -273,7 +279,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     #[must_use = "stream does nothingby itself"]
     pub fn into_stream(
         mut self,
-    ) -> impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>> {
+    ) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
         async_stream::stream! {
             loop {
                 yield self.next_batch().await;
@@ -294,7 +300,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         generation_id: i32,
         member_id: Bytes,
         retention_time_ms: i64,
-    ) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> + 'a {
+    ) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
             for await stream_message in self.into_stream() {
@@ -321,7 +327,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
 }
 
 pub fn into_flat_stream(
-    stream: impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>>,
+    stream: impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>>,
 ) -> impl Stream<Item = ConsumeMessage> {
     futures::StreamExt::flat_map(
         stream
