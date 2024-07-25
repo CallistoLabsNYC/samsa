@@ -22,7 +22,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     let topic = testsupport::create_topic_from_file_path(file!())?;
 
     // set up tcp connection options
-    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let mut metadata = ClusterMetadata::new(brokers.clone(), CORRELATION_ID, CLIENT_ID.to_owned(), vec![]).await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
         .get_mut(&metadata.controller_id)

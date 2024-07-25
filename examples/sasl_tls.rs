@@ -57,7 +57,7 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(s);
 
     while let Some(m) = s.next().await {
-        tracing::info!("{:?}", m);
+        tracing::info!("{:?} messages read", m.unwrap().0.count());
     }
 
     Ok(())

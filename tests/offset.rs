@@ -17,7 +17,7 @@ async fn it_can_commit_and_fetch_offsets() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let mut metadata = ClusterMetadata::new(brokers.clone(), CORRELATION_ID, CLIENT_ID.to_owned(), vec![]).await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
         .get_mut(&metadata.controller_id)
@@ -123,7 +123,7 @@ async fn it_can_commit_and_fetch_offsets_with_functions() -> Result<(), Box<Erro
     if skip {
         return Ok(());
     }
-    let mut metadata = ClusterMetadata::new(brokers.clone(), CLIENT_ID.to_owned(), vec![]).await?;
+    let mut metadata = ClusterMetadata::new(brokers.clone(),CORRELATION_ID, CLIENT_ID.to_owned(), vec![]).await?;
     let conn: &mut TcpConnection = metadata
         .broker_connections
         .get_mut(&metadata.controller_id)
