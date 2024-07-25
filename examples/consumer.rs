@@ -38,7 +38,6 @@ async fn main() -> Result<(), ()> {
     .map_err(|err| tracing::error!("{:?}", err))?
     .max_bytes(3000000)
     .max_partition_bytes(3000000)
-    .max_wait_ms(200)
     .build()
     .into_stream();
 
@@ -48,14 +47,13 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(stream);
     tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        // let new = message.unwrap().count();
-        // count += new;
-        tracing::info!("reading");
-        // tracing::info!("{} - read {} of {}", new, count, size);
-        // if count == size {
-        //     tracing::info!("done!");
-        //     break;
-        // }
+        let new = message.unwrap().count();
+        count += new;
+        tracing::info!("{} - read {} of {}", new, count, size);
+        if count == size {
+            tracing::info!("done!");
+            break;
+        }
     }
 
     Ok(())
