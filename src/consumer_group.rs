@@ -15,8 +15,8 @@ use crate::{
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
+        sync_group::response::MemberAssignment,
         Assignment,
-        sync_group::response::MemberAssignment
     },
 };
 

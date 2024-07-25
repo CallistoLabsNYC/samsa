@@ -1,5 +1,14 @@
 # Samsa Changelog
 
+## [1.0.0] - Unreleased
+### Added
+- [#73] Implemented SASL for TCP and TLS
+
+### Changed
+- Altered API for consumers to return Iterators
+- Updated Integration tests
+- Updated documentation and examples
+
 ## [0.1.6] - 2024-06-21
 ### Changed
 - [#13](https://github.com/CallistoLabsNYC/samsa/issues/13) Add TLS support
