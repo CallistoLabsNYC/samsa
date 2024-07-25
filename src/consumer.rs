@@ -272,12 +272,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok((iterators, self.offsets.clone()))
     }
 
-    /// Convert consumer into an asynchronous iterator.
-    ///
-    /// Returns a tuple of a RecordBatch and the max offsets
-    /// for the topic-partitions. Useful for manual commiting.
-    #[must_use = "stream does nothingby itself"]
-    pub fn into_stream(
+    fn stream(
         mut self,
     ) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
         async_stream::stream! {
@@ -285,6 +280,15 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                 yield self.next_batch().await;
             }
         }
+    }
+
+    /// Convert consumer into an asynchronous iterator.
+    ///
+    /// Returns a tuple of a RecordBatch and the max offsets
+    /// for the topic-partitions. Useful for manual commiting.
+    #[must_use = "stream does nothingby itself"]
+    pub fn into_stream(self) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> {
+        self.stream().map(|messages| messages.map(|m| m.0))
     }
 
     /// Apply auto-commit to the consumer.
@@ -303,7 +307,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     ) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
-            for await stream_message in self.into_stream() {
+            for await stream_message in self.stream() {
                 let (messages, offsets) = stream_message?;
                 yield messages;
                 commit_offset_wrapper(
@@ -319,23 +323,6 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
             }
         }
     }
-
-    /// Break the batched messages into individual elements.
-    pub fn into_flat_stream(self) -> impl Stream<Item = ConsumeMessage> {
-        into_flat_stream(self.into_stream())
-    }
-}
-
-pub fn into_flat_stream(
-    stream: impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>>,
-) -> impl Stream<Item = ConsumeMessage> {
-    futures::StreamExt::flat_map(
-        stream
-            .filter(|batch| batch.is_ok())
-            .map(|batch| batch.unwrap())
-            .map(|(batch, _)| batch),
-        futures::stream::iter,
-    )
 }
 
 /// Commit a set of offsets for a consumer group.

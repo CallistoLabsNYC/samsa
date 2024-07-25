@@ -41,12 +41,12 @@ async fn main() -> Result<(), ()> {
     .await
     .unwrap()
     .build()
-    .into_flat_stream();
+    .into_stream();
 
     tokio::pin!(s);
 
     while let Some(m) = s.next().await {
-        tracing::info!("{:?}", m);
+        tracing::info!("{:?} read", m.unwrap().count());
     }
 
     Ok(())

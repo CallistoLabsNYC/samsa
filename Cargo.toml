@@ -37,7 +37,7 @@ webpki-roots = "0.26.1"
 rand = "0.8.5"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = {version = "0.3", features = ["async_tokio"]}
 random_word = { version = "0.4.3", features = ["en"] }
 
 [[bench]]
@@ -46,6 +46,10 @@ harness = false
 
 [[bench]]
 name = "encoder"
+harness = false
+
+[[bench]]
+name = "consumer"
 harness = false
 
 [features]

@@ -1,7 +1,5 @@
-use futures::stream::{iter, StreamExt};
-use samsa::prelude::{
-    ConsumerBuilder, ProduceMessage, ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
-};
+use futures::stream::StreamExt;
+use samsa::prelude::{ConsumerBuilder, TcpConnection, TopicPartitionsBuilder};
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
@@ -27,34 +25,6 @@ async fn main() -> Result<(), ()> {
 
     let topic = "benchmark";
 
-    let stream = iter(0..100)
-        .map(move |_| ProduceMessage {
-            topic: topic.to_string(),
-            partition_id: 0,
-            key: None,
-            value: Some(bytes::Bytes::from_static(b"0123456789")),
-            headers: vec![],
-        })
-        .chunks(50);
-
-    let output_stream =
-        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs.clone(), vec![topic.to_string()])
-            .await
-            .unwrap()
-            .max_batch_size(1)
-            .required_acks(1)
-            .clone()
-            .build_from_stream(stream)
-            .await;
-
-    tokio::pin!(output_stream);
-    // producing
-    while let Some(message) = output_stream.next().await {
-        let res = message[0].as_ref();
-        tracing::info!("{:?}", res);
-    }
-    // done
-
     //
     // Test fetch (read)
     //
@@ -66,18 +36,26 @@ async fn main() -> Result<(), ()> {
     )
     .await
     .map_err(|err| tracing::error!("{:?}", err))?
-    .max_bytes(1000000)
-    .max_partition_bytes(500000)
+    .max_bytes(3000000)
+    .max_partition_bytes(3000000)
+    .max_wait_ms(200)
     .build()
     .into_stream();
 
-    // let mut counter = 0;
+    let size = 1000000;
+
+    let mut count = 0;
     tokio::pin!(stream);
     tracing::info!("starting!");
     while let Some(message) = stream.next().await {
-        if message.unwrap().0.count() == 0 {
-            tracing::info!("done!");
-        }
+        // let new = message.unwrap().count();
+        // count += new;
+        tracing::info!("reading");
+        // tracing::info!("{} - read {} of {}", new, count, size);
+        // if count == size {
+        //     tracing::info!("done!");
+        //     break;
+        // }
     }
 
     Ok(())
