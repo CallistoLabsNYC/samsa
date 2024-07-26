@@ -22,6 +22,8 @@ This crate provides Rust native consumers and producers as well as low level bin
     - [SASL support](#sasl-support)
 - [Examples](#examples)
 - [Development setup](#development-setup)
+    - [Tests](#tests)
+- [Benchmarks](#benchmarks)
 - [Resources](#resources)
 
 
@@ -360,6 +362,22 @@ To set up the development environment, you will need the [Rust Toolchain](https:
 
 ### Tests
 To run the tests, be sure to have the cluster running. Run `KAFKA_BROKERS=[your cluster url] cargo test --tests --all-features -- --show-output --test-threads=1`
+
+## Benchmarks
+We provide a way to benchmark the library's performance through Criterion. This requires a small amount of setup:
+1. Set up a local redpanda cluster
+1. Create a topic with 1 partition named `benchmark`
+1. Run the `producer` example using `cargo run --example producer` to put data in that topic
+1. Run `cargo bench`
+
+### Results
+On a 2020 Macbook Pro, 2 GHz Quad-Core Intel Core i5, 16 GB 3733 MHz LPDDR4X
+#### Produce 1 million 10 byte messages
+1.9s
+
+#### Consume 1 million 10 byte messages
+1.6s
+
 
 ## Resources
 - [Kafka Protocol Spec](https://kafka.apache.org/protocol.html)
