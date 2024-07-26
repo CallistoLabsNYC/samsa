@@ -3,6 +3,7 @@
 ## [1.0.0] - Unreleased
 ### Added
 - [#73] Implemented SASL for TCP and TLS
+- [#89] Added benchmark for Consumer and Producer
 
 ### Changed
 - Altered API for consumers to return Iterators
