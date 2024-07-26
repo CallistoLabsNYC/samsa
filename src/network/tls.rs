@@ -257,7 +257,7 @@ pub struct SaslTlsConfig {
 }
 
 /// SASL/TLS connection to a Kafka/Redpanda broker.
-/// 
+///
 /// # Example
 /// ```rust
 /// let tls_config = TlsConnectionOptions {

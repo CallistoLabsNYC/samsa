@@ -16,7 +16,7 @@ use super::sasl::{do_sasl, SaslConfig};
 use super::{BrokerAddress, BrokerConnection};
 
 /// TCP connection to a Kafka/Redpanda broker.
-/// 
+///
 /// # Example
 /// ```rust
 /// // set up connection options
@@ -213,7 +213,7 @@ pub struct SaslTcpConfig {
 }
 
 /// SASL connection to a Kafka/Redpanda broker.
-/// 
+///
 /// # Example
 /// ```rust
 /// let tcp_config = vec![BrokerAddress {
