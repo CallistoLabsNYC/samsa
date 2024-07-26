@@ -373,10 +373,14 @@ We provide a way to benchmark the library's performance through Criterion. This 
 ### Results
 On a 2020 Macbook Pro, 2 GHz Quad-Core Intel Core i5, 16 GB 3733 MHz LPDDR4X
 #### Produce 1 million 10 byte messages
-1.9s
+```
+time:   [1.5852 s 1.6119 s 1.6406 s]
+```
 
 #### Consume 1 million 10 byte messages
-1.6s
+```
+time:   [1.8013 s 1.8112 s 1.8225 s]
+```
 
 
 ## Resources

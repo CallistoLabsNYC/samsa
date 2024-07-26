@@ -709,6 +709,7 @@ pub mod prelude {
         pub use crate::redpanda::*;
     }
 
+    /// Compression alogorithm for the Producer
     #[derive(Clone, Debug, PartialEq)]
     pub enum Compression {
         Gzip,
