@@ -23,7 +23,7 @@ use crate::{
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
 /// Kafka/Redpanda ConsumerGroup.
-/// 
+///
 /// # Example
 /// ```rust
 /// use samsa::prelude::*;
