@@ -52,6 +52,10 @@ harness = false
 name = "consumer"
 harness = false
 
+[[bench]]
+name = "producer"
+harness = false
+
 [features]
 integration_tests = []
 redpanda = ["reqwest", "serde", "serde_derive"]

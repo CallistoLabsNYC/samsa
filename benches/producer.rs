@@ -1,7 +1,8 @@
+use bytes::Bytes;
 use criterion::BenchmarkId;
 use criterion::Criterion;
 use criterion::{criterion_group, criterion_main};
-use futures::stream::StreamExt;
+use futures::stream::{iter, StreamExt};
 use samsa::prelude::*;
 
 // Here we have an async function to benchmark
@@ -13,29 +14,27 @@ async fn do_something(size: usize) {
 
     let topic = "benchmark";
 
-    let stream = ConsumerBuilder::<TcpConnection>::new(
-        bootstrap_addrs.clone(),
-        TopicPartitionsBuilder::new()
-            .assign(topic.to_string(), vec![0])
-            .build(),
-    )
-    .await
-    .map_err(|err| tracing::error!("{:?}", err))
-    .unwrap()
-    .max_bytes(3000000)
-    .max_partition_bytes(3000000)
-    .build()
-    .into_stream();
+    let stream = iter(0..size).map(|_| ProduceMessage {
+        topic: topic.to_string(),
+        partition_id: 0,
+        key: None,
+        value: Some(Bytes::from_static(b"0123456789")),
+        headers: vec![],
+    });
 
-    let mut count = 0;
-    tokio::pin!(stream);
-    while let Some(message) = stream.next().await {
-        let new = message.unwrap().count();
-        count += new;
-        if count == size {
-            break;
-        }
-    }
+    tracing::info!("Connecting to cluster");
+    let output_stream =
+        ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic.to_string()])
+            .await
+            .map_err(|err| tracing::error!("{:?}", err))
+            .unwrap()
+            .required_acks(1)
+            .clone()
+            .build_from_stream(stream.chunks(50000))
+            .await;
+
+    tokio::pin!(output_stream);
+    while (output_stream.next().await).is_some() {}
 }
 
 fn from_elem(c: &mut Criterion) {
@@ -47,7 +46,7 @@ fn from_elem(c: &mut Criterion) {
         .unwrap();
 
     c.bench_with_input(
-        BenchmarkId::new("consume_10byte_messages", size),
+        BenchmarkId::new("produce_10byte_messages", size),
         &size,
         |b, &s| {
             // Insert a call to `to_async` to convert the bencher to async mode.
