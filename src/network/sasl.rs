@@ -12,6 +12,7 @@ use bytes::Bytes;
 use rsasl::prelude::*;
 use std::io::Cursor;
 
+/// SASL Credentials
 #[derive(Clone, Debug)]
 pub struct SaslConfig {
     pub username: String,

@@ -22,6 +22,7 @@ use crate::{
 
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
+/// Kafka/Redpanda ConsumerGroup.
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,

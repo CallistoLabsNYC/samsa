@@ -13,7 +13,6 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::Mutex;
 use tokio_rustls::{client::TlsStream, rustls, TlsConnector};
-// use tracing::instrument;
 
 use crate::{
     encode::ToByte,
@@ -24,24 +23,27 @@ use super::sasl::do_sasl;
 use super::sasl::SaslConfig;
 use super::{BrokerAddress, BrokerConnection};
 
-/// Reference counted TCP connection to a Kafka/Redpanda broker.
+/// TLS connection to a Kafka/Redpanda broker.
 ///
-/// This is designed to be held by a metadata structure which will
-/// dispatch many of these connections at the behest of either a
-/// consumer or producer.
-///
-/// A client would probably need more than one of these at a given time
-/// to implement all of the different protocols.
-///
-/// Typically this would only be used directly in a low level context.
-/// Otherwise the Metadata, Consumer, or Producer modules abstract out the
-/// connection details for the user.
-
+/// # Example
+/// ```rust
+/// // set up connection options
+/// let tls_option = TlsConnectionOptions {
+///         broker_options: vec![BrokerAddress {
+///             host: "127.0.0.1".to_owned(),
+///             port: 9092,
+///         }],
+///         key: "/path_to_key_file".into(),
+///         cert: "/path_to_cert_file".into(),
+///         cafile: Some("/path_to_ca_file".into()),
+///     };
+/// ```
 #[derive(Clone, Debug)]
 pub struct TlsConnection {
     stream: Arc<Mutex<TlsStream<TcpStream>>>,
 }
 
+/// TLS connection options.
 #[derive(Clone, Debug)]
 pub struct TlsConnectionOptions {
     pub broker_options: Vec<BrokerAddress>,
@@ -247,12 +249,34 @@ impl BrokerConnection for TlsConnection {
     }
 }
 
+/// SASL/TLS connection options.
 #[derive(Clone, Debug)]
 pub struct SaslTlsConfig {
     pub tls_config: TlsConnectionOptions,
     pub sasl_config: SaslConfig,
 }
 
+/// SASL/TLS connection to a Kafka/Redpanda broker.
+/// 
+/// # Example
+/// ```rust
+/// let tls_config = TlsConnectionOptions {
+///     broker_options: vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }],
+///     key: "/path_to_key_file".into(),
+///     cert: "/path_to_cert_file".into(),
+///     cafile: Some("/path_to_ca_file".into()),
+/// };
+///
+/// let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
+///
+/// let options = SaslTlsConfig {
+///     tls_config,
+///     sasl_config,
+/// };
+/// ```
 #[derive(Clone, Debug)]
 pub struct SaslTlsConnection {
     tls_conn: TlsConnection,
@@ -270,6 +294,7 @@ impl BrokerConnection for SaslTlsConnection {
         self.tls_conn.receive_response_().await
     }
 
+    /// Connect to a Kafka/Redpanda broker
     async fn new(p: Self::ConnConfig) -> Result<Self> {
         let conn = TlsConnection::new_(p.tls_config).await?;
         do_sasl(

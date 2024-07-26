@@ -10,6 +10,7 @@ use crate::{
     protocol::{self, metadata::response::*},
 };
 
+/// Cluster metadata & operations.
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,

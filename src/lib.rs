@@ -54,14 +54,14 @@
 //!     key: Some(bytes::Bytes::from_static(b"Tester")),
 //!     value: Some(bytes::Bytes::from_static(b"Value")),
 //!     headers: vec![
-//!         samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+//!         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
 //!     ],
 //! }).chunks(100);
 //!
 //! let output_stream =
 //! ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
 //!     .await?
-//!     .batch_timeout_ms(100)
+//!     .batch_timeout_ms(1000)
 //!     .max_batch_size(100)
 //!     .clone()
 //!     .build_from_stream(stream)
@@ -69,7 +69,6 @@
 //!
 //! tokio::pin!(output_stream);
 //! while (output_stream.next().await).is_some() {}
-//!
 //! ```
 //!
 //! ### Consumer
@@ -99,8 +98,8 @@
 //! tokio::pin!(stream);
 //!
 //! // Stream will do nothing unless consumed.
-//! while let Some(Ok((batch, offsets))) = stream.next().await {
-//!     println!("{:?}", batch);
+//! while let Some(batch) = stream.next().await {
+//!     println!("{:?} messages read", batch.unwrap().count());
 //! }
 //! ```
 //!
@@ -134,56 +133,13 @@
 //!
 //! // Stream will do nothing unless consumed.
 //! while let Some(batch) = stream.next().await {
-//!     println!("{:?}", batch);
+//!     println!("{:?} messages read", batch.unwrap().count());
 //! }
 //! ```
 //!
 //! ### TLS support
 //! You can add TLS support to your consumer or producer for secured communication. To enable this, start with specifying the [`TlsConnectionOptions`](prelude::TlsConnectionOptions),
 //! and pass it into an instance of the [`ProducerBuilder`](prelude::ProducerBuilder) or [`ConsumerBuilder`](prelude::ConsumerBuilder).
-//!
-//! Example for [`Producer`](prelude::Producer) with TLS support:
-//! ```rust
-//! use samsa::prelude::*;
-//!
-//! let tls_option = TlsConnectionOptions {
-//!         broker_options: vec![BrokerAddress {
-//!           host: "127.0.0.1".to_owned(),
-//!           port: 9092,
-//!         }],
-//!         key: "/path_to_key_file".into(),
-//!         cert: "/path_to_cert_file".into(),
-//!         cafile: Some("/path_to_ca_file".into()),
-//!     };
-//! let topic_name = "my-topic".to_string();
-//! let partition_id = 0;
-//!
-//! let message = ProduceMessage {
-//!         topic: topic_name.to_string(),
-//!         partition_id,
-//!         key: Some(bytes::Bytes::from_static(b"Tester")),
-//!         value: Some(bytes::Bytes::from_static(b"Value")),
-//!         headers: vec![
-//!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-//!         ],
-//!     };
-//!
-//! let producer_client = ProducerBuilder::<TlsConnection>::new(
-//!         tls_option,
-//!         vec![topic_name.to_string()]
-//!     )
-//!     .await?
-//!     .batch_timeout_ms(1)
-//!     .max_batch_size(2)
-//!     .clone()
-//!     .build()
-//!     .await;
-//!
-//! producer_client
-//!     .produce(message)
-//!     .await;
-//!
-//! ```
 //!
 //! Example for [`Consumer`](prelude::Consumer) with TLS support:
 //! ```rust
@@ -224,44 +180,40 @@
 //! ### Compression support
 //! We provide support for compression in the producer using the [`Compression`](prelude::Compression) enum. The enum allows to specify what type of compression to use. The Consumer will automatically know to decompress the message.
 //!
-//! Example for Producer with TLS and GZIP compression support:
+//! Example for Producer with GZIP compression enabled:
 //! ```rust
 //! use samsa::prelude::*;
 //!
-//! let tls_option = TlsConnectionOptions {
-//!         broker_options: vec![BrokerAddress {
-//!             host: "127.0.0.1".to_owned(),
-//!             port: 9092,
-//!         }],
-//!         key: "/path_to_key_file".into(),
-//!         cert: "/path_to_cert_file".into(),
-//!         cafile: Some("/path_to_ca_file".into()),
-//!     };
+//! let bootstrap_addrs = vec![BrokerAddress {
+//!         host: "127.0.0.1".to_owned(),
+//!         port: 9092,
+//!     }];
 //! let topic_name = "my-topic".to_string();
 //! let partition_id = 0;
 //!
-//! let message = ProduceMessage {
-//!         topic: topic_name.to_string(),
-//!         partition_id,
-//!         key: Some(bytes::Bytes::from_static(b"Tester")),
-//!         value: Some(bytes::Bytes::from_static(b"Value")),
-//!         headers: vec![
-//!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-//!         ],
-//!     };
+//! // create a stream of 5k messages in batches of 100
+//! let stream = iter(0..5000).map(|_| ProduceMessage {
+//!     topic: topic_name.to_string(),
+//!     partition_id,
+//!     key: Some(bytes::Bytes::from_static(b"Tester")),
+//!     value: Some(bytes::Bytes::from_static(b"Value")),
+//!     headers: vec![
+//!         samsa::prelude::Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+//!     ],
+//! }).chunks(100);
 //!
-//! let producer_client = ProducerBuilder::new(tls_option, vec![topic_name.to_string()])
+//! let output_stream =
+//! ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
 //!     .await?
+//!     .batch_timeout_ms(1000)
+//!     .max_batch_size(100)
 //!     .compression(Compression::Gzip)
-//!     .batch_timeout_ms(1)
-//!     .max_batch_size(2)
 //!     .clone()
-//!     .build()
+//!     .build_from_stream(stream)
 //!     .await;
 //!
-//! producer_client
-//!     .produce(message)
-//!     .await;
+//! tokio::pin!(output_stream);
+//! while (output_stream.next().await).is_some() {}
 //! ```
 //!
 //! ### SASL support
@@ -389,7 +341,7 @@ pub mod prelude {
     //! let output_stream =
     //! ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
     //!     .await?
-    //!     .batch_timeout_ms(100)
+    //!     .batch_timeout_ms(1000)
     //!     .max_batch_size(100)
     //!     .clone()
     //!     .build_from_stream(stream)
@@ -405,7 +357,6 @@ pub mod prelude {
     //! They are presented as the building blocks that we use to build the higher level
     //! abstractions.
     //!
-    //! ### Produce
     //! [`produce`] sends messages to a broker.
     //!
     //! # Consuming
@@ -453,8 +404,8 @@ pub mod prelude {
     //! tokio::pin!(stream);
     //!
     //! // Stream will do nothing unless consumed.
-    //! while let Some(Ok((batch, offsets))) = stream.next().await {
-    //!     println!("{:?}", batch);
+    //! while let Some(batch) = stream.next().await {
+    //!     println!("{:?} messages read", batch.unwrap().count());
     //! }
     //! ```
     //!
@@ -463,16 +414,12 @@ pub mod prelude {
     //! They are presented as the building blocks that we use to build the higher level
     //! abstractions.
     //!
-    //! ### List Offsets
     //! [`list_offsets`] finds the offsets given a timestamp.
     //!
-    //! ### Fetch
     //! [`fetch`] fetches a batch of messages.
     //!
-    //! ### Fetch Offset
     //! [`fetch_offset`] gets the offsets of a consumer group.
     //!
-    //! ### Commit Offset
     //! [`commit_offset`] commits a set of offsets for a group.
     //!
     //! # Consumer Groups
@@ -492,7 +439,6 @@ pub mod prelude {
     //!
     //! To use, simply provide the initial bootstrap broker, the group id, and the assignments
     //! to the [`ConsumerGroupBuilder`]. This you can use to configure the fetching parameters as needed.
-    //!
     //!
     //! ### Example
     //! ```rust
@@ -523,7 +469,7 @@ pub mod prelude {
     //!
     //! // Stream will do nothing unless consumed.
     //! while let Some(batch) = stream.next().await {
-    //!     println!("{:?}", batch);
+    //!     println!("{:?} messages read", batch.unwrap().count());
     //! }
     //! ```
     //!
@@ -532,63 +478,57 @@ pub mod prelude {
     //! They are presented as the building blocks that we use to build the higher level
     //! abstractions.
     //!
-    //! ### Join Group
     //! [`join_group`] Become a member of a group, creating it if there are no active members.
     //!
-    //!  ### Sync Group
     //! [`sync_group`] Synchronize state for all members of a group.
     //!
-    //! ### Heartbeat
     //! [`heartbeat`] Keep a member alive in the group.
     //!
-    //! ### Leave Group
     //! [`leave_group`] Directly depart a group.
     //!
     //! ## Broker Connections
     //! We provide mechanisms to connect to your brokers in many different formats:
-    //! - [`TcpConnection`](TcpConnection)
-    //! - [`TlsConnection`](TlsConnection)
-    //! - [`SaslTcpConnection`](SaslTcpConnection)
-    //! - [`SaslTlsConnection`](SaslTlsConnection)
+    //! - [`TcpConnection`]
+    //! - [`TlsConnection`]
+    //! - [`SaslTcpConnection`]
+    //! - [`SaslTlsConnection`]
     //!
-    //! This is implemented through a common trait, called [`BrokerConnection`](BrokerConnection). This allows users
+    //! This is implemented through a common trait, called [`BrokerConnection`]. This allows users
     //! to just drop in the corresponding connection options struct. Here is how you use each one:
     //!
     //! ### Example for Producer connecting over TCP:
     //! ```rust
     //! use samsa::prelude::*;
     //!
-    //! let broker_option = vec![BrokerAddress {
-    //!           host: "127.0.0.1".to_owned(),
-    //!           port: 9092,
-    //!         }];
+    //! let bootstrap_addrs = vec![BrokerAddress {
+    //!         host: "127.0.0.1".to_owned(),
+    //!         port: 9092,
+    //!     }];
     //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
-    //! let message = ProduceMessage {
-    //!         topic: topic_name.to_string(),
-    //!         partition_id,
-    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
-    //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![
-    //!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-    //!         ],
-    //!     };
+    //! // create a stream of 5k messages in batches of 100
+    //! let stream = iter(0..5000).map(|_| ProduceMessage {
+    //!     topic: topic_name.to_string(),
+    //!     partition_id,
+    //!     key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!     value: Some(bytes::Bytes::from_static(b"Value")),
+    //!     headers: vec![
+    //!         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!     ],
+    //! }).chunks(100);
     //!
-    //! let producer_client = ProducerBuilder::<TcpConnection>::new(
-    //!         broker_option,
-    //!         vec![topic_name.to_string()]
-    //!     )
+    //! let output_stream =
+    //! ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
     //!     .await?
-    //!     .batch_timeout_ms(1)
-    //!     .max_batch_size(2)
+    //!     .batch_timeout_ms(1000)
+    //!     .max_batch_size(100)
     //!     .clone()
-    //!     .build()
+    //!     .build_from_stream(stream)
     //!     .await;
     //!
-    //! producer_client
-    //!     .produce(message)
-    //!     .await;
+    //! tokio::pin!(output_stream);
+    //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
     //! ### Example for Producer connecting over TLS:
@@ -607,30 +547,28 @@ pub mod prelude {
     //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
-    //! let message = ProduceMessage {
-    //!         topic: topic_name.to_string(),
-    //!         partition_id,
-    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
-    //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![
-    //!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-    //!         ],
-    //!     };
+    //! // create a stream of 5k messages in batches of 100
+    //! let stream = iter(0..5000).map(|_| ProduceMessage {
+    //!     topic: topic_name.to_string(),
+    //!     partition_id,
+    //!     key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!     value: Some(bytes::Bytes::from_static(b"Value")),
+    //!     headers: vec![
+    //!         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!     ],
+    //! }).chunks(100);
     //!
-    //! let producer_client = ProducerBuilder::<TlsConnection>::new(
-    //!         tls_option,
-    //!         vec![topic_name.to_string()]
-    //!     )
+    //! let output_stream =
+    //! ProducerBuilder::<TlsConnection>::new(tls_option, vec![topic_name.to_string()])
     //!     .await?
-    //!     .batch_timeout_ms(1)
-    //!     .max_batch_size(2)
+    //!     .batch_timeout_ms(1000)
+    //!     .max_batch_size(100)
     //!     .clone()
-    //!     .build()
+    //!     .build_from_stream(stream)
     //!     .await;
     //!
-    //! producer_client
-    //!     .produce(message)
-    //!     .await;
+    //! tokio::pin!(output_stream);
+    //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
     //! ### Example for Producer connecting over SASL:
@@ -650,30 +588,28 @@ pub mod prelude {
     //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
-    //! let message = ProduceMessage {
-    //!         topic: topic_name.to_string(),
-    //!         partition_id,
-    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
-    //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![
-    //!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-    //!         ],
-    //!     };
+    //! // create a stream of 5k messages in batches of 100
+    //! let stream = iter(0..5000).map(|_| ProduceMessage {
+    //!     topic: topic_name.to_string(),
+    //!     partition_id,
+    //!     key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!     value: Some(bytes::Bytes::from_static(b"Value")),
+    //!     headers: vec![
+    //!         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!     ],
+    //! }).chunks(100);
     //!
-    //! let producer_client = ProducerBuilder::<SaslConnection>::new(
-    //!         tls_option,
-    //!         vec![topic_name.to_string()]
-    //!     )
+    //! let output_stream =
+    //! ProducerBuilder::<SaslConnection>::new(options, vec![topic_name.to_string()])
     //!     .await?
-    //!     .batch_timeout_ms(1)
-    //!     .max_batch_size(2)
+    //!     .batch_timeout_ms(1000)
+    //!     .max_batch_size(100)
     //!     .clone()
-    //!     .build()
+    //!     .build_from_stream(stream)
     //!     .await;
     //!
-    //! producer_client
-    //!     .produce(message)
-    //!     .await;
+    //! tokio::pin!(output_stream);
+    //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
     //! ### Example for Producer connecting over SASL/TLS:
@@ -698,30 +634,28 @@ pub mod prelude {
     //! let topic_name = "my-topic".to_string();
     //! let partition_id = 0;
     //!
-    //! let message = ProduceMessage {
-    //!         topic: topic_name.to_string(),
-    //!         partition_id,
-    //!         key: Some(bytes::Bytes::from_static(b"Tester")),
-    //!         value: Some(bytes::Bytes::from_static(b"Value")),
-    //!         headers: vec![
-    //!             Header::new(String::from("Key"), bytes::Bytes::from("Value"))
-    //!         ],
-    //!     };
+    //! // create a stream of 5k messages in batches of 100
+    //! let stream = iter(0..5000).map(|_| ProduceMessage {
+    //!     topic: topic_name.to_string(),
+    //!     partition_id,
+    //!     key: Some(bytes::Bytes::from_static(b"Tester")),
+    //!     value: Some(bytes::Bytes::from_static(b"Value")),
+    //!     headers: vec![
+    //!         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+    //!     ],
+    //! }).chunks(100);
     //!
-    //! let producer_client = ProducerBuilder::<SaslTlsConnection>::new(
-    //!         tls_option,
-    //!         vec![topic_name.to_string()]
-    //!     )
+    //! let output_stream =
+    //! ProducerBuilder::<SaslTlsConnection>::new(options, vec![topic_name.to_string()])
     //!     .await?
-    //!     .batch_timeout_ms(1)
-    //!     .max_batch_size(2)
+    //!     .batch_timeout_ms(1000)
+    //!     .max_batch_size(100)
     //!     .clone()
-    //!     .build()
+    //!     .build_from_stream(stream)
     //!     .await;
     //!
-    //! producer_client
-    //!     .produce(message)
-    //!     .await;
+    //! tokio::pin!(output_stream);
+    //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
     pub use crate::admin::{create_topics, delete_topics};
@@ -745,15 +679,28 @@ pub mod prelude {
     };
     pub use crate::producer::{produce, ProduceMessage, Producer};
     pub use crate::producer_builder::ProducerBuilder;
+    /// Message Header.
     pub use crate::protocol::Header;
 
     pub use bytes;
 
     pub mod encode {
+        //! Serialize data into the bytecode protocol.
         pub use crate::encode::*;
     }
 
     pub mod protocol {
+        //! Bytecode protocol requests & responses.
+        //!
+        //! This module aims to implement the bytecode protocol outlined in the
+        //! [Kafka Documentation](https://kafka.apache.org/protocol.html)
+        //!
+        //! The module is set up as a list of message pairs containing two files
+        //! each corresponding to the request and response.
+        //!
+        //! The request files hold the logic for creating and encoding structs that
+        //! will be sent to the broker. The response files hold the logic for parsing
+        //! and processing the messages coming from the broker.
         pub use crate::protocol::*;
     }
 
