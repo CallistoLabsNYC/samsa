@@ -50,29 +50,37 @@ impl ProduceParams {
 ///
 /// ### Example
 /// ```rust
-/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
-/// let topic_name = "my-topic";
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
+/// let topic_name = "my-topic".to_string();
 /// let partition_id = 0;
 ///
-/// let message = samsa::prelude::ProduceMessage {
-///         topic: topic_name.to_string(),
-///         partition_id,
-///         key: Some(bytes::Bytes::from_static(b"Tester")),
-///         value: Some(bytes::Bytes::from_static(b"Value")),
-///         headers: vec![String::from("Key"), bytes::Bytes::from("Value")]
-///     };
+/// // create a stream of 5k messages in batches of 100
+/// let stream = iter(0..5000).map(|_| ProduceMessage {
+///     topic: topic_name.to_string(),
+///     partition_id,
+///     key: Some(bytes::Bytes::from_static(b"Tester")),
+///     value: Some(bytes::Bytes::from_static(b"Value")),
+///     headers: vec![
+///         Header::new(String::from("Key"), bytes::Bytes::from("Value"))
+///     ],
+/// }).chunks(100);
 ///
-/// let producer_client = samsa::prelude::ProducerBuilder::new(bootstrap_addrs, vec![topic_name.to_string()])
+/// let output_stream =
+/// ProducerBuilder::<TcpConnection>::new(bootstrap_addrs, vec![topic_name.to_string()])
 ///     .await?
-///     .batch_timeout_ms(1)
-///     .max_batch_size(2)
+///     .batch_timeout_ms(1000)
+///     .max_batch_size(100)
 ///     .clone()
-///     .build()
+///     .build_from_stream(stream)
 ///     .await;
 ///
-/// producer_client
-///     .produce(message)
-///     .await;
+/// tokio::pin!(output_stream);
+/// while (output_stream.next().await).is_some() {}
 /// ```
 pub struct Producer {
     /// Direct connection to the background worker.

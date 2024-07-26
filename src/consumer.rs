@@ -129,27 +129,32 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 ///
 /// ### Example
 /// ```rust
-/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
 /// let partitions = vec![0];
-/// let topic_name = "my-topic";
-/// let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+/// let topic_name = "my-topic".to_string();
+/// let assignment = TopicPartitionsBuilder::new()
 ///     .assign(topic_name, partitions)
 ///     .build();
 ///
-/// let consumer = samsa::prelude::ConsumerBuilder::new(
-///     bootstrap_addrs,
-///     assignment,
-/// )
-/// .await?
-/// .build();
+/// let consumer = ConsumerBuilder::<TcpConnection>::new(
+///         bootstrap_addrs,
+///         assignment,
+///     )
+///     .await?
+///     .build();
 ///
 /// let stream = consumer.into_stream();
 /// // have to pin streams before iterating
 /// tokio::pin!(stream);
 ///
 /// // Stream will do nothing unless consumed.
-/// while let Some(Ok((batch, offsets))) = stream.next().await {
-///     println!("{:?}", batch);
+/// while let Some(batch) = stream.next().await {
+///     println!("{:?} messages read", batch.unwrap().count());
 /// }
 /// ```
 #[derive(Clone, Debug)]
