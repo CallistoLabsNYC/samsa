@@ -93,7 +93,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
     let mut counter = 0_usize;
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
-        let new_count: usize = message.unwrap().0.count();
+        let new_count: usize = message.unwrap().count();
         counter += new_count;
         if counter >= 1_000_000 {
             break;

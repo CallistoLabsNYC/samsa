@@ -16,18 +16,12 @@ use tokio_stream::{iter, StreamExt};
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     tracing_subscriber::fmt()
-        // filter spans/events with level TRACE or higher.
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .compact()
-        // Display source code file paths
         .with_file(true)
-        // Display source code line numbers
         .with_line_number(true)
-        // Display the thread ID an event was recorded on
         .with_thread_ids(true)
-        // Don't display the event's target (module path)
         .with_target(false)
-        // Build the subscriber
         .init();
 
     let tcp_config = vec![BrokerAddress {
@@ -43,7 +37,7 @@ async fn main() -> Result<(), ()> {
 
     let topic_name = "atopic";
 
-    let stream = iter(0..5000000)
+    let stream = iter(0..1_000_000)
         .map(|_| ProduceMessage {
             topic: topic_name.to_string(),
             partition_id: 0,
@@ -58,18 +52,13 @@ async fn main() -> Result<(), ()> {
         ProducerBuilder::<SaslTcpConnection>::new(options, vec![topic_name.to_string()])
             .await
             .map_err(|err| tracing::error!("{:?}", err))?
-            // .compression(Compression::Gzip)
-            // .required_acks(1)
             .clone()
             .build_from_stream(stream)
             .await;
 
     tracing::info!("running");
     tokio::pin!(output_stream);
-    while (output_stream.next().await).is_some() {
-        // tracing::info!("Produced {} * 2000 message", message.len());
-        // counter += message[0].len() * 2000;
-    }
+    while (output_stream.next().await).is_some() {}
     tracing::info!("done");
 
     Ok(())

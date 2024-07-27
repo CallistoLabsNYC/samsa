@@ -129,27 +129,32 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 ///
 /// ### Example
 /// ```rust
-/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
 /// let partitions = vec![0];
-/// let topic_name = "my-topic";
-/// let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+/// let topic_name = "my-topic".to_string();
+/// let assignment = TopicPartitionsBuilder::new()
 ///     .assign(topic_name, partitions)
 ///     .build();
 ///
-/// let consumer = samsa::prelude::ConsumerBuilder::new(
-///     bootstrap_addrs,
-///     assignment,
-/// )
-/// .await?
-/// .build();
+/// let consumer = ConsumerBuilder::<TcpConnection>::new(
+///         bootstrap_addrs,
+///         assignment,
+///     )
+///     .await?
+///     .build();
 ///
 /// let stream = consumer.into_stream();
 /// // have to pin streams before iterating
 /// tokio::pin!(stream);
 ///
 /// // Stream will do nothing unless consumed.
-/// while let Some(Ok((batch, offsets))) = stream.next().await {
-///     println!("{:?}", batch);
+/// while let Some(batch) = stream.next().await {
+///     println!("{:?} messages read", batch.unwrap().count());
 /// }
 /// ```
 #[derive(Clone, Debug)]
@@ -272,12 +277,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok((iterators, self.offsets.clone()))
     }
 
-    /// Convert consumer into an asynchronous iterator.
-    ///
-    /// Returns a tuple of a RecordBatch and the max offsets
-    /// for the topic-partitions. Useful for manual commiting.
-    #[must_use = "stream does nothingby itself"]
-    pub fn into_stream(
+    fn stream(
         mut self,
     ) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
         async_stream::stream! {
@@ -285,6 +285,15 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                 yield self.next_batch().await;
             }
         }
+    }
+
+    /// Convert consumer into an asynchronous iterator.
+    ///
+    /// Returns a tuple of a RecordBatch and the max offsets
+    /// for the topic-partitions. Useful for manual commiting.
+    #[must_use = "stream does nothingby itself"]
+    pub fn into_stream(self) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> {
+        self.stream().map(|messages| messages.map(|m| m.0))
     }
 
     /// Apply auto-commit to the consumer.
@@ -303,7 +312,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     ) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
-            for await stream_message in self.into_stream() {
+            for await stream_message in self.stream() {
                 let (messages, offsets) = stream_message?;
                 yield messages;
                 commit_offset_wrapper(
@@ -319,23 +328,6 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
             }
         }
     }
-
-    /// Break the batched messages into individual elements.
-    pub fn into_flat_stream(self) -> impl Stream<Item = ConsumeMessage> {
-        into_flat_stream(self.into_stream())
-    }
-}
-
-pub fn into_flat_stream(
-    stream: impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>>,
-) -> impl Stream<Item = ConsumeMessage> {
-    futures::StreamExt::flat_map(
-        stream
-            .filter(|batch| batch.is_ok())
-            .map(|batch| batch.unwrap())
-            .map(|(batch, _)| batch),
-        futures::stream::iter,
-    )
 }
 
 /// Commit a set of offsets for a consumer group.

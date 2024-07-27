@@ -104,7 +104,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
         // assert topic name
-        let mut res = message.unwrap().0;
+        let mut res = message.unwrap();
         match res.next() {
             None => break,
             Some(r) => {

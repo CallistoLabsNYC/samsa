@@ -22,6 +22,40 @@ use crate::{
 
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
+/// Kafka/Redpanda ConsumerGroup.
+///
+/// # Example
+/// ```rust
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
+/// let partitions = vec![0];
+/// let topic_name = "my-topic".to_string();
+/// let assignment = TopicPartitionsBuilder::new()
+///     .assign(topic_name, partitions)
+///     .build();
+/// let group_id = "The Data Engineering Team".to_string();
+///
+/// let consumer_group_member = ConsumerGroupBuilder::<TcpConnection>::new(
+///         bootstrap_addrs,
+///         group_id,
+///         assignment,
+///     ).await?
+///     .build()
+///     .await?;
+///
+/// let stream = consumer_group_member.into_stream();
+/// // have to pin streams before iterating
+/// tokio::pin!(stream);
+///
+/// // Stream will do nothing unless consumed.
+/// while let Some(batch) = stream.next().await {
+///     println!("{:?} messages read", batch.unwrap().count());
+/// }
+/// ```
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,

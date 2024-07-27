@@ -85,7 +85,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
         // assert topic name
-        let mut res = message.unwrap().0;
+        let mut res = message.unwrap();
         match res.next() {
             None => break,
             Some(r) => {
