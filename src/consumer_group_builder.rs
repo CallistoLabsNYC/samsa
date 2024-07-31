@@ -13,6 +13,7 @@ const DEFAULT_RETENTION_TIME_MS: i64 = 100000;
 const DEFAULT_SESSION_TIMEOUT_MS: i32 = 10000;
 const DEFAULT_REBALANCE_TIMEOUT_MS: i32 = 10000;
 
+/// Configure a [`ConsumerGroup`].
 #[derive(Clone)]
 pub struct ConsumerGroupBuilder<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,

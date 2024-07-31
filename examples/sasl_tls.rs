@@ -1,5 +1,6 @@
 use samsa::prelude::{
-    BrokerAddress, ConsumerBuilder, TlsConnection, TlsConnectionOptions, TopicPartitionsBuilder,
+    BrokerAddress, ConsumerBuilder, SaslConfig, SaslTlsConfig, SaslTlsConnection,
+    TlsConnectionOptions, TopicPartitionsBuilder,
 };
 use tokio_stream::StreamExt;
 
@@ -14,7 +15,7 @@ async fn main() -> Result<(), ()> {
         .with_target(false)
         .init();
 
-    let options = TlsConnectionOptions {
+    let tls_config = TlsConnectionOptions {
         broker_options: vec![BrokerAddress {
             host: "piggy.callistolabs.cloud".to_owned(),
             port: 9092,
@@ -24,12 +25,19 @@ async fn main() -> Result<(), ()> {
         cafile: Some("./etc/redpanda/certs/trustedroot.crt".into()),
     };
 
-    let src_topic = "my-tester".to_owned();
+    let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
 
-    let s = ConsumerBuilder::<TlsConnection>::new(
+    let options = SaslTlsConfig {
+        tls_config,
+        sasl_config,
+    };
+
+    let topic_name = "atopic";
+
+    let s = ConsumerBuilder::<SaslTlsConnection>::new(
         options,
         TopicPartitionsBuilder::new()
-            .assign(src_topic, vec![0])
+            .assign(topic_name.to_owned(), vec![0])
             .build(),
     )
     .await
@@ -40,7 +48,7 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(s);
 
     while let Some(m) = s.next().await {
-        tracing::info!("{:?} read", m.unwrap().count());
+        tracing::info!("{:?} messages read", m.unwrap().count());
     }
 
     Ok(())

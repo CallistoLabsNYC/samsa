@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use futures::stream::iter;
 use futures::StreamExt;
 
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
-    BrokerConnection, ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder,
-    TcpConnection, TopicPartitionsBuilder,
+    ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder, TcpConnection,
+    TopicPartitionsBuilder,
 };
 
 mod testsupport;
@@ -22,7 +22,17 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(brokers.clone()).await?;
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
     let topic_name = testsupport::create_topic_from_file_path(file!())?;
 
     //
@@ -94,10 +104,13 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
         // assert topic name
-        let res = message.unwrap().0;
-        if !res.is_empty() {
-            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic_name.clone()));
-            break;
+        let mut res = message.unwrap();
+        match res.next() {
+            None => break,
+            Some(r) => {
+                assert_eq!(r.topic_name, topic_name.to_string());
+                assert_eq!(r.value, bytes::Bytes::from_static(b"0123456789"));
+            }
         }
     }
 

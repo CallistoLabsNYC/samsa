@@ -1,10 +1,10 @@
 use futures::stream::iter;
 use futures::StreamExt;
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 
 use samsa::prelude::{
-    BrokerConnection, Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage,
-    ProducerBuilder, TcpConnection, TopicPartitionsBuilder,
+    Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder, TcpConnection,
+    TopicPartitionsBuilder,
 };
 
 mod testsupport;
@@ -22,7 +22,18 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     let topic = testsupport::create_topic_from_file_path(file!())?;
 
     // set up tcp connection options
-    let conn = TcpConnection::new(brokers.clone()).await?;
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
+
     testsupport::ensure_topic_creation(conn.clone(), topic.as_str(), CORRELATION_ID, CLIENT_ID)
         .await?;
 
@@ -43,7 +54,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
         .required_acks(1)
         .compression(Compression::Gzip)
         .clone()
-        .build_from_stream(stream.chunks(5))
+        .build_from_stream(stream.chunks(1))
         .await;
     tokio::pin!(output_stream);
     // producing
@@ -74,11 +85,13 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
     tokio::pin!(stream);
     while let Some(message) = stream.next().await {
         // assert topic name
-        let res = message.unwrap().0;
-        if !res.is_empty() {
-            assert_eq!(res[0].topic_name, bytes::Bytes::from(topic.to_string()));
-            assert_eq!(res[0].value, bytes::Bytes::from_static(b"0123456789"));
-            break;
+        let mut res = message.unwrap();
+        match res.next() {
+            None => break,
+            Some(r) => {
+                assert_eq!(r.topic_name, bytes::Bytes::from(topic.to_string()));
+                assert_eq!(r.value, bytes::Bytes::from_static(b"0123456789"));
+            }
         }
     }
 

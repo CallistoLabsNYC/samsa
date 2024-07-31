@@ -9,6 +9,7 @@ use crate::prelude::Compression;
 use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
 use crate::protocol::produce::request::Attributes;
 use crate::protocol::ProduceResponse;
+use crate::DEFAULT_CORRELATION_ID;
 use crate::{error::Result, metadata::ClusterMetadata, DEFAULT_CLIENT_ID};
 
 const DEFAULT_MAX_BATCH_SIZE: usize = 100;
@@ -57,8 +58,13 @@ where
 {
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>) -> Result<Self> {
-        let cluster_metadata =
-            ClusterMetadata::new(connection_params, DEFAULT_CLIENT_ID.to_owned(), topics).await?;
+        let cluster_metadata = ClusterMetadata::new(
+            connection_params,
+            DEFAULT_CORRELATION_ID,
+            DEFAULT_CLIENT_ID.to_owned(),
+            topics,
+        )
+        .await?;
 
         Ok(Self {
             cluster_metadata,

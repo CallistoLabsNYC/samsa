@@ -10,12 +10,14 @@ use crate::{
     protocol::{self, metadata::response::*},
 };
 
+/// Cluster metadata & operations.
 #[derive(Clone, Default, Debug)]
 pub struct ClusterMetadata<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,
     pub broker_connections: HashMap<i32, T>,
     pub brokers: Vec<Broker>,
     pub topics: Vec<Topic>,
+    pub correlation_id: i32,
     pub client_id: String,
     pub topic_names: Vec<String>,
     pub controller_id: i32,
@@ -26,6 +28,7 @@ type TopicPartition = HashMap<String, Vec<i32>>;
 impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     pub async fn new(
         connection_params: T::ConnConfig,
+        correlation_id: i32,
         client_id: String,
         topics: Vec<String>,
     ) -> Result<ClusterMetadata<T>> {
@@ -36,6 +39,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
             broker_connections: HashMap::new(),
             brokers: vec![],
             topics: vec![],
+            correlation_id,
             client_id,
             topic_names: topics,
         };
@@ -74,7 +78,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     ) -> Option<i32> {
         let partition = self.get_topic_partition_by_id(topic_name, partition_id)?;
         let leader = self.get_broker_by_id(partition.leader_id)?;
-        tracing::debug!(
+        tracing::trace!(
             "Leader is {:?} for topic {} and partition {}",
             leader,
             topic_name,
@@ -110,7 +114,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
     pub async fn fetch(&mut self, mut conn: T) -> Result<()> {
         tracing::debug!("Fetching metadata");
         let metadata_request =
-            protocol::MetadataRequest::new(1, &self.client_id, &self.topic_names);
+            protocol::MetadataRequest::new(self.correlation_id, &self.client_id, &self.topic_names);
         conn.send_request(&metadata_request).await?;
 
         let response_bytes = conn.receive_response().await?;
@@ -241,6 +245,7 @@ mod test {
                 }],
                 broker_connections: HashMap::new(),
                 topic_names: vec![String::from("purchases")],
+                correlation_id: 1,
                 client_id: String::from("client_id"),
                 controller_id: 1,
                 brokers: vec![

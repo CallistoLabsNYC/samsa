@@ -1,6 +1,6 @@
 mod testsupport;
 
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
     protocol::{self, produce::request::Attributes},
     BrokerConnection, Error, KafkaCode, TcpConnection,
@@ -17,11 +17,22 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let conn = TcpConnection::new(brokers.clone()).await?;
-    testsupport::ensure_topic_creation(conn, &topic, CORRELATION_ID, CLIENT_ID).await?;
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
+    testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )
@@ -106,6 +117,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
 
     let cluster_metadata = samsa::prelude::ClusterMetadata::<TcpConnection>::new(
         brokers.clone(),
+        CORRELATION_ID,
         CLIENT_ID.to_string(),
         vec![topic.clone()],
     )

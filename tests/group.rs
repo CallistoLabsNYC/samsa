@@ -1,7 +1,7 @@
 mod testsupport;
 
 use nom::AsBytes;
-use samsa::prelude;
+use samsa::prelude::{self, ClusterMetadata};
 use samsa::prelude::{
     protocol, BrokerAddress, BrokerConnection, Error, KafkaCode, TcpConnection,
     ROUND_ROBIN_PROTOCOL,
@@ -19,7 +19,18 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
     if skip {
         return Ok(());
     }
-    let mut conn = TcpConnection::new(brokers).await?;
+
+    let mut metadata = ClusterMetadata::new(
+        brokers.clone(),
+        CORRELATION_ID,
+        CLIENT_ID.to_owned(),
+        vec![],
+    )
+    .await?;
+    let conn: &mut TcpConnection = metadata
+        .broker_connections
+        .get_mut(&metadata.controller_id)
+        .unwrap();
     testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
 
     //
@@ -169,12 +180,14 @@ async fn it_can_join_and_sync_groups() -> Result<(), Box<Error>> {
 
 #[tokio::test]
 async fn it_can_join_and_sync_groups_with_functions() -> Result<(), Box<Error>> {
-    let (skip, brokers, topic) = testsupport::get_brokers_and_topic()?;
+    let (skip, brokers) = testsupport::get_brokers()?;
     if skip {
         return Ok(());
     }
+    let topic = "group-integration-test".to_owned();
     let conn = TcpConnection::new(brokers).await?;
-    testsupport::ensure_topic_creation(conn.clone(), &topic, CORRELATION_ID, CLIENT_ID).await?;
+    testsupport::ensure_topic_creation(conn.clone(), &topic.clone(), CORRELATION_ID, CLIENT_ID)
+        .await?;
 
     //
     // Get coordinator for this group

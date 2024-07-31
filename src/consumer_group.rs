@@ -15,12 +15,47 @@ use crate::{
     protocol::{
         self,
         join_group::request::{Metadata, Protocol},
+        sync_group::response::MemberAssignment,
         Assignment,
     },
 };
 
 const DEFAULT_PROTOCOL_TYPE: &str = "consumer";
 
+/// Kafka/Redpanda ConsumerGroup.
+///
+/// # Example
+/// ```rust
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
+/// let partitions = vec![0];
+/// let topic_name = "my-topic".to_string();
+/// let assignment = TopicPartitionsBuilder::new()
+///     .assign(topic_name, partitions)
+///     .build();
+/// let group_id = "The Data Engineering Team".to_string();
+///
+/// let consumer_group_member = ConsumerGroupBuilder::<TcpConnection>::new(
+///         bootstrap_addrs,
+///         group_id,
+///         assignment,
+///     ).await?
+///     .build()
+///     .await?;
+///
+/// let stream = consumer_group_member.into_stream();
+/// // have to pin streams before iterating
+/// tokio::pin!(stream);
+///
+/// // Stream will do nothing unless consumed.
+/// while let Some(batch) = stream.next().await {
+///     println!("{:?} messages read", batch.unwrap().count());
+/// }
+/// ```
 #[derive(Clone, Debug)]
 pub struct ConsumerGroup<T: BrokerConnection> {
     pub connection_params: T::ConnConfig,
@@ -32,14 +67,16 @@ pub struct ConsumerGroup<T: BrokerConnection> {
     pub group_id: String,
     pub member_id: Bytes,
     pub generation_id: i32,
-    pub assignment: Option<protocol::sync_group::response::MemberAssignment>,
+    pub assignment: Option<MemberAssignment>,
     pub retention_time_ms: i64,
     pub group_topic_partitions: TopicPartitions,
     pub fetch_params: FetchParams,
 }
 
 impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
-    pub fn into_stream(mut self) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> {
+    pub fn into_stream(
+        mut self,
+    ) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> {
         async_stream::stream! {
             let coordinator_conn = self.coordinator_conn.clone();
             loop {

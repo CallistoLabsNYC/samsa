@@ -15,7 +15,7 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
         return Ok(());
     }
     let mut metadata =
-        ClusterMetadata::<TcpConnection>::new(brokers, "rust".to_string(), vec![]).await?;
+        ClusterMetadata::<TcpConnection>::new(brokers, 1, "rust".to_string(), vec![]).await?;
 
     let conn: &mut TcpConnection = metadata
         .broker_connections
@@ -61,7 +61,7 @@ async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Erro
     }
 
     let mut metadata =
-        ClusterMetadata::<TcpConnection>::new(brokers, "rust".to_string(), vec![]).await?;
+        ClusterMetadata::<TcpConnection>::new(brokers, 1, "rust".to_string(), vec![]).await?;
 
     let conn: &mut TcpConnection = metadata
         .broker_connections

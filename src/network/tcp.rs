@@ -12,35 +12,26 @@ use crate::{
     error::{Error, Result},
 };
 
+use super::sasl::{do_sasl, SaslConfig};
 use super::{BrokerAddress, BrokerConnection};
 
-/// Reference counted TCP connection to a Kafka/Redpanda broker.
+/// TCP connection to a Kafka/Redpanda broker.
 ///
-/// This is designed to be held by a metadata structure which will
-/// dispatch many of these connections at the behest of either a
-/// consumer or producer.
-///
-/// A client would probably need more than one of these at a given time
-/// to implement all of the different protocols.
-///
-/// Typically this would only be used directly in a low level context.
-/// Otherwise the Metadata, Consumer, or Producer modules abstract out the
-/// connection details for the user.
-
+/// # Example
+/// ```rust
+/// // set up connection options
+/// let broker_option = vec![BrokerAddress {
+///     host: "127.0.0.1".to_owned(),
+///     port: 9092,
+/// }];
+/// ```
 #[derive(Clone, Debug)]
 pub struct TcpConnection {
     stream: Arc<TcpStream>,
 }
 
 impl TcpConnection {
-    /// Connect to a Kafka/Redpanda broker
-    ///
-    /// ### Example
-    /// ```
-    /// // connect to a kafka/redpanda broker
-    /// let bootstrap_addrs = vec!["localhost:9092"];
-    /// let conn = samsa::prelude::TcpConnection(bootstrap_addrs).await?;
-    /// ```
+    /// Connect to a Kafka/Redpanda cluster
     pub async fn new_(bootstrap_addrs: Vec<BrokerAddress>) -> Result<Self> {
         let mut propagated_err: Option<Error> = None;
         let mut stream: Option<TcpStream> = None;
@@ -158,13 +149,6 @@ impl TcpConnection {
     ///
     /// This method is only useful in practice when used in combination with
     /// a request type. To see how this would be done, visit the protocol module.
-    ///
-    /// ### Example
-    /// ```
-    /// // send an arbitrary set of bytes to kafka broker
-    /// let buf = "test";
-    /// conn.send_request(buf).await?;
-    /// ```
     pub async fn send_request_<R: ToByte + Send>(&mut self, req: &R) -> Result<()> {
         // TODO: Does it make sense to find the capacity of the type
         // and fill it here?
@@ -190,12 +174,6 @@ impl TcpConnection {
     /// This method returns raw data that is not useful until parsed
     /// into a response type. To see how this would be done, visit the
     /// protocol module.
-    ///
-    /// ### Example
-    /// ```
-    /// // receive a message from a kafka broker
-    /// let response_bytes = conn.receive_response().await?;
-    /// ```
     pub async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
@@ -224,5 +202,64 @@ impl BrokerConnection for TcpConnection {
 
     async fn from_addr(_: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
         Self::new_(vec![addr]).await
+    }
+}
+
+/// SASL connection options.
+#[derive(Clone, Debug)]
+pub struct SaslTcpConfig {
+    pub tcp_config: Vec<BrokerAddress>,
+    pub sasl_config: SaslConfig,
+}
+
+/// SASL connection to a Kafka/Redpanda broker.
+///
+/// # Example
+/// ```rust
+/// let tcp_config = vec![BrokerAddress {
+///     host: "127.0.0.1".to_owned(),
+///     port: 9092,
+/// }];
+/// let sasl_config = SaslConfig::new(String::from("myuser"), String::from("pass1234"), None, None);
+/// ```
+#[derive(Clone, Debug)]
+pub struct SaslTcpConnection {
+    tcp_conn: TcpConnection,
+}
+
+#[async_trait]
+impl BrokerConnection for SaslTcpConnection {
+    type ConnConfig = SaslTcpConfig;
+
+    async fn send_request<R: ToByte + Sync + Send>(&mut self, req: &R) -> Result<()> {
+        self.tcp_conn.send_request_(req).await
+    }
+
+    async fn receive_response(&mut self) -> Result<BytesMut> {
+        self.tcp_conn.receive_response_().await
+    }
+
+    async fn new(p: Self::ConnConfig) -> Result<Self> {
+        let conn = TcpConnection::new_(p.tcp_config).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tcp_conn: conn })
+    }
+
+    async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
+        let conn = TcpConnection::new_(vec![addr]).await?;
+        do_sasl(
+            conn.clone(),
+            p.sasl_config.correlation_id,
+            &p.sasl_config.client_id,
+            p.sasl_config.clone(),
+        )
+        .await?;
+        Ok(Self { tcp_conn: conn })
     }
 }

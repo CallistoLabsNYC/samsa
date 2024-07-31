@@ -28,7 +28,7 @@ pub struct ConsumeMessage {
     pub value: Bytes,
     pub offset: usize,
     pub timestamp: usize,
-    pub topic_name: Bytes,
+    pub topic_name: String,
     pub partition_index: i32,
 }
 
@@ -129,27 +129,32 @@ pub type PartitionOffsets = HashMap<TopicPartitionKey, i64>;
 ///
 /// ### Example
 /// ```rust
-/// let bootstrap_addrs = vec!["127.0.0.1:9092".to_string()];
+/// use samsa::prelude::*;
+///
+/// let bootstrap_addrs = vec![BrokerAddress {
+///         host: "127.0.0.1".to_owned(),
+///         port: 9092,
+///     }];
 /// let partitions = vec![0];
-/// let topic_name = "my-topic";
-/// let assignment = samsa::prelude::TopicPartitionsBuilder::new()
+/// let topic_name = "my-topic".to_string();
+/// let assignment = TopicPartitionsBuilder::new()
 ///     .assign(topic_name, partitions)
 ///     .build();
 ///
-/// let consumer = samsa::prelude::ConsumerBuilder::new(
-///     bootstrap_addrs,
-///     assignment,
-/// )
-/// .await?
-/// .build();
+/// let consumer = ConsumerBuilder::<TcpConnection>::new(
+///         bootstrap_addrs,
+///         assignment,
+///     )
+///     .await?
+///     .build();
 ///
 /// let stream = consumer.into_stream();
 /// // have to pin streams before iterating
 /// tokio::pin!(stream);
 ///
 /// // Stream will do nothing unless consumed.
-/// while let Some(Ok((batch, offsets))) = stream.next().await {
-///     println!("{:?}", batch);
+/// while let Some(batch) = stream.next().await {
+///     println!("{:?} messages read", batch.unwrap().count());
 /// }
 /// ```
 #[derive(Clone, Debug)]
@@ -196,13 +201,13 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         Ok(responses)
     }
 
-    pub async fn next_batch(&mut self) -> Result<(Vec<ConsumeMessage>, PartitionOffsets)> {
+    pub async fn next_batch(
+        &mut self,
+    ) -> Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)> {
         let responses = self.consume().await?;
-        let mut records = vec![];
-
         // for each group of broker reponses
-        for response in responses {
-            for topic in response.topics {
+        for response in responses.iter() {
+            for topic in response.topics.iter() {
                 // is this really the best way to do this?
                 // is it efficient? maybe need to tweak types
                 // Bytes is common so there will be loads of examples somewhere
@@ -218,7 +223,7 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                     .iter()
                     .find(|my_topic| **my_topic == topic_name)
                     .unwrap();
-                for partition in topic.partitions {
+                for partition in topic.partitions.iter() {
                     // TODO: handle kafka error code here
                     /*
                      * OFFSET_OUT_OF_RANGE (1)
@@ -227,43 +232,59 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                      * REPLICA_NOT_AVAILABLE (9)
                      * UNKNOWN (-1)
                      */
-                    for record_batch in partition.record_batch {
+                    for record_batch in partition.record_batch.iter() {
                         let base_offset = record_batch.base_offset;
-                        let base_timestamp = record_batch.base_timestamp;
-
-                        for record in record_batch.records {
-                            let new_offset = (record.offset_delta / 2) + (base_offset as usize);
-
-                            self.offsets.insert(
-                                (topic_name.to_owned(), partition.id),
-                                record.offset_delta as i64 + base_offset + 1,
-                            );
-
-                            records.push(ConsumeMessage {
-                                key: record.key,
-                                value: record.value,
-                                offset: new_offset,
-                                timestamp: base_timestamp as usize + record.timestamp_delta,
-                                topic_name: topic.name.clone(),
-                                partition_index: partition.id,
-                            });
-                        }
+                        self.offsets.insert(
+                            (topic_name.to_owned(), partition.id),
+                            base_offset + (record_batch.record_count() as i64),
+                        );
                     }
                 }
             }
         }
 
-        tracing::debug!(
-            "Read {} records, newest offset {:?}",
-            records.len(),
-            self.offsets
-        );
+        let iterators = responses.into_iter().flat_map(|response| {
+            response.topics.into_iter().flat_map(|topic| {
+                let topic_name = std::string::String::from_utf8(topic.name.to_vec()).unwrap();
+                topic.partitions.into_iter().flat_map(move |partition| {
+                    let topic_name = topic_name.clone();
 
-        // gotta clone here, this will be difficult
-        // because it is big, but we can't do a ref
-        // because we will mutate it underneath and
-        // rust will definitely get mad at us
-        Ok((records, self.offsets.clone()))
+                    let partition_id = partition.id;
+                    partition.record_batch.into_iter().flat_map(move |batch| {
+                        let topic_name = topic_name.clone();
+
+                        let base_timestamp = batch.base_timestamp;
+                        let base_offset = batch.base_offset;
+                        batch.records.into_iter().map(move |record| {
+                            let topic_name = topic_name.clone();
+
+                            let new_offset = (record.offset_delta / 2) + (base_offset as usize);
+
+                            ConsumeMessage {
+                                key: record.key.clone(),
+                                value: record.value.clone(),
+                                offset: new_offset,
+                                timestamp: base_timestamp as usize + record.timestamp_delta,
+                                topic_name: topic_name.clone(),
+                                partition_index: partition_id,
+                            }
+                        })
+                    })
+                })
+            })
+        });
+
+        Ok((iterators, self.offsets.clone()))
+    }
+
+    fn stream(
+        mut self,
+    ) -> impl Stream<Item = Result<(impl Iterator<Item = ConsumeMessage>, PartitionOffsets)>> {
+        async_stream::stream! {
+            loop {
+                yield self.next_batch().await;
+            }
+        }
     }
 
     /// Convert consumer into an asynchronous iterator.
@@ -271,14 +292,8 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     /// Returns a tuple of a RecordBatch and the max offsets
     /// for the topic-partitions. Useful for manual commiting.
     #[must_use = "stream does nothingby itself"]
-    pub fn into_stream(
-        mut self,
-    ) -> impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>> {
-        async_stream::stream! {
-            loop {
-                yield self.next_batch().await;
-            }
-        }
+    pub fn into_stream(self) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> {
+        self.stream().map(|messages| messages.map(|m| m.0))
     }
 
     /// Apply auto-commit to the consumer.
@@ -294,10 +309,10 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         generation_id: i32,
         member_id: Bytes,
         retention_time_ms: i64,
-    ) -> impl Stream<Item = Result<Vec<ConsumeMessage>>> + 'a {
+    ) -> impl Stream<Item = Result<impl Iterator<Item = ConsumeMessage>>> + 'a {
         let fetch_params = self.fetch_params.clone();
         try_stream! {
-            for await stream_message in self.into_stream() {
+            for await stream_message in self.stream() {
                 let (messages, offsets) = stream_message?;
                 yield messages;
                 commit_offset_wrapper(
@@ -313,23 +328,6 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
             }
         }
     }
-
-    /// Break the batched messages into individual elements.
-    pub fn into_flat_stream(self) -> impl Stream<Item = ConsumeMessage> {
-        into_flat_stream(self.into_stream())
-    }
-}
-
-pub fn into_flat_stream(
-    stream: impl Stream<Item = Result<(Vec<ConsumeMessage>, PartitionOffsets)>>,
-) -> impl Stream<Item = ConsumeMessage> {
-    futures::StreamExt::flat_map(
-        stream
-            .filter(|batch| batch.is_ok())
-            .map(|batch| batch.unwrap())
-            .map(|(batch, _)| batch),
-        futures::stream::iter,
-    )
 }
 
 /// Commit a set of offsets for a consumer group.
