@@ -22,7 +22,7 @@ nombytes = "0.1.1"
 num-derive = "0.4.2"
 num-traits = "0.2.18"
 reqwest = { version = "0.11", features=['json'], optional = true }
-rsasl = { version = "2.0.1", default-features = false, features = ["config_builder", "provider", "login", "plain", "scram-sha-1", "scram-sha-2"]}
+rsasl = { version = "2.0.2", default-features = false, features = ["config_builder", "provider", "login", "plain", "scram-sha-1", "scram-sha-2"]}
 rustls-pemfile = "2.1.2"
 rustls-pki-types = "1.4.1"
 serde = { version = "1.0.193", optional = true }
