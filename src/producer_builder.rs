@@ -5,7 +5,7 @@ use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
 use tokio_stream::{Stream, StreamExt};
 
 use crate::network::BrokerConnection;
-use crate::prelude::Compression;
+use crate::prelude::{Compression, TcpConnection};
 use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
 use crate::protocol::produce::request::Attributes;
 use crate::protocol::ProduceResponse;
@@ -56,6 +56,16 @@ impl<'a, T> ProducerBuilder<T>
 where
     T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
 {
+    /// Start a producer builder using a tcp connection.
+    ///
+    /// Equivalent to `ProducerBuilder::<TcpConnection>::new(...)`. To complete, use the [`build`](Self::build) method.
+    pub async fn new_tcp(
+        connection_params: TcpConnection::ConnConfig,
+        topics: Vec<String>,
+    ) -> Result<ProducerBuilder<TcpConnection>> {
+        ProducerBuilder::<TcpConnection>::new(connection_params, topics).await
+    }
+
     /// Start a producer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(connection_params: T::ConnConfig, topics: Vec<String>) -> Result<Self> {
         let cluster_metadata = ClusterMetadata::new(

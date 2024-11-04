@@ -23,7 +23,7 @@ async fn main() -> Result<(), ()> {
     // Test fetch (read)
     //
     tracing::info!("Connecting to cluster");
-    let stream = ConsumerBuilder::<TcpConnection>::new(
+    let stream = ConsumerBuilder::new_tcp(
         bootstrap_addrs.clone(),
         TopicPartitionsBuilder::new()
             .assign(topic.to_string(), vec![0])

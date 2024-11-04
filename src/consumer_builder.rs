@@ -1,5 +1,6 @@
 use crate::consumer::{Consumer, FetchParams, PartitionOffsets, TopicPartitions};
 use crate::metadata::ClusterMetadata;
+use crate::prelude::TcpConnection;
 use crate::{
     error::{Error, KafkaCode, Result},
     metadata::{self},
@@ -47,6 +48,18 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
     pub(crate) assigned_topic_partitions: TopicPartitions,
     /// Offsets to read from for each assigned topic partition.
     pub(crate) offsets: PartitionOffsets,
+}
+
+impl<T> ConsumerBuilder<T: BrokerConnection> {
+    /// Start a consumer builder using a tcp connection.
+    ///
+    /// Equivalent to `ConsumerBuilder::<TcpConnection>::new(...)`. To complete, use the [`build`](Self::build) method.
+    pub async fn new_tcp(
+        connection_params: TcpConnection::ConnConfig,
+        assigned_topic_partitions: TopicPartitions,
+    ) -> Result<ConsumerBuilder<TcpConnection>> {
+        ConsumerBuilder::<TcpConnection>::new(connection_params, assigned_topic_partitions).await
+    }
 }
 
 impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
