@@ -27,7 +27,7 @@ pub struct ConsumerGroupBuilder<T: BrokerConnection> {
     pub fetch_params: FetchParams,
 }
 
-impl<'a, T: BrokerConnection> ConsumerGroupBuilder<T> {
+impl<T: BrokerConnection> ConsumerGroupBuilder<T> {
     /// Start a consumer group builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
         connection_params: T::ConnConfig,

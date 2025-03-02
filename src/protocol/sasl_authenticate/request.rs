@@ -50,7 +50,7 @@ impl<'a> SaslAuthenticationRequest<'a> {
     }
 }
 
-impl<'a> ToByte for SaslAuthenticationRequest<'a> {
+impl ToByte for SaslAuthenticationRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding SaslAuthenticationRequest {:?}", self);
         self.header.encode(buffer)?;

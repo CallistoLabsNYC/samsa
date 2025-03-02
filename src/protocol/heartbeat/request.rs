@@ -82,7 +82,7 @@ impl<'a> HeartbeatRequest<'a> {
     }
 }
 
-impl<'a> ToByte for HeartbeatRequest<'a> {
+impl ToByte for HeartbeatRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding HeartbeatRequest {:?}", self);
         self.header.encode(buffer)?;

@@ -52,7 +52,7 @@ pub struct ProducerBuilder<T: BrokerConnection> {
     attributes: Attributes,
 }
 
-impl<'a, T> ProducerBuilder<T>
+impl<T> ProducerBuilder<T>
 where
     T: BrokerConnection + Clone + Debug + Send + Sync + 'static,
 {

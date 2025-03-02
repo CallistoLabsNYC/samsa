@@ -49,7 +49,7 @@ impl<'a> ProduceRequest<'a> {
         correlation_id: i32,
         client_id: &'a str,
         attributes: Attributes,
-    ) -> ProduceRequest {
+    ) -> ProduceRequest<'a> {
         ProduceRequest {
             header: HeaderRequest::new(API_KEY_PRODUCE, API_VERSION, correlation_id, client_id),
             transactional_id: None,
@@ -86,7 +86,7 @@ impl<'a> ProduceRequest<'a> {
     }
 }
 
-impl<'a> ToByte for ProduceRequest<'a> {
+impl ToByte for ProduceRequest<'_> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         tracing::trace!("Encoding ProduceRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -108,7 +108,7 @@ struct TopicPartition<'a> {
 }
 
 impl<'a> TopicPartition<'a> {
-    pub fn new(index: &'a str, attributes: Attributes) -> TopicPartition {
+    pub fn new(index: &'a str, attributes: Attributes) -> TopicPartition<'a> {
         TopicPartition {
             index,
             partitions: vec![],
@@ -134,7 +134,7 @@ impl<'a> TopicPartition<'a> {
     }
 }
 
-impl<'a> ToByte for TopicPartition<'a> {
+impl ToByte for TopicPartition<'_> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         tracing::trace!("Encoding TopicPartition {:?}", self);
         self.index.encode(buffer)?;

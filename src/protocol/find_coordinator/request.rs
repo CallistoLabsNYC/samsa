@@ -48,7 +48,7 @@ impl<'a> FindCoordinatorRequest<'a> {
     }
 }
 
-impl<'a> ToByte for FindCoordinatorRequest<'a> {
+impl ToByte for FindCoordinatorRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding FindCoordinatorRequest {:?}", self);
         self.header.encode(buffer)?;
