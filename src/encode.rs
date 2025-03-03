@@ -11,7 +11,7 @@ macro_rules! try_usize_to_int {
     // ~ $ttype should actually be a 'ty' ... but rust complains for
     // some reason :/
     ($value:expr, $ttype:ident) => {{
-        let maxv = $ttype::max_value();
+        let maxv = $ttype::MAX;
         let x: usize = $value;
         if (x as u64) <= (maxv as u64) {
             x as $ttype
@@ -115,7 +115,7 @@ impl ToByte for String {
 fn test_string_too_long() {
     use std::str;
 
-    let s = vec![b'a'; i16::max_value() as usize + 1];
+    let s = vec![b'a'; i16::MAX as usize + 1];
     let s = unsafe { str::from_utf8_unchecked(&s) };
     let mut buf = Vec::new();
     match s.encode(&mut buf) {
@@ -180,7 +180,7 @@ where
     Ok(())
 }
 
-impl<'a> ToByte for Option<&'a [u8]> {
+impl ToByte for Option<&[u8]> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         match *self {
             Some(xs) => xs.encode(buffer),
@@ -199,7 +199,7 @@ impl ToByte for Option<Bytes> {
 }
 
 // why is this using i32 when strings need i16?
-impl<'a> ToByte for Option<&'a str> {
+impl ToByte for Option<&str> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         match *self {
             Some(xs) => xs.encode(buffer),

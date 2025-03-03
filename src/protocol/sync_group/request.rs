@@ -100,7 +100,7 @@ pub struct PartitionAssignment<'a> {
     pub partitions: Vec<i32>,
 }
 
-impl<'a> Assignment<'a> {
+impl Assignment<'_> {
     pub fn new(member_id: Bytes, assignment: MemberAssignment) -> Result<Assignment> {
         Ok(Assignment {
             member_id: String::from_utf8(member_id.as_bytes().to_vec())
@@ -110,8 +110,8 @@ impl<'a> Assignment<'a> {
     }
 }
 
-impl<'a> PartitionAssignment<'a> {
-    pub fn new(topic_name: &'a str, partitions: Vec<i32>) -> PartitionAssignment {
+impl PartitionAssignment<'_> {
+    pub fn new(topic_name: &str, partitions: Vec<i32>) -> PartitionAssignment {
         PartitionAssignment {
             topic_name,
             partitions,
@@ -140,7 +140,7 @@ impl<'a> SyncGroupRequest<'a> {
     }
 }
 
-impl<'a> ToByte for SyncGroupRequest<'a> {
+impl ToByte for SyncGroupRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding SyncGroupRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -152,7 +152,7 @@ impl<'a> ToByte for SyncGroupRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Assignment<'a> {
+impl ToByte for Assignment<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.member_id.encode(buffer)?;
 
@@ -165,7 +165,7 @@ impl<'a> ToByte for Assignment<'a> {
     }
 }
 
-impl<'a> ToByte for MemberAssignment<'a> {
+impl ToByte for MemberAssignment<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.version.encode(buffer)?;
         self.partition_assignments.encode(buffer)?;
@@ -174,7 +174,7 @@ impl<'a> ToByte for MemberAssignment<'a> {
     }
 }
 
-impl<'a> ToByte for PartitionAssignment<'a> {
+impl ToByte for PartitionAssignment<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.topic_name.encode(buffer)?;
         self.partitions.encode(buffer)?;

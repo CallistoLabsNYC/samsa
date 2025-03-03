@@ -288,14 +288,14 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerGroup<T> {
 /// See this [protocol spec] for more information.
 ///
 /// [protocol spec]: protocol::sync_group
-pub async fn sync_group<'a>(
+pub async fn sync_group(
     mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
     group_id: &str,
     generation_id: i32,
     member_id: Bytes,
-    assignments: Vec<protocol::Assignment<'a>>,
+    assignments: Vec<protocol::Assignment<'_>>,
 ) -> Result<protocol::SyncGroupResponse> {
     let sync_request = protocol::SyncGroupRequest::new(
         correlation_id,
@@ -318,7 +318,7 @@ pub async fn sync_group<'a>(
 ///
 /// [protocol spec]: protocol::join_group
 #[allow(clippy::too_many_arguments)]
-pub async fn join_group<'a>(
+pub async fn join_group(
     mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
@@ -327,7 +327,7 @@ pub async fn join_group<'a>(
     rebalance_timeout_ms: i32,
     member_id: Bytes,
     protocol_type: &str,
-    protocols: Vec<Protocol<'a>>,
+    protocols: Vec<Protocol<'_>>,
 ) -> Result<protocol::JoinGroupResponse> {
     let join_request = protocol::JoinGroupRequest::new(
         correlation_id,

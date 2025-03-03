@@ -49,7 +49,7 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
     pub(crate) offsets: PartitionOffsets,
 }
 
-impl<'a, T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
+impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
         connection_params: T::ConnConfig,

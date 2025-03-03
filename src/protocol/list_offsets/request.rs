@@ -99,7 +99,7 @@ impl<'a> ListOffsetsRequest<'a> {
     }
 }
 
-impl<'a> ToByte for ListOffsetsRequest<'a> {
+impl ToByte for ListOffsetsRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding ListOffsetRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -109,7 +109,7 @@ impl<'a> ToByte for ListOffsetsRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Topic<'a> {
+impl ToByte for Topic<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.name.encode(buffer)?;
         self.partitions.encode(buffer)?;

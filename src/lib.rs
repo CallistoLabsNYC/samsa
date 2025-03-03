@@ -310,6 +310,7 @@ pub mod prelude {
     //! sent upon meeting either of two conditions:
     //! - The maximum number of messages is filled
     //! - The wait time has ran out
+    //!
     //! When either of these two are met, the record queue is flushed and sent to the appropriate
     //! brokers.
     //!

@@ -77,7 +77,7 @@ impl<'a> HeaderRequest<'a> {
         api_version: i16,
         correlation_id: i32,
         client_id: &'a str,
-    ) -> HeaderRequest {
+    ) -> HeaderRequest<'a> {
         HeaderRequest {
             api_key,
             api_version,
@@ -87,7 +87,7 @@ impl<'a> HeaderRequest<'a> {
     }
 }
 
-impl<'a> ToByte for HeaderRequest<'a> {
+impl ToByte for HeaderRequest<'_> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         self.api_key.encode(buffer)?;
         self.api_version.encode(buffer)?;

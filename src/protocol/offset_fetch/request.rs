@@ -78,7 +78,7 @@ impl<'a> OffsetFetchRequest<'a> {
     }
 }
 
-impl<'a> ToByte for OffsetFetchRequest<'a> {
+impl ToByte for OffsetFetchRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding OffsetFetchRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -88,7 +88,7 @@ impl<'a> ToByte for OffsetFetchRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Topic<'a> {
+impl ToByte for Topic<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.name.encode(buffer)?;
         self.partition_indexes.encode(buffer)?;
