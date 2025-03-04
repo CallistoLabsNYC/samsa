@@ -183,7 +183,7 @@ impl<'a> OffsetCommitRequest<'a> {
     }
 }
 
-impl<'a> ToByte for OffsetCommitRequest<'a> {
+impl ToByte for OffsetCommitRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding OffsetCommitRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -196,7 +196,7 @@ impl<'a> ToByte for OffsetCommitRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Topic<'a> {
+impl ToByte for Topic<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.name.encode(buffer)?;
         self.partitions.encode(buffer)?;
@@ -204,7 +204,7 @@ impl<'a> ToByte for Topic<'a> {
     }
 }
 
-impl<'a> ToByte for Partition<'a> {
+impl ToByte for Partition<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.partition_index.encode(buffer)?;
         self.committed_offset.encode(buffer)?;

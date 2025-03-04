@@ -113,7 +113,7 @@ impl<'a> FetchRequest<'a> {
     }
 }
 
-impl<'a> ToByte for FetchRequest<'a> {
+impl ToByte for FetchRequest<'_> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         tracing::trace!("Encoding FetchRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -127,7 +127,7 @@ impl<'a> ToByte for FetchRequest<'a> {
     }
 }
 
-impl<'a> ToByte for TopicPartition<'a> {
+impl ToByte for TopicPartition<'_> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         self.topic_name.encode(buffer)?;
         self.partitions.encode(buffer)?;
