@@ -48,7 +48,7 @@ impl<'a> SaslHandshakeRequest<'a> {
     }
 }
 
-impl<'a> ToByte for SaslHandshakeRequest<'a> {
+impl ToByte for SaslHandshakeRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding SaslHandshakeRequest {:?}", self);
         self.header.encode(buffer)?;

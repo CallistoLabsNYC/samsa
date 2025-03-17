@@ -140,7 +140,7 @@ impl<'a> JoinGroupRequest<'a> {
     }
 }
 
-impl<'a> ToByte for JoinGroupRequest<'a> {
+impl ToByte for JoinGroupRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding JoinGroupRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -154,7 +154,7 @@ impl<'a> ToByte for JoinGroupRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Protocol<'a> {
+impl ToByte for Protocol<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.name.encode(buffer)?;
 
@@ -167,7 +167,7 @@ impl<'a> ToByte for Protocol<'a> {
     }
 }
 
-impl<'a> ToByte for Metadata<'a> {
+impl ToByte for Metadata<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.version.encode(buffer)?;
         self.subscription.encode(buffer)?;

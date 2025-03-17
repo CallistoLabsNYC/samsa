@@ -72,7 +72,7 @@ impl<'a> LeaveGroupRequest<'a> {
     }
 }
 
-impl<'a> ToByte for LeaveGroupRequest<'a> {
+impl ToByte for LeaveGroupRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding LeaveGroupRequest {:?}", self);
         self.header.encode(buffer)?;

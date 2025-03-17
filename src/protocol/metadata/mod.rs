@@ -7,6 +7,7 @@
 //! - How many partitions does each topic have?
 //! - Which broker is currently the leader for each partition?
 //! - What is the host and port for each of these brokers?
+//!
 //! This is the only request that can be addressed to any broker
 //! in the cluster.
 //!

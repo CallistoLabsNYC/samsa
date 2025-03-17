@@ -89,7 +89,7 @@ impl<'a> DeleteTopicsRequest<'a> {
     }
 }
 
-impl<'a> ToByte for DeleteTopicsRequest<'a> {
+impl ToByte for DeleteTopicsRequest<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         tracing::trace!("Encoding DeleteTopicsRequest {:?}", self);
         self.header.encode(buffer)?;
@@ -99,7 +99,7 @@ impl<'a> ToByte for DeleteTopicsRequest<'a> {
     }
 }
 
-impl<'a> ToByte for Topic<'a> {
+impl ToByte for Topic<'_> {
     fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
         self.name.encode(buffer)?;
         Ok(())
