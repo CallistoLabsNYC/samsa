@@ -53,7 +53,8 @@ impl<T: BrokerConnection> ConsumerGroupBuilder<T> {
     }
 
     pub fn client_id(mut self, client_id: String) -> Self {
-        self.fetch_params.client_id = client_id;
+        self.client_id = client_id;
+        self.fetch_params.client_id = self.client_id.clone();
         self
     }
 

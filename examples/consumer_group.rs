@@ -40,8 +40,16 @@ async fn main() -> Result<(), ()> {
     tokio::pin!(stream);
 
     while let Some(message) = stream.next().await {
-        let messages: Vec<ConsumeMessage> = message.unwrap().collect();
-        tracing::info!("{:?}", messages);
+        match message {
+            Ok(msg) => {
+                let messages: Vec<ConsumeMessage> = msg.collect();
+                tracing::info!("{:?}", messages);
+            }
+            Err(e) => {
+                tracing::error!("Failed to process message: {:?}", e);
+            }
+        }
     }
+
     Ok(())
 }
