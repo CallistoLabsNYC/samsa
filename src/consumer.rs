@@ -43,17 +43,12 @@ pub struct FetchParams {
     pub isolation_level: i8,
 }
 
-impl Default for FetchParams {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl FetchParams {
-    pub fn new() -> Self {
+    pub fn create(correlation_id: i32, client_id: String) -> Self {
         Self {
-            correlation_id: DEFAULT_CORRELATION_ID,
-            client_id: DEFAULT_CLIENT_ID.to_owned(),
+            correlation_id,
+            client_id,
             max_wait_ms: DEFAULT_MAX_WAIT_MS,
             min_bytes: DEFAULT_MIN_BYTES,
             max_bytes: DEFAULT_MAX_BYTES,
@@ -62,6 +57,7 @@ impl FetchParams {
         }
     }
 }
+
 
 type TopicPartitionKey = (String, i32);
 
@@ -167,11 +163,19 @@ pub struct Consumer<T: BrokerConnection> {
     pub(crate) assigned_topic_partitions: TopicPartitions,
     /// Offsets to read from for each assigned topic partition.
     pub(crate) offsets: PartitionOffsets,
+    /// Client ID for this consumer
+    pub(crate) client_id: String,
+    /// Correlation ID for this consumer
+    pub(crate) correlation_id: i32,
+
 }
 
 impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     #[instrument]
     async fn consume(&self) -> Result<Vec<protocol::FetchResponse>> {
+        let fetch_params = FetchParams::create(self.correlation_id, self.client_id.clone());
+
+
         // TODO: Push this into the metadata
         let brokers_and_their_topic_partitions = self
             .cluster_metadata
@@ -183,17 +187,17 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
         for (broker_conn, topic_partitions) in brokers_and_their_topic_partitions.into_iter() {
             let response = fetch(
                 broker_conn,
-                self.fetch_params.correlation_id,
-                &self.fetch_params.client_id,
-                self.fetch_params.max_wait_ms,
-                self.fetch_params.min_bytes,
-                self.fetch_params.max_bytes,
-                self.fetch_params.max_partition_bytes,
-                self.fetch_params.isolation_level,
+                fetch_params.correlation_id,
+                &fetch_params.client_id,
+                fetch_params.max_wait_ms,
+                fetch_params.min_bytes,
+                fetch_params.max_bytes,
+                fetch_params.max_partition_bytes,
+                fetch_params.isolation_level,
                 &topic_partitions,
                 &self.offsets,
-            )
-            .await?;
+            ).await?;
+
 
             responses.push(response);
         }
