@@ -173,7 +173,7 @@ pub struct Consumer<T: BrokerConnection> {
 impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     #[instrument]
     async fn consume(&self) -> Result<Vec<protocol::FetchResponse>> {
-        let fetch_params = FetchParams::create(self.correlation_id, self.client_id.clone());
+        let fetch_params = &self.fetch_params;
 
 
         // TODO: Push this into the metadata

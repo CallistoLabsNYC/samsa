@@ -6,7 +6,7 @@ use crate::{
     network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
-use nom::AsBytes;
+use nom::{AsBytes, ExtendInto};
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -52,16 +52,12 @@ pub struct ConsumerBuilder<T: BrokerConnection> {
 impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     /// Start a consumer builder. To complete, use the [`build`](Self::build) method.
     pub async fn new(
-        connection_params: T::ConnConfig,
+        broker_config: T::ConnConfig,
         assigned_topic_partitions: TopicPartitions,
     ) -> Result<Self> {
-        let topics = assigned_topic_partitions
-            .keys()
-            .map(|topic_name| topic_name.to_owned())
-            .collect();
-
+        let topics = Self::extract_topics_from_assignments(&assigned_topic_partitions);
         let cluster_metadata = metadata::ClusterMetadata::new(
-            connection_params,
+            broker_config,
             DEFAULT_CORRELATION_ID,
             DEFAULT_CLIENT_ID.to_owned(),
             topics,
@@ -70,7 +66,7 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
 
         Ok(Self {
             cluster_metadata,
-            fetch_params: FetchParams::new(),
+            fetch_params: FetchParams::create(DEFAULT_CORRELATION_ID, DEFAULT_CLIENT_ID.to_owned()),
             assigned_topic_partitions,
             offsets: HashMap::new(),
         })
@@ -251,12 +247,26 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
     }
 
     pub fn build(self) -> Consumer<T> {
+        let fetch_params = self.fetch_params;
+
         Consumer {
             cluster_metadata: self.cluster_metadata,
-            fetch_params: self.fetch_params,
+            fetch_params: fetch_params.clone(),
             assigned_topic_partitions: self.assigned_topic_partitions,
             offsets: self.offsets,
+            client_id:  fetch_params.client_id,
+            correlation_id: fetch_params.correlation_id,
         }
+    }
+
+
+
+
+    fn extract_topics_from_assignments(assigned_partitions: &TopicPartitions) -> Vec<String> {
+        assigned_partitions
+            .keys()
+            .map(|topic_name| topic_name.to_owned())
+            .collect()
     }
 }
 
