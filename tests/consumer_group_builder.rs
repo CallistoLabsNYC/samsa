@@ -37,7 +37,7 @@ async fn it_sets_params_correctly() -> Result<(), Box<Error>> {
         assignment,
     ).await
         .expect("Could not create consumer.")
-        .client_id("ism-1".parse().unwrap()) //SETTING MY CLIENT ID
+        .client_id("ism-1".parse().unwrap())
         .max_wait_ms(1024)
         .min_bytes(1024)
         .max_bytes(1024)
