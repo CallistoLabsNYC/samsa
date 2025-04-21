@@ -12,7 +12,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
+    protocol
 };
 
 const DEFAULT_MAX_WAIT_MS: i32 = 200;
@@ -163,11 +163,6 @@ pub struct Consumer<T: BrokerConnection> {
     pub(crate) assigned_topic_partitions: TopicPartitions,
     /// Offsets to read from for each assigned topic partition.
     pub(crate) offsets: PartitionOffsets,
-    /// Client ID for this consumer
-    pub(crate) client_id: String,
-    /// Correlation ID for this consumer
-    pub(crate) correlation_id: i32,
-
 }
 
 impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {

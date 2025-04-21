@@ -6,7 +6,7 @@ use crate::{
     network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
-use nom::{AsBytes, ExtendInto};
+use nom::{AsBytes };
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -253,9 +253,7 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
             cluster_metadata: self.cluster_metadata,
             fetch_params: fetch_params.clone(),
             assigned_topic_partitions: self.assigned_topic_partitions,
-            offsets: self.offsets,
-            client_id:  fetch_params.client_id,
-            correlation_id: fetch_params.correlation_id,
+            offsets: self.offsets
         }
     }
 
