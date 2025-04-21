@@ -19,6 +19,24 @@ async fn it_can_build_with_minimal_args() -> Result<(), Box<Error>> {
 }
 
 #[tokio::test]
+async fn it_can_build_with_ref_to_builder() -> Result<(), Box<Error>> {
+    let (skip, brokers) = testsupport::get_brokers()?;
+    if skip {
+        return Ok(());
+    }
+    let builder = ConsumerGroupBuilder::<TcpConnection>::new(
+        brokers,
+        "abc".to_string(),
+        TopicPartitions::default(),
+    )
+    .await?;
+    let builder_ref = &builder;
+    let _consumer = builder_ref.clone().build();
+    Ok(())
+}
+
+
+#[tokio::test]
 async fn it_sets_params_correctly() -> Result<(), Box<Error>> {
     let bootstrap_address = vec![BrokerAddress {
         host: "localhost".to_owned(),
@@ -37,7 +55,7 @@ async fn it_sets_params_correctly() -> Result<(), Box<Error>> {
         assignment,
     ).await
         .expect("Could not create consumer.")
-        .client_id("ism-1".parse().unwrap())
+        .client_id("ism-1".parse().unwrap()) //SETTING MY CLIENT ID
         .max_wait_ms(1024)
         .min_bytes(1024)
         .max_bytes(1024)
@@ -53,6 +71,6 @@ async fn it_sets_params_correctly() -> Result<(), Box<Error>> {
     assert_eq!(consumer.fetch_params.max_bytes, 1024);
     assert_eq!(consumer.fetch_params.max_partition_bytes, 1024);
     assert_eq!(consumer.fetch_params.isolation_level, 60);
-    
+
     Ok(())
 }
