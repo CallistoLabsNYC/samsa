@@ -6,7 +6,7 @@ use crate::{
     network::BrokerConnection,
     protocol, DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
 };
-use nom::{AsBytes };
+use nom::AsBytes;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -253,12 +253,9 @@ impl<T: BrokerConnection + Clone + Debug> ConsumerBuilder<T> {
             cluster_metadata: self.cluster_metadata,
             fetch_params: fetch_params.clone(),
             assigned_topic_partitions: self.assigned_topic_partitions,
-            offsets: self.offsets
+            offsets: self.offsets,
         }
     }
-
-
-
 
     fn extract_topics_from_assignments(assigned_partitions: &TopicPartitions) -> Vec<String> {
         assigned_partitions

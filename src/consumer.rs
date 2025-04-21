@@ -12,7 +12,7 @@ use crate::{
     error::{Error, Result},
     metadata::ClusterMetadata,
     network::BrokerConnection,
-    protocol
+    protocol,
 };
 
 const DEFAULT_MAX_WAIT_MS: i32 = 200;
@@ -43,7 +43,6 @@ pub struct FetchParams {
     pub isolation_level: i8,
 }
 
-
 impl FetchParams {
     pub fn create(correlation_id: i32, client_id: String) -> Self {
         Self {
@@ -57,7 +56,6 @@ impl FetchParams {
         }
     }
 }
-
 
 type TopicPartitionKey = (String, i32);
 
@@ -170,7 +168,6 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
     async fn consume(&self) -> Result<Vec<protocol::FetchResponse>> {
         let fetch_params = &self.fetch_params;
 
-
         // TODO: Push this into the metadata
         let brokers_and_their_topic_partitions = self
             .cluster_metadata
@@ -191,8 +188,8 @@ impl<'a, T: BrokerConnection + Clone + Debug + 'a> Consumer<T> {
                 fetch_params.isolation_level,
                 &topic_partitions,
                 &self.offsets,
-            ).await?;
-
+            )
+            .await?;
 
             responses.push(response);
         }
