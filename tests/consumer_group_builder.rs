@@ -64,7 +64,7 @@ async fn it_sets_params_correctly() -> Result<(), Box<Error>> {
         .await
         .expect("Could not create consumer.");
 
-    assert_eq!(consumer.client_id,"ism-1");
+    assert_eq!(consumer.fetch_params.client_id,"ism-1");
     assert_eq!(consumer.fetch_params.max_wait_ms, 1024);
     assert_eq!(consumer.fetch_params.max_wait_ms, 1024);
     assert_eq!(consumer.fetch_params.min_bytes, 1024);
