@@ -122,9 +122,16 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
 
         metadata_response.is_error()?;
 
-        self.topics = metadata_response.topics;
+        self.topics = metadata_response.topics.clone();
         self.brokers = metadata_response.brokers;
         self.controller_id = metadata_response.controller_id;
+
+        // insert topic names into self.topic_names
+        for topic in &metadata_response.topics {
+            let vec = topic.name.to_vec();
+            let name = String::from_utf8(vec).map_err(|_| Error::DecodingUtf8Error)?;
+            self.topic_names.push(name);
+        }
 
         Ok(())
     }
@@ -233,6 +240,7 @@ mod test {
     use super::*;
     use crate::{
         error::KafkaCode,
+        metadata,
         network::{tcp::TcpConnection, BrokerAddress},
     };
 
