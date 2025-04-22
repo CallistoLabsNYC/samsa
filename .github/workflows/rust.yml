@@ -30,7 +30,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
     - uses: actions/checkout@v3
-    - uses: adambirds/docker-compose-action@v1.3.0
+    - uses: adambirds/docker-compose-action@v1.5.0
       with:
         compose-file: "./docker-compose.yaml"
     - name: rustup
