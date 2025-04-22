@@ -240,7 +240,6 @@ mod test {
     use super::*;
     use crate::{
         error::KafkaCode,
-        metadata,
         network::{tcp::TcpConnection, BrokerAddress},
     };
 
