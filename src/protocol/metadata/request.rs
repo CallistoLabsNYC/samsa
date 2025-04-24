@@ -37,11 +37,19 @@ const API_VERSION: i16 = 1;
 pub struct MetadataRequest<'a, T> {
     pub header: HeaderRequest<'a>,
     /// The topics to fetch metadata for.
-    pub topics: &'a [T],
+    /// Kafka expects the topic to be None for it to return all topics
+    pub topics: Option<&'a [T]>,
 }
 
 impl<'a, T: AsRef<str>> MetadataRequest<'a, T> {
     pub fn new(correlation_id: i32, client_id: &'a str, topics: &'a [T]) -> MetadataRequest<'a, T> {
+        // better to make the topic into an option here than to change the whole code.
+        let topics = if topics.is_empty() {
+            None
+        } else {
+            Some(topics)
+        };
+
         MetadataRequest {
             header: HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id),
             topics,
@@ -52,7 +60,14 @@ impl<'a, T: AsRef<str>> MetadataRequest<'a, T> {
 impl<'a, T: AsRef<str> + 'a> ToByte for MetadataRequest<'a, T> {
     fn encode<W: BufMut>(&self, buffer: &mut W) -> Result<()> {
         self.header.encode(buffer)?;
-        AsStrings(self.topics).encode(buffer)?;
+
+        match self.topics {
+            Some(topics) => AsStrings(topics).encode(buffer)?,
+            None => {
+                // Kafka protocol uses -1 to signal a null array
+                buffer.put_i32(-1);
+            }
+        }
         Ok(())
     }
 }

@@ -14,7 +14,7 @@
 
 ### For Kafka with ZooKeeper and KRaft
 You must first create a custom network:
-`docker create network my-network`
+`docker network create my-network`
 
 
 ## Kafka with ZooKeeper
