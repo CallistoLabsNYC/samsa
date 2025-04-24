@@ -81,5 +81,16 @@ async fn it_can_return_all_the_broker_topics() -> Result<(), Box<Error>> {
     assert!(metadata_response.topic_names.contains(&topic_1));
     assert!(metadata_response.topic_names.contains(&topic_2));
 
+    //
+    // Delete topic
+    //
+    prelude::delete_topics(
+        conn.clone(),
+        CORRELATION_ID,
+        CLIENT_ID,
+        vec![topic_1.as_str(), topic_2.as_str()],
+    )
+    .await?;
+
     Ok(())
 }
