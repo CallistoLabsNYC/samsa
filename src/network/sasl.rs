@@ -187,11 +187,11 @@ where
 
     match do_sasl_chit_chat(session, &broker_conn, correlation_id, client_id).await {
         Ok(_) => {
-            return Ok(broker_conn);
+            Ok(broker_conn)
         }
         Err(e) => {
             tracing::error!("chit_chat failed: {:?}", e);
-            return Err(e);
+            Err(e)
         }
     }
 }
@@ -241,21 +241,21 @@ where
                 } else {
                     None
                 };
-            },
+            }
             KafkaCode::SaslAuthenticationFailed => {
-                let msg = response.error_message.map(|x| String::from_utf8_lossy(&x).into_owned()).unwrap_or("".to_owned());
+                let msg = response
+                    .error_message
+                    .map(|x| String::from_utf8_lossy(&x).into_owned())
+                    .unwrap_or("".to_owned());
                 tracing::info!("auth failed: {:?}: {:?}", response.error_code, msg);
-                return Err(Error::SaslAuthFailed(msg))
+                return Err(Error::SaslAuthFailed(msg));
             }
-            _ => {
-                return Err(Error::KafkaError(response.error_code))
-            }
+            _ => return Err(Error::KafkaError(response.error_code)),
         }
 
         if data_in.is_none() && state.is_finished() {
             break;
         }
-
     }
 
     Ok(())
