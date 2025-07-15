@@ -12,7 +12,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::sasl::{do_sasl, SaslConfig};
+use super::sasl::{do_sasl_v2, SaslConfig};
 use super::{BrokerAddress, BrokerConnection};
 
 /// TCP connection to a Kafka/Redpanda broker.
@@ -84,6 +84,10 @@ impl TcpConnection {
             // Try to read data, this may still fail with `WouldBlock`
             // if the readiness event is a false positive.
             match self.stream.try_read(&mut buf[index..]) {
+                Ok(0) => {
+                    tracing::info!("Empty read: stop trying: probably closed");
+                    return Err(Error::IncorrectConnectionUsage);
+                }
                 Ok(n) => {
                     index += n;
                     tracing::trace!("Read {} bytes", n);
@@ -177,6 +181,11 @@ impl TcpConnection {
     pub async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
+        if size.is_empty() {
+            return Err(Error::MissingData(String::from(
+                "could no read a packet length",
+            )));
+        }
 
         let length = size.get_u32();
         tracing::trace!("Reading {} bytes", length);
@@ -239,27 +248,24 @@ impl BrokerConnection for SaslTcpConnection {
         self.tcp_conn.receive_response_().await
     }
 
+    #[instrument(name = "sasl-new", level = "trace")]
     async fn new(p: Self::ConnConfig) -> Result<Self> {
-        let conn = TcpConnection::new_(p.tcp_config).await?;
-        do_sasl(
-            conn.clone(),
+        let conn = do_sasl_v2(
+            async || TcpConnection::new_(p.tcp_config.clone()).await,
             p.sasl_config.correlation_id,
             &p.sasl_config.client_id,
             p.sasl_config.clone(),
         )
         .await?;
+
         Ok(Self { tcp_conn: conn })
     }
 
     async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
-        let conn = TcpConnection::new_(vec![addr]).await?;
-        do_sasl(
-            conn.clone(),
-            p.sasl_config.correlation_id,
-            &p.sasl_config.client_id,
-            p.sasl_config.clone(),
-        )
-        .await?;
-        Ok(Self { tcp_conn: conn })
+        let tc = Self::ConnConfig {
+            tcp_config: vec![addr],
+            ..p
+        };
+        return Self::new(tc).await;
     }
 }

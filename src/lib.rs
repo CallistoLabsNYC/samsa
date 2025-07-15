@@ -673,7 +673,7 @@ pub mod prelude {
     pub use crate::error::{Error, KafkaCode, Result};
     pub use crate::metadata::ClusterMetadata;
     pub use crate::network::{
-        sasl::{do_sasl, SaslConfig},
+        sasl::{do_sasl_v2, SaslConfig},
         tcp::{SaslTcpConfig, SaslTcpConnection, TcpConnection},
         tls::{SaslTlsConfig, SaslTlsConnection, TlsConnection, TlsConnectionOptions},
         BrokerAddress, BrokerConnection,
