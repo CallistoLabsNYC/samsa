@@ -87,7 +87,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         Some(leader.node_id)
     }
 
-    #[instrument(name = "metadata-sync")]
+    #[instrument(name = "metadata-sync", level = "debug")]
     pub async fn sync(&mut self) -> Result<()> {
         tracing::debug!("Syncing metadata");
         // let mut set = JoinSet::new();

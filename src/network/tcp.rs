@@ -85,8 +85,8 @@ impl TcpConnection {
             // if the readiness event is a false positive.
             match self.stream.try_read(&mut buf[index..]) {
                 Ok(0) => {
-                    tracing::info!("Empty read: stop trying: probably closed");
-                    return Err(Error::IncorrectConnectionUsage);
+                    tracing::info!("Empty read: connection was closed by server");
+                    return Err(Error::MissingData("Connection closed".to_owned()));
                 }
                 Ok(n) => {
                     index += n;
@@ -181,11 +181,6 @@ impl TcpConnection {
     pub async fn receive_response_(&mut self) -> Result<BytesMut> {
         // figure out the message size
         let mut size = self.read(4).await?;
-        if size.is_empty() {
-            return Err(Error::MissingData(String::from(
-                "could no read a packet length",
-            )));
-        }
 
         let length = size.get_u32();
         tracing::trace!("Reading {} bytes", length);

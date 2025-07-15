@@ -94,11 +94,11 @@ pub async fn start_sasl_session(
             })?);
         }
         KafkaCode::UnsupportedSaslMechanism => {
-            tracing::warn!(
+            tracing::debug!(
                 "bad handshake: {:?} not supported; will try others",
                 mechanism
             );
-            tracing::info!("supported mechanisms {:?}", suggested);
+            tracing::debug!("supported mechanisms {:?}", suggested);
             assert!(!suggested.is_empty());
 
             maybe_next.extend(suggested.iter().map(|x| String::from(x.as_str())));
@@ -170,11 +170,11 @@ where
             .difference(&tried)
             .map(|x| x.to_owned())
             .next();
-        tracing::info!("will retry with mechanism {:?}", next_mech);
 
         if maybe_session.is_some() || next_mech.is_none() {
             break;
         }
+        tracing::debug!("will retry with mechanism {:?}", next_mech);
     }
 
     if maybe_session.is_none() {
@@ -190,8 +190,8 @@ where
             return Ok(broker_conn);
         }
         Err(e) => {
-            tracing::error!("{:?}", e);
-            return Err(Error::InvalidSaslMechanism);
+            tracing::error!("chit_chat failed: {:?}", e);
+            return Err(e);
         }
     }
 }
@@ -207,20 +207,22 @@ where
 {
     let mut data_in: Option<Vec<u8>> = None;
 
+    tracing::trace!("start sasl chit-chat");
+
     // stepping the authentication exchange to completion
     loop {
         let mut out = Cursor::new(Vec::new());
 
         // each call to step writes the generated auth data into the provided writer.
-        // Normally this data would then have to be sent to the other party, but this goes
-        // beyond the scope of this example
         let state = session
             .step(data_in.as_deref(), &mut out)
             .expect("step errored!");
 
         let data_out = out.into_inner();
 
-        let authentication_response = sasl_authentication(
+        tracing::trace!("outgoing: {:?}", data_out);
+
+        let response = sasl_authentication(
             broker_conn.clone(),
             correlation_id,
             client_id,
@@ -228,17 +230,32 @@ where
         )
         .await?;
 
-        let auth_bytes = authentication_response.auth_bytes.to_vec();
+        tracing::trace!("incoming: {:?}", response);
 
-        data_in = if !auth_bytes.is_empty() {
-            Some(auth_bytes)
-        } else {
-            None
-        };
+        match response.error_code {
+            KafkaCode::None => {
+                let auth_bytes = response.auth_bytes.to_vec();
+
+                data_in = if !auth_bytes.is_empty() {
+                    Some(auth_bytes)
+                } else {
+                    None
+                };
+            },
+            KafkaCode::SaslAuthenticationFailed => {
+                let msg = response.error_message.map(|x| String::from_utf8_lossy(&x).into_owned()).unwrap_or("".to_owned());
+                tracing::info!("auth failed: {:?}: {:?}", response.error_code, msg);
+                return Err(Error::SaslAuthFailed(msg))
+            }
+            _ => {
+                return Err(Error::KafkaError(response.error_code))
+            }
+        }
 
         if data_in.is_none() && state.is_finished() {
             break;
         }
+
     }
 
     Ok(())

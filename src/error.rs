@@ -32,6 +32,7 @@ pub enum Error {
     MissingBrokerConfigOptions,
     IncorrectConnectionUsage,
     InvalidSaslMechanism,
+    SaslAuthFailed(String),
 }
 
 impl fmt::Display for Error {
