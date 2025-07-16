@@ -11,6 +11,6 @@ async fn it_can_get_redpanda_adminapi_leader_id() -> Result<(), Box<Error>> {
     }
     let client = AdminAPI::builder().urls(urls).build()?;
     let leader_id = client.get_leader_id().await?;
-    println!("Leader id is {}", leader_id);
+    println!("Leader id is {leader_id}");
     Ok(())
 }
