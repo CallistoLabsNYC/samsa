@@ -36,6 +36,15 @@ pub fn uncompress<T: Read>(src: T) -> Result<Vec<u8>> {
     Ok(buffer)
 }
 
+pub fn uncompress_snappy(src: &[u8]) -> Result<Vec<u8>> {
+    let mut decoder = snap::raw::Decoder::new();
+    let buff = decoder.decompress_vec(src).map_err(|e| {
+        tracing::error!("Error uncompressing buffer {:?}", e);
+        Error::DecompressError(e.to_string())
+    })?;
+    Ok(buff)
+}
+
 #[test]
 fn test_uncompress() {
     use std::io::Cursor;

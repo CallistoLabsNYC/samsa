@@ -279,10 +279,11 @@ impl From<i16> for Attributes {
     fn from(n: i16) -> Self {
         // if the 1 bit is on, then its GZIP compression
         // technically ignoring other compression types for now
-        let compression = if n % 2 == 1 {
-            Some(Compression::Gzip)
-        } else {
-            None
+        let compression = match n & 7 {
+            0 => None,
+            1 => Some(Compression::Gzip),
+            2 => Some(Compression::Snappy),
+            _ => panic!("unsupported compression type: {n:?}"),
         };
 
         Self::new(compression)
