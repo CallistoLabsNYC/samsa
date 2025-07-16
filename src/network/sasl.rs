@@ -186,9 +186,7 @@ where
     tracing::info!("Using {:?} for our SASL Mechanism", session.get_mechname());
 
     match do_sasl_chit_chat(session, &broker_conn, correlation_id, client_id).await {
-        Ok(_) => {
-            Ok(broker_conn)
-        }
+        Ok(_) => Ok(broker_conn),
         Err(e) => {
             tracing::error!("chit_chat failed: {:?}", e);
             Err(e)
