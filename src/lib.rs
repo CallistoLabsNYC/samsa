@@ -714,5 +714,8 @@ pub mod prelude {
     #[derive(Clone, Debug, PartialEq)]
     pub enum Compression {
         Gzip,
+        Snappy,
+        Lz4,
+        Zstd,
     }
 }
