@@ -23,7 +23,7 @@ jobs:
       - name: cargo-fmt
         run: |
           set -euxo pipefail
-          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup component add rustfmt 
           cargo fmt --all -- --check
       - name: cargo-clippy
         run: rustup component add clippy && cargo clippy --all-targets --all-features -- --no-deps -D warnings
