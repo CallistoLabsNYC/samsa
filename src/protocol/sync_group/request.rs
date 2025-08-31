@@ -112,7 +112,7 @@ impl Assignment<'_> {
 
 impl<'a> PartitionAssignment<'a> {
     pub fn new(topic_name: &'a str, partitions: Vec<i32>) -> Self {
-        PartitionAssignment {
+        Self {
             topic_name,
             partitions,
         }
