@@ -7,7 +7,7 @@ use crate::{
     error::Result,
     prelude::Compression,
     protocol::HeaderRequest,
-    utils::{compress, now, to_crc},
+    utils::{compress, compress_lz4, compress_snappy, compress_zstd, now, to_crc},
 };
 
 const API_KEY_PRODUCE: i16 = 0;
@@ -277,12 +277,12 @@ impl Attributes {
 
 impl From<i16> for Attributes {
     fn from(n: i16) -> Self {
-        // if the 1 bit is on, then its GZIP compression
-        // technically ignoring other compression types for now
-        let compression = if n % 2 == 1 {
-            Some(Compression::Gzip)
-        } else {
-            None
+        let compression = match n & 0x07 {
+            1 => Some(Compression::Gzip),
+            2 => Some(Compression::Snappy),
+            3 => Some(Compression::Lz4),
+            4 => Some(Compression::Zstd),
+            _ => None,
         };
 
         Self::new(compression)
@@ -294,8 +294,11 @@ impl ToByte for Attributes {
         let mut attr: i16 = 0;
 
         attr = match self.compression {
-            Some(Compression::Gzip) => attr + 1,
-            _ => attr,
+            Some(Compression::Gzip) => attr | 1,
+            Some(Compression::Snappy) => attr | 2,
+            Some(Compression::Lz4) => attr | 3,
+            Some(Compression::Zstd) => attr | 4,
+            None => attr,
         };
 
         attr.encode(out)?;
@@ -370,7 +373,37 @@ impl RecordBatch {
                 // then the compressed data without the bytestring length in front
                 buf.put(compressed.as_ref());
             }
-            _ => self.records.encode(&mut buf)?,
+            Some(Compression::Snappy) => {
+                let mut uncompressed = Vec::new();
+                for record in &self.records {
+                    record.encode(&mut uncompressed)?;
+                }
+                let compressed = compress_snappy(&uncompressed)?;
+
+                (self.records.len() as i32).encode(&mut buf)?;
+                buf.put(compressed.as_ref());
+            }
+            Some(Compression::Lz4) => {
+                let mut uncompressed = Vec::new();
+                for record in &self.records {
+                    record.encode(&mut uncompressed)?;
+                }
+                let compressed = compress_lz4(&uncompressed)?;
+
+                (self.records.len() as i32).encode(&mut buf)?;
+                buf.put(compressed.as_ref());
+            }
+            Some(Compression::Zstd) => {
+                let mut uncompressed = Vec::new();
+                for record in &self.records {
+                    record.encode(&mut uncompressed)?;
+                }
+                let compressed = compress_zstd(&uncompressed)?;
+
+                (self.records.len() as i32).encode(&mut buf)?;
+                buf.put(compressed.as_ref());
+            }
+            None => self.records.encode(&mut buf)?,
         }
 
         let crc = to_crc(&buf[(crc_pos + 4)..]);
