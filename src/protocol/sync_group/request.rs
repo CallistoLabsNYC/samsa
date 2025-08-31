@@ -119,7 +119,6 @@ impl<'a> PartitionAssignment<'a> {
     }
 }
 
-
 impl<'a> SyncGroupRequest<'a> {
     pub fn new(
         correlation_id: i32,
