@@ -306,7 +306,8 @@ pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
             let record_count: usize = record_count as usize;
 
             let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
-            let records_bytes = uncompress_snappy(compressed_records.into_bytes().as_ref()).unwrap();
+            let records_bytes =
+                uncompress_snappy(compressed_records.into_bytes().as_ref()).unwrap();
             let (_, records) = many_m_n(record_count, record_count, parse_record)(NomBytes::new(
                 Bytes::from(records_bytes),
             ))?;
