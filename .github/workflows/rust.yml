@@ -10,7 +10,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION: 1.88.0
+  RUST_VERSION: 1.89.0
 
 jobs:
   static_analysis:
@@ -21,7 +21,11 @@ jobs:
       - name: rustup
         run: rustup default $RUST_VERSION
       - name: cargo-fmt
-        run: rustup component add rustfmt && cargo fmt --check
+        run: |
+          set -euxo pipefail
+          rustup component add rustfmt 
+          rustfmt --version
+          cargo fmt --all -- --check
       - name: cargo-clippy
         run: rustup component add clippy && cargo clippy --all-targets --all-features -- --no-deps -D warnings
 
