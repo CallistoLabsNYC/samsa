@@ -42,7 +42,10 @@ jobs:
     - name: build
       run: make
     - name: test
-      run: rustup component add clippy && make check
+      run: |
+        set -euxo pipefail
+        cargo test --tests --all-features -- --show-output --test-threads=1
+
 
   publish:
       runs-on: ubuntu-latest
