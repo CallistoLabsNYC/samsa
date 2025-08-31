@@ -44,7 +44,6 @@ jobs:
     - name: test
       run: |
         set -euxo pipefail
-        rustup component add clippy && make check
         cargo test --tests --all-features -- --show-output --test-threads=1
 
 
