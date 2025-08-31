@@ -43,7 +43,7 @@ impl<T: BrokerConnection> ConsumerGroupBuilder<T> {
             group_id,
             retention_time_ms: DEFAULT_RETENTION_TIME_MS,
             group_topic_partitions,
-            fetch_params: FetchParams::new(),
+            fetch_params: FetchParams::create(DEFAULT_CORRELATION_ID, DEFAULT_CLIENT_ID.to_owned()),
         })
     }
 
@@ -130,11 +130,12 @@ impl<T: BrokerConnection> ConsumerGroupBuilder<T> {
         )
         .await?;
 
+        let fetch_params = self.fetch_params.clone();
         Ok(ConsumerGroup {
             connection_params: self.connection_params,
             coordinator_conn,
-            correlation_id: self.correlation_id,
-            client_id: self.client_id,
+            correlation_id: fetch_params.correlation_id,
+            client_id: fetch_params.client_id,
             session_timeout_ms: self.session_timeout_ms,
             rebalance_timeout_ms: self.rebalance_timeout_ms,
             group_id: self.group_id,
