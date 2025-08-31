@@ -87,7 +87,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
         Some(leader.node_id)
     }
 
-    #[instrument(name = "metadata-sync")]
+    #[instrument(name = "metadata-sync", level = "debug")]
     pub async fn sync(&mut self) -> Result<()> {
         tracing::debug!("Syncing metadata");
         // let mut set = JoinSet::new();
@@ -122,9 +122,16 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
 
         metadata_response.is_error()?;
 
-        self.topics = metadata_response.topics;
+        self.topics = metadata_response.topics.clone();
         self.brokers = metadata_response.brokers;
         self.controller_id = metadata_response.controller_id;
+
+        // insert topic names into self.topic_names
+        for topic in &metadata_response.topics {
+            let vec = topic.name.to_vec();
+            let name = String::from_utf8(vec).map_err(|_| Error::DecodingUtf8Error)?;
+            self.topic_names.push(name);
+        }
 
         Ok(())
     }
@@ -187,10 +194,7 @@ impl<'a, T: BrokerConnection + Clone + Debug> ClusterMetadata<T> {
                 // Do we have this topic already?
                 if let Some(existing_partitions) = broker_ownership.get_mut(&new_topic_name) {
                     // Don't push the partition on more than once
-                    if !existing_partitions
-                        .iter()
-                        .any(|existing_partition| *existing_partition == *new_partition)
-                    {
+                    if !existing_partitions.contains(new_partition) {
                         existing_partitions.push(*new_partition);
                     }
                 } else {

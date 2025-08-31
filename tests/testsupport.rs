@@ -90,7 +90,7 @@ pub fn get_topic(caller_path: &str) -> Result<(bool, String), Error> {
 #[allow(dead_code)]
 pub fn get_topic_2(caller_path: &str) -> Result<(bool, String), Error> {
     let topic = match create_topic_from_file_path(caller_path) {
-        Ok(topic) => format!("{}-2", topic),
+        Ok(topic) => format!("{topic}-2"),
         Err(_) => {
             tracing::warn!("Skipping test because no {} is set", KAFKA_TOPIC_2);
             return Ok((true, "".to_string()));
@@ -112,5 +112,5 @@ pub fn create_topic_from_file_path(caller_path: &str) -> Result<String, Error> {
         }
     };
 
-    Ok(format!("{}-integration", file_name))
+    Ok(format!("{file_name}-integration"))
 }

@@ -32,11 +32,12 @@ pub enum Error {
     MissingBrokerConfigOptions,
     IncorrectConnectionUsage,
     InvalidSaslMechanism,
+    SaslAuthFailed(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

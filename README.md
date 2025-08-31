@@ -226,7 +226,15 @@ while let Some(batch) = stream.next().await {
 ```
 
 ### Compression support
-We provide support for compression in the producer using the `Compression` enum. The enum allows to specify what type of compression to use. The Consumer will automatically know to decompress the message.
+We provide **full support for all Kafka compression algorithms** in the producer using the `Compression` enum. The enum allows to specify what type of compression to use. The Consumer will automatically know to decompress the message.
+
+**Supported compression types:**
+- `Compression::Gzip` - High compression ratio
+- `Compression::Snappy` - Balanced performance  
+- `Compression::Lz4` - Fast compression
+- `Compression::Zstd` - Modern algorithm with excellent performance
+
+All implementations are **pure Rust** with no C dependencies.
 
 Example for Producer with TLS and GZIP compression support:
 ```rust

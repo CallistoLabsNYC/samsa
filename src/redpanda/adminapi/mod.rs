@@ -49,7 +49,7 @@ impl AdminAPI {
     }
 
     pub async fn delete_wasm_transform(&self, name: &str) -> Result<()> {
-        let path = format!("/v1/transform/{}", name);
+        let path = format!("/v1/transform/{name}");
         self.send_to_leader(Method::DELETE, &path).await?;
         Ok(())
     }
@@ -108,7 +108,7 @@ impl AdminAPI {
         let partition: Partition = self
             .send_any(
                 Method::GET,
-                &format!("/v1/partitions/{}/{}/{}", namespace, topic, partition),
+                &format!("/v1/partitions/{namespace}/{topic}/{partition}"),
             )
             .await?
             .json()

@@ -14,7 +14,7 @@ use crate::{
     parser,
     prelude::Compression,
     protocol::{parse_header_response, produce::request::Attributes, HeaderResponse},
-    utils::uncompress,
+    utils::{uncompress, uncompress_lz4, uncompress_snappy, uncompress_zstd},
 };
 
 /*
@@ -294,6 +294,46 @@ pub fn parse_record_batch(s: NomBytes) -> IResult<NomBytes, RecordBatch> {
             // 49 is magic number is because of how many bytes between now and batch length
             let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
             let records_bytes = uncompress(compressed_records.into_bytes().as_ref()).unwrap();
+            let (_, records) = many_m_n(record_count, record_count, parse_record)(NomBytes::new(
+                Bytes::from(records_bytes),
+            ))?;
+
+            (s, records)
+        }
+        Some(Compression::Snappy) => {
+            tracing::debug!("Decompressing with Snappy");
+            let (s, record_count) = be_i32(s)?;
+            let record_count: usize = record_count as usize;
+
+            let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
+            let records_bytes =
+                uncompress_snappy(compressed_records.into_bytes().as_ref()).unwrap();
+            let (_, records) = many_m_n(record_count, record_count, parse_record)(NomBytes::new(
+                Bytes::from(records_bytes),
+            ))?;
+
+            (s, records)
+        }
+        Some(Compression::Lz4) => {
+            tracing::debug!("Decompressing with LZ4");
+            let (s, record_count) = be_i32(s)?;
+            let record_count: usize = record_count as usize;
+
+            let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
+            let records_bytes = uncompress_lz4(compressed_records.into_bytes().as_ref()).unwrap();
+            let (_, records) = many_m_n(record_count, record_count, parse_record)(NomBytes::new(
+                Bytes::from(records_bytes),
+            ))?;
+
+            (s, records)
+        }
+        Some(Compression::Zstd) => {
+            tracing::debug!("Decompressing with Zstd");
+            let (s, record_count) = be_i32(s)?;
+            let record_count: usize = record_count as usize;
+
+            let (s, compressed_records) = take((batch_length - 49) as usize)(s)?;
+            let records_bytes = uncompress_zstd(compressed_records.into_bytes().as_ref()).unwrap();
             let (_, records) = many_m_n(record_count, record_count, parse_record)(NomBytes::new(
                 Bytes::from(records_bytes),
             ))?;

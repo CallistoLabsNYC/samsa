@@ -19,7 +19,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::sasl::do_sasl;
+use super::sasl::do_sasl_v2;
 use super::sasl::SaslConfig;
 use super::{BrokerAddress, BrokerConnection};
 
@@ -296,9 +296,8 @@ impl BrokerConnection for SaslTlsConnection {
 
     /// Connect to a Kafka/Redpanda broker
     async fn new(p: Self::ConnConfig) -> Result<Self> {
-        let conn = TlsConnection::new_(p.tls_config).await?;
-        do_sasl(
-            conn.clone(),
+        let conn = do_sasl_v2(
+            async || TlsConnection::new_(p.tls_config.clone()).await,
             p.sasl_config.correlation_id,
             &p.sasl_config.client_id,
             p.sasl_config.clone(),
@@ -308,22 +307,14 @@ impl BrokerConnection for SaslTlsConnection {
     }
 
     async fn from_addr(p: Self::ConnConfig, addr: BrokerAddress) -> Result<Self> {
-        let cafile = p.tls_config.cafile.clone();
-
         let options = TlsConnectionOptions {
             broker_options: vec![addr],
-            cert: p.tls_config.cert,
-            key: p.tls_config.key,
-            cafile,
+            ..p.tls_config
         };
-        let conn = TlsConnection::new_(options).await?;
-        do_sasl(
-            conn.clone(),
-            p.sasl_config.correlation_id,
-            &p.sasl_config.client_id,
-            p.sasl_config.clone(),
-        )
-        .await?;
-        Ok(Self { tls_conn: conn })
+        let tc = Self::ConnConfig {
+            tls_config: options,
+            ..p
+        };
+        return Self::new(tc).await;
     }
 }
