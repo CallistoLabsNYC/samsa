@@ -28,7 +28,7 @@ async fn do_something(size: usize) {
             .await
             .map_err(|err| tracing::error!("{:?}", err))
             .unwrap()
-            .required_acks(1)
+            .required_acks(RequiredAcks::Leader)
             .clone()
             .build_from_stream(stream.chunks(50000))
             .await;

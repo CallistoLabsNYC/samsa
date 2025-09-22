@@ -36,8 +36,8 @@ const API_VERSION: i16 = 1;
 #[derive(Debug)]
 pub struct ListOffsetsRequest<'a> {
     pub header: HeaderRequest<'a>,
-    /// The broker ID of the requester, or -1 if this request is being made by a normal consumer.
-    pub replica_id: i32,
+    /// The broker ID of the requester.
+    pub replica_id: ReplicaId,
     /// Each topic in the request.
     pub topics: Vec<Topic<'a>>,
 }
@@ -56,12 +56,49 @@ pub struct Topic<'a> {
 pub struct Partition {
     /// The partition index.
     pub partition_index: i32,
-    /// The current timestamp.
-    pub timestamp: i64,
+    /// The timestamp to query offsets for.
+    pub timestamp: TimestampQuery,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ReplicaId {
+    /// Normal consumer request (-1)
+    NormalConsumer,
+    /// Broker id when used by a broker (>= 0)
+    Broker(i32),
+}
+
+impl ToByte for ReplicaId {
+    fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
+        match *self {
+            ReplicaId::NormalConsumer => (-1i32).encode(buffer),
+            ReplicaId::Broker(id) => id.encode(buffer),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TimestampQuery {
+    /// Latest offset (-1)
+    Latest,
+    /// Earliest available offset (-2)
+    Earliest,
+    /// Specific timestamp in ms
+    At(i64),
+}
+
+impl ToByte for TimestampQuery {
+    fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
+        match *self {
+            TimestampQuery::Latest => (-1i64).encode(buffer),
+            TimestampQuery::Earliest => (-2i64).encode(buffer),
+            TimestampQuery::At(ts) => ts.encode(buffer),
+        }
+    }
 }
 
 impl<'a> ListOffsetsRequest<'a> {
-    pub fn new(correlation_id: i32, client_id: &'a str, replica_id: i32) -> Self {
+    pub fn new(correlation_id: i32, client_id: &'a str, replica_id: ReplicaId) -> Self {
         let header = HeaderRequest::new(API_KEY_METADATA, API_VERSION, correlation_id, client_id);
         Self {
             header,
@@ -70,7 +107,12 @@ impl<'a> ListOffsetsRequest<'a> {
         }
     }
 
-    pub fn add(&mut self, topic_name: &'a str, partition_index: i32, timestamp: i64) {
+    pub fn add(
+        &mut self,
+        topic_name: &'a str,
+        partition_index: i32,
+        timestamp: TimestampQuery,
+    ) {
         match self
             .topics
             .iter_mut()

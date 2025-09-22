@@ -1,10 +1,13 @@
 mod testsupport;
 
-use samsa::prelude::{self, ClusterMetadata};
-use samsa::prelude::{
-    protocol::{self, produce::request::Attributes},
-    BrokerConnection, Error, KafkaCode, TcpConnection,
-};
+use samsa::prelude::BrokerConnection;
+use samsa::prelude::ClusterMetadata;
+use samsa::prelude::Error;
+use samsa::prelude::KafkaCode;
+use samsa::prelude::TcpConnection;
+use samsa::prelude::protocol::produce::request::Attributes;
+use samsa::prelude::protocol::{self};
+use samsa::prelude::{self};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "produce & fetch protocol integration test";
@@ -47,8 +50,13 @@ async fn it_can_produce_and_fetch() -> Result<(), Box<Error>> {
     //
     // Test producing
     //
-    let mut produce_request =
-        protocol::ProduceRequest::new(1, 1000, CORRELATION_ID, CLIENT_ID, Attributes::new(None));
+    let mut produce_request = protocol::ProduceRequest::new(
+        prelude::RequiredAcks::Leader,
+        1000,
+        CORRELATION_ID,
+        CLIENT_ID,
+        Attributes::new(None),
+    );
     let header = protocol::Header::new(
         String::from("Header key"),
         bytes::Bytes::from("Header value"),
@@ -147,7 +155,7 @@ async fn it_can_produce_and_fetch_with_functions() -> Result<(), Box<Error>> {
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        1,
+        prelude::RequiredAcks::Leader,
         1000,
         &vec![produce_message],
         Attributes::new(None),

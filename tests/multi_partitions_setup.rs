@@ -42,7 +42,11 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        HashMap::from([(topic_name.as_str(), NUMBER_OF_PARTITIONS)]),
+        vec![prelude::NewTopic {
+            topic_name: topic_name.to_string(),
+            num_partitions: prelude::protocol::create_topics::request::NumPartitions::Count(NUMBER_OF_PARTITIONS),
+            replication_factor: prelude::protocol::create_topics::request::ReplicationFactor::Factor(1),
+        }],
     )
     .await?;
 
@@ -67,7 +71,7 @@ async fn multi_partition_writing_and_reading() -> Result<(), Box<Error>> {
     let output_stream =
         ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic_name.clone()])
             .await?
-            .required_acks(1)
+            .required_acks(prelude::RequiredAcks::Leader)
             .clone()
             .build_from_stream(stream.chunks(CHUNK_SIZE))
             .await;

@@ -1,5 +1,7 @@
-use crate::prelude::{protocol, BrokerConnection, Result};
-use std::collections::HashMap;
+use crate::prelude::BrokerConnection;
+use crate::prelude::Result;
+use crate::prelude::protocol;
+use crate::protocol::create_topics::NewTopic;
 
 /// Create a topic in the cluster.
 ///
@@ -10,13 +12,13 @@ pub async fn create_topics(
     mut conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
-    topics_with_partition_count: HashMap<&str, i32>,
+    topics: Vec<NewTopic>,
 ) -> Result<protocol::CreateTopicsResponse> {
     let mut create_topics =
         protocol::CreateTopicsRequest::new(correlation_id, client_id, 4000, false)?;
 
-    for (topic_name, num_partitions) in topics_with_partition_count {
-        create_topics.add(topic_name, num_partitions, 1);
+    for t in &topics {
+        create_topics.add(&t.topic_name, t.num_partitions, t.replication_factor);
     }
 
     conn.send_request(&create_topics).await?;

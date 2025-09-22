@@ -5,7 +5,6 @@ use samsa::prelude::{
     Compression, ConsumerBuilder, Error, KafkaCode, ProduceMessage, ProducerBuilder, TcpConnection,
     TopicPartitionsBuilder,
 };
-use std::collections::HashMap;
 
 mod testsupport;
 
@@ -41,7 +40,11 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        HashMap::from([(topic_name.as_str(), NUMBER_OF_PARTITIONS)]),
+        vec![prelude::NewTopic {
+            topic_name: topic_name.to_string(),
+            num_partitions: prelude::protocol::create_topics::request::NumPartitions::Count(NUMBER_OF_PARTITIONS),
+            replication_factor: prelude::protocol::create_topics::request::ReplicationFactor::Factor(1),
+        }],
     )
     .await?;
 
@@ -67,7 +70,7 @@ async fn write_and_read_1m_messages_with_multi_partitions_and_compression() -> R
         ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic_name.to_string()])
             .await?
             .compression(Compression::Gzip)
-            .required_acks(1)
+            .required_acks(prelude::RequiredAcks::Leader)
             .max_batch_size(50000)
             .clone()
             .build_from_stream(stream.chunks(CHUNK_SIZE))

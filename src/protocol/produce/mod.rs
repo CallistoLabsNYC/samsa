@@ -5,19 +5,17 @@ pub mod response;
 
 #[cfg(test)]
 mod test {
+    use self::request::Attributes;
+    use super::*;
+    use crate::encode::ToByte;
+    use crate::error::KafkaCode;
+    use crate::prelude::Compression;
+    use crate::protocol::fetch::response::parse_record_batch;
+    use crate::protocol::{self};
+    use crate::utils::compress;
+    use crate::utils::uncompress;
     use bytes::Bytes;
     use nombytes::NomBytes;
-
-    use self::request::Attributes;
-
-    use super::*;
-    use crate::{
-        encode::ToByte,
-        error::KafkaCode,
-        prelude::Compression,
-        protocol::{self, fetch::response::parse_record_batch},
-        utils::{compress, uncompress},
-    };
 
     #[test]
     fn encode() {
@@ -61,7 +59,7 @@ mod test {
         // ];
 
         let mut produce_req = request::ProduceRequest::new(
-            0,
+            crate::prelude::RequiredAcks::None,
             1000,
             correlation_id,
             client_id,

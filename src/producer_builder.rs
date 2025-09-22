@@ -1,16 +1,24 @@
-use std::fmt::Debug;
-use std::time::Duration;
-
-use tokio::sync::mpsc::{channel, unbounded_channel, Receiver, UnboundedSender};
-use tokio_stream::{Stream, StreamExt};
-
+use crate::DEFAULT_CLIENT_ID;
+use crate::DEFAULT_CORRELATION_ID;
+use crate::error::Result;
+use crate::metadata::ClusterMetadata;
 use crate::network::BrokerConnection;
 use crate::prelude::Compression;
-use crate::producer::{flush_producer, ProduceMessage, ProduceParams, Producer};
-use crate::protocol::produce::request::Attributes;
+use crate::prelude::RequiredAcks;
+use crate::producer::ProduceMessage;
+use crate::producer::ProduceParams;
+use crate::producer::Producer;
+use crate::producer::flush_producer;
 use crate::protocol::ProduceResponse;
-use crate::DEFAULT_CORRELATION_ID;
-use crate::{error::Result, metadata::ClusterMetadata, DEFAULT_CLIENT_ID};
+use crate::protocol::produce::request::Attributes;
+use std::fmt::Debug;
+use std::time::Duration;
+use tokio::sync::mpsc::Receiver;
+use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::unbounded_channel;
+use tokio_stream::Stream;
+use tokio_stream::StreamExt;
 
 const DEFAULT_MAX_BATCH_SIZE: usize = 100;
 const DEFAULT_BATCH_TIMEOUT_MS: u64 = 1000;
@@ -109,8 +117,8 @@ where
         self
     }
 
-    /// The number of acknowledgments the producer requires the leader to have received before considering a request complete. Allowed values: 0 for no acknowledgments, 1 for only the leader and -1 for the full ISR.
-    pub fn required_acks(&mut self, required_acks: i16) -> &mut Self {
+    /// The number of acknowledgments the producer requires the leader to have received before considering a request complete.
+    pub fn required_acks(&mut self, required_acks: RequiredAcks) -> &mut Self {
         self.produce_params.required_acks = required_acks;
         self
     }

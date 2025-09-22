@@ -30,7 +30,9 @@
 //!
 //! Note that we are using version 3 of this API
 
-use crate::{encode::ToByte, error::Result, protocol::HeaderRequest};
+use crate::encode::ToByte;
+use crate::error::Result;
+use crate::protocol::HeaderRequest;
 
 const API_KEY_METADATA: i16 = 19;
 const API_VERSION: i16 = 3;
@@ -63,14 +65,44 @@ pub struct CreateTopicsRequest<'a> {
 pub struct Topic<'a> {
     /// The topic name.
     pub name: &'a str,
-    /// The number of partitions to create in the topic, or -1 if we are either specifying a manual partition assignment or using the default partitions.
-    pub num_partitions: i32,
-    /// The number of replicas to create for each partition in the topic, or -1 if we are either specifying a manual partition assignment or using the default replication factor.
-    pub replication_factor: i16,
+    /// The number of partitions to create in the topic, or Default if we are either specifying a manual partition assignment or using the default partitions.
+    pub num_partitions: NumPartitions,
+    /// The number of replicas to create for each partition in the topic, or Default if we are either specifying a manual partition assignment or using the default replication factor.
+    pub replication_factor: ReplicationFactor,
     /// The manual partition assignment, or the empty array if we are using automatic assignment.
     pub assignments: Vec<Assignment>,
     /// The custom topic configurations to set.
     pub configs: Vec<Config>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum NumPartitions {
+    Default,
+    Count(i32),
+}
+
+impl ToByte for NumPartitions {
+    fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
+        match *self {
+            NumPartitions::Default => (-1i32).encode(buffer),
+            NumPartitions::Count(n) => n.encode(buffer),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ReplicationFactor {
+    Default,
+    Factor(i16),
+}
+
+impl ToByte for ReplicationFactor {
+    fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
+        match *self {
+            ReplicationFactor::Default => (-1i16).encode(buffer),
+            ReplicationFactor::Factor(n) => n.encode(buffer),
+        }
+    }
 }
 
 /// The manual partition assignment, or the empty array if we are using automatic assignment.
@@ -117,13 +149,19 @@ impl<'a> CreateTopicsRequest<'a> {
     ///
     /// ### Example
     /// ```rust
+    /// use samsa::prelude::protocol::create_topics::request::{NumPartitions, ReplicationFactor};
     /// create_topics_request.add(
     ///     topic_name,
-    ///     num_partitions,
-    ///     replication_factor,
+    ///     NumPartitions::Count(3),
+    ///     ReplicationFactor::Factor(1),
     /// );
     /// ```
-    pub fn add(&mut self, topic_name: &'a str, num_partitions: i32, replication_factor: i16) {
+    pub fn add(
+        &mut self,
+        topic_name: &'a str,
+        num_partitions: NumPartitions,
+        replication_factor: ReplicationFactor,
+    ) {
         match self
             .topics
             .iter_mut()
