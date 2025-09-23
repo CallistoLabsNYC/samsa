@@ -51,7 +51,7 @@ async fn writing_and_reading_using_compression_setup() -> Result<(), Box<Error>>
 
     let output_stream = ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
         .await?
-        .required_acks(1)
+        .required_acks(prelude::RequiredAcks::Leader)
         .compression(Compression::Gzip)
         .clone()
         .build_from_stream(stream.chunks(1))

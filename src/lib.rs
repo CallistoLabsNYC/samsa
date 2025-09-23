@@ -659,30 +659,49 @@ pub mod prelude {
     //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
-    pub use crate::admin::{create_topics, delete_topics};
+    pub use crate::admin::create_topics;
+    pub use crate::admin::delete_topics;
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
-    pub use crate::consumer::{
-        commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions,
-        TopicPartitionsBuilder,
-    };
-    pub use crate::consumer_builder::{fetch_offset, list_offsets, ConsumerBuilder};
-    pub use crate::consumer_group::{
-        heartbeat, join_group, leave_group, sync_group, ConsumerGroup,
-    };
-    pub use crate::consumer_group_builder::{find_coordinator, ConsumerGroupBuilder};
-    pub use crate::error::{Error, KafkaCode, Result};
+    pub use crate::consumer::ConsumeMessage;
+    pub use crate::consumer::Consumer;
+    pub use crate::consumer::PartitionOffsets;
+    pub use crate::consumer::TopicPartitions;
+    pub use crate::consumer::TopicPartitionsBuilder;
+    pub use crate::consumer::commit_offset;
+    pub use crate::consumer::fetch;
+    pub use crate::consumer_builder::ConsumerBuilder;
+    pub use crate::consumer_builder::fetch_offset;
+    pub use crate::consumer_builder::list_offsets;
+    pub use crate::consumer_group::ConsumerGroup;
+    pub use crate::consumer_group::heartbeat;
+    pub use crate::consumer_group::join_group;
+    pub use crate::consumer_group::leave_group;
+    pub use crate::consumer_group::sync_group;
+    pub use crate::consumer_group_builder::ConsumerGroupBuilder;
+    pub use crate::consumer_group_builder::find_coordinator;
+    pub use crate::error::Error;
+    pub use crate::error::KafkaCode;
+    pub use crate::error::Result;
     pub use crate::metadata::ClusterMetadata;
-    pub use crate::network::{
-        sasl::{do_sasl_v2, SaslConfig},
-        tcp::{SaslTcpConfig, SaslTcpConnection, TcpConnection},
-        tls::{SaslTlsConfig, SaslTlsConnection, TlsConnection, TlsConnectionOptions},
-        BrokerAddress, BrokerConnection,
-    };
-    pub use crate::producer::{produce, ProduceMessage, Producer};
+    pub use crate::network::BrokerAddress;
+    pub use crate::network::BrokerConnection;
+    pub use crate::network::sasl::SaslConfig;
+    pub use crate::network::sasl::do_sasl_v2;
+    pub use crate::network::tcp::SaslTcpConfig;
+    pub use crate::network::tcp::SaslTcpConnection;
+    pub use crate::network::tcp::TcpConnection;
+    pub use crate::network::tls::SaslTlsConfig;
+    pub use crate::network::tls::SaslTlsConnection;
+    pub use crate::network::tls::TlsConnection;
+    pub use crate::network::tls::TlsConnectionOptions;
+    pub use crate::producer::ProduceMessage;
+    pub use crate::producer::Producer;
+    pub use crate::producer::produce;
     pub use crate::producer_builder::ProducerBuilder;
     /// Message Header.
     pub use crate::protocol::Header;
-
+    // Re-export NewTopic for admin helpers
+    pub use crate::protocol::create_topics::NewTopic;
     pub use bytes;
 
     pub mod encode {
@@ -717,5 +736,42 @@ pub mod prelude {
         Snappy,
         Lz4,
         Zstd,
+    }
+
+    /// Required acknowledgments for produce requests.
+    ///
+    /// Allowed values per Kafka protocol:
+    /// - `None` => 0 (no acknowledgments)
+    /// - `Leader` => 1 (only leader)
+    /// - `All` => -1 (full ISR)
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub enum RequiredAcks {
+        None,
+        Leader,
+        All,
+    }
+
+    impl RequiredAcks {
+        pub fn as_i16(&self) -> i16 {
+            match self {
+                RequiredAcks::None => 0,
+                RequiredAcks::Leader => 1,
+                RequiredAcks::All => -1,
+            }
+        }
+
+        pub fn requires_response(&self) -> bool {
+            match self {
+                RequiredAcks::None => false,
+                RequiredAcks::Leader | RequiredAcks::All => true,
+            }
+        }
+    }
+}
+
+// Allow encoding of RequiredAcks directly into protocol buffers as INT16
+impl crate::encode::ToByte for crate::prelude::RequiredAcks {
+    fn encode<T: bytes::BufMut>(&self, buffer: &mut T) -> crate::error::Result<()> {
+        self.as_i16().encode(buffer)
     }
 }

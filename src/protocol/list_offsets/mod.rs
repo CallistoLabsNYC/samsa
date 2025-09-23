@@ -23,9 +23,13 @@ mod test {
         let topic_name = "purchases";
         let partition_index = 1;
 
-        let mut req = request::ListOffsetsRequest::new(correlation_id, client_id, 0);
+        let mut req = request::ListOffsetsRequest::new(
+            correlation_id,
+            client_id,
+            request::ReplicaId::Broker(0),
+        );
 
-        req.add(topic_name, partition_index, 123456);
+        req.add(topic_name, partition_index, request::TimestampQuery::At(123456));
 
         let mut buffer: Vec<u8> = vec![];
 
@@ -55,19 +59,23 @@ mod test {
         let topic_name = "purchases";
         let partitions = vec![1, 2, 3];
 
-        let mut request = request::ListOffsetsRequest::new(correlation_id, client_id, replica_id);
+        let mut request = request::ListOffsetsRequest::new(
+            correlation_id,
+            client_id,
+            request::ReplicaId::Broker(replica_id),
+        );
 
         for partition in partitions.clone() {
-            request.add(topic_name, partition, 12000);
+            request.add(topic_name, partition, request::TimestampQuery::At(12000));
         }
 
         // wont allow duplicates
         for partition in partitions.clone() {
-            request.add(topic_name, partition, 12000);
+            request.add(topic_name, partition, request::TimestampQuery::At(12000));
         }
 
         for partition in partitions.clone() {
-            request.add("second topic", partition, 12000);
+            request.add("second topic", partition, request::TimestampQuery::At(12000));
         }
 
         assert_eq!(request.topics.len(), 2);
@@ -75,7 +83,10 @@ mod test {
         assert_eq!(request.topics[0].partitions.len(), 3);
 
         for (i, partition) in request.topics[0].partitions.iter().enumerate() {
-            assert_eq!(partition.timestamp, 12000);
+            match partition.timestamp {
+                request::TimestampQuery::At(v) => assert_eq!(v, 12000),
+                _ => panic!("unexpected timestamp variant"),
+            }
             assert_eq!(partition.partition_index, (i + 1) as i32);
         }
     }

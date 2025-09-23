@@ -1,8 +1,12 @@
 mod testsupport;
 
-use samsa::prelude::{
-    self, protocol, BrokerConnection, ClusterMetadata, Error, KafkaCode, TcpConnection,
-};
+use samsa::prelude::BrokerConnection;
+use samsa::prelude::ClusterMetadata;
+use samsa::prelude::Error;
+use samsa::prelude::KafkaCode;
+use samsa::prelude::TcpConnection;
+use samsa::prelude::protocol;
+use samsa::prelude::{self};
 use std::collections::HashMap;
 
 const CLIENT_ID: &str = "create delete topic integration test";
@@ -27,7 +31,11 @@ async fn it_can_create_and_delete_topics() -> Result<(), Box<Error>> {
     let mut create_req =
         protocol::CreateTopicsRequest::new(CORRELATION_ID, CLIENT_ID, 4000, false)?;
 
-    create_req.add("tester-creation", 2, 1);
+    create_req.add(
+        "tester-creation",
+        protocol::create_topics::request::NumPartitions::Count(2),
+        protocol::create_topics::request::ReplicationFactor::Factor(1),
+    );
 
     conn.send_request(&create_req).await?;
     let res = conn.receive_response().await?.freeze();
@@ -74,7 +82,12 @@ async fn it_can_create_and_delete_topics_with_functions() -> Result<(), Box<Erro
         conn.clone(),
         CORRELATION_ID,
         CLIENT_ID,
-        HashMap::from([("function-topic", 2)]),
+        vec![prelude::NewTopic {
+            topic_name: "function-topic".to_string(),
+            num_partitions: prelude::protocol::create_topics::request::NumPartitions::Count(2),
+            replication_factor:
+                prelude::protocol::create_topics::request::ReplicationFactor::Factor(1),
+        }],
     )
     .await?;
     assert_eq!(create_res.topics[0].error_code, KafkaCode::None);

@@ -1,6 +1,13 @@
-use samsa::prelude::{create_topics, BrokerAddress, BrokerConnection, Error};
+use samsa::prelude::BrokerAddress;
+use samsa::prelude::BrokerConnection;
+use samsa::prelude::Error;
+use samsa::prelude::NewTopic;
+use samsa::prelude::create_topics;
+use samsa::prelude::protocol::create_topics::request::NumPartitions;
+use samsa::prelude::protocol::create_topics::request::ReplicationFactor;
+use std::collections::HashMap;
+use std::env;
 use std::panic::Location;
-use std::{collections::HashMap, env};
 const KAFKA_BROKERS: &str = "KAFKA_BROKERS";
 #[allow(dead_code)]
 const REDPANDA_ADMIN_URLS: &str = "REDPANDA_ADMIN_URLS";
@@ -16,7 +23,17 @@ pub async fn ensure_topic_creation(
     correlation_id: i32,
     client_id: &str,
 ) -> Result<(), Error> {
-    create_topics(conn, correlation_id, client_id, HashMap::from([(topic, 1)])).await?;
+    create_topics(
+        conn,
+        correlation_id,
+        client_id,
+        vec![NewTopic {
+            topic_name: topic.to_string(),
+            num_partitions: NumPartitions::Count(1),
+            replication_factor: ReplicationFactor::Factor(1),
+        }],
+    )
+    .await?;
 
     Ok(())
 }

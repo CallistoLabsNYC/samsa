@@ -309,10 +309,18 @@ pub async fn list_offsets(
         timestamp,
         topic_partitions
     );
-    let mut list_offsets_request = protocol::ListOffsetsRequest::new(correlation_id, client_id, -1);
+    let mut list_offsets_request = protocol::ListOffsetsRequest::new(
+        correlation_id,
+        client_id,
+        protocol::list_offsets::request::ReplicaId::NormalConsumer,
+    );
     for (topic_name, partitions) in topic_partitions.iter() {
         for partition_index in partitions.iter() {
-            list_offsets_request.add(topic_name, *partition_index, timestamp);
+            list_offsets_request.add(
+                topic_name,
+                *partition_index,
+                protocol::list_offsets::request::TimestampQuery::At(timestamp),
+            );
         }
     }
 

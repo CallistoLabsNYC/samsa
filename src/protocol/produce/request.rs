@@ -1,14 +1,18 @@
 //! Encoding and creation for Fetch Offsets requests.
 
-use bytes::{BufMut, Bytes};
-
-use crate::{
-    encode::ToByte,
-    error::Result,
-    prelude::Compression,
-    protocol::HeaderRequest,
-    utils::{compress, compress_lz4, compress_snappy, compress_zstd, now, to_crc},
-};
+use crate::encode::ToByte;
+use crate::error::Result;
+use crate::prelude::Compression;
+use crate::prelude::RequiredAcks;
+use crate::protocol::HeaderRequest;
+use crate::utils::compress;
+use crate::utils::compress_lz4;
+use crate::utils::compress_snappy;
+use crate::utils::compress_zstd;
+use crate::utils::now;
+use crate::utils::to_crc;
+use bytes::BufMut;
+use bytes::Bytes;
 
 const API_KEY_PRODUCE: i16 = 0;
 const API_VERSION: i16 = 3;
@@ -33,8 +37,8 @@ pub struct ProduceRequest<'a> {
     pub header: HeaderRequest<'a>,
     /// The transactional ID of the producer. This is used to authorize transaction produce requests. This can be null for non-transactional producers.
     pub transactional_id: Option<String>,
-    /// The number of acknowledgments the producer requires the leader to have received before considering a request complete. Allowed values: 0 for no acknowledgments, 1 for only the leader and -1 for the full ISR.
-    pub required_acks: i16,
+    /// The number of acknowledgments the producer requires the leader to have received before considering a request complete.
+    pub required_acks: RequiredAcks,
     /// The timeout to await a response in milliseconds.
     pub timeout_ms: i32,
     /// Each topic to produce to.
@@ -44,7 +48,7 @@ pub struct ProduceRequest<'a> {
 
 impl<'a> ProduceRequest<'a> {
     pub fn new(
-        required_acks: i16,
+        required_acks: RequiredAcks,
         timeout_ms: i32,
         correlation_id: i32,
         client_id: &'a str,

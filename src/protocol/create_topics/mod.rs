@@ -1,13 +1,21 @@
 pub mod request;
 pub mod response;
 
+/// Description of a topic to create.
+#[derive(Clone, Debug)]
+pub struct NewTopic {
+    pub topic_name: String,
+    pub num_partitions: request::NumPartitions,
+    pub replication_factor: request::ReplicationFactor,
+}
+
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::encode::ToByte;
+    use crate::protocol;
     use bytes::Bytes;
     use nombytes::NomBytes;
-
-    use super::*;
-    use crate::{encode::ToByte, protocol};
 
     #[test]
     fn encode() {
@@ -27,7 +35,11 @@ mod test {
             request::CreateTopicsRequest::new(correlation_id, client_id, timeout_ms, false)
                 .unwrap();
 
-        req.add(topic_name, num_partitions, 0);
+        req.add(
+            topic_name,
+            request::NumPartitions::Count(num_partitions),
+            request::ReplicationFactor::Factor(0),
+        );
 
         let mut buffer: Vec<u8> = vec![];
 

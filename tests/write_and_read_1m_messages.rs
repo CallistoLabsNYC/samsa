@@ -47,7 +47,7 @@ async fn write_and_read_1m_messages() -> Result<(), Box<Error>> {
     let output_stream = ProducerBuilder::<TcpConnection>::new(brokers.clone(), vec![topic.clone()])
         .await?
         .compression(Compression::Gzip)
-        .required_acks(1)
+        .required_acks(prelude::RequiredAcks::Leader)
         .max_batch_size(50000)
         .clone()
         .build_from_stream(stream.chunks(CHUNK_SIZE))

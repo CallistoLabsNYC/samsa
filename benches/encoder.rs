@@ -11,8 +11,13 @@ fn criterion_benchmark(c: &mut Criterion) {
     let topic_name = "purchases";
     let partition_id = 3;
 
-    let mut produce_req =
-        protocol::ProduceRequest::new(0, 1000, correlation_id, client_id, Attributes::new(None));
+    let mut produce_req = protocol::ProduceRequest::new(
+        samsa::prelude::RequiredAcks::None,
+        1000,
+        correlation_id,
+        client_id,
+        Attributes::new(None),
+    );
     produce_req.add(
         topic_name,
         partition_id,

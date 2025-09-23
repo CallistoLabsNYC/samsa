@@ -1,30 +1,32 @@
 //! Client that sends records to a cluster.
 
-use std::{collections::HashMap, fmt::Debug};
-
+use crate::DEFAULT_CLIENT_ID;
+use crate::DEFAULT_CORRELATION_ID;
+use crate::error::Error;
+use crate::error::Result;
+use crate::metadata::ClusterMetadata;
+use crate::network::BrokerConnection;
+use crate::prelude::RequiredAcks;
+use crate::protocol::Header;
+use crate::protocol::ProduceRequest;
+use crate::protocol::ProduceResponse;
+use crate::protocol::produce::request::Attributes;
 use bytes::Bytes;
-use tokio::{
-    sync::mpsc::{Sender, UnboundedReceiver},
-    task::JoinSet,
-};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::UnboundedReceiver;
+use tokio::task::JoinSet;
 use tracing::instrument;
 
-use crate::{
-    error::{Error, Result},
-    metadata::ClusterMetadata,
-    network::BrokerConnection,
-    protocol::{produce::request::Attributes, Header, ProduceRequest, ProduceResponse},
-    DEFAULT_CLIENT_ID, DEFAULT_CORRELATION_ID,
-};
-
-const DEFAULT_REQUIRED_ACKS: i16 = 0;
+const DEFAULT_REQUIRED_ACKS: RequiredAcks = RequiredAcks::None;
 const DEFAULT_TIMEOUT_MS: i32 = 1000;
 
 #[derive(Clone)]
 pub(crate) struct ProduceParams {
     pub correlation_id: i32,
     pub client_id: String,
-    pub required_acks: i16,
+    pub required_acks: RequiredAcks,
     pub timeout_ms: i32,
 }
 
@@ -174,7 +176,7 @@ pub async fn produce(
     mut broker_conn: impl BrokerConnection,
     correlation_id: i32,
     client_id: &str,
-    required_acks: i16,
+    required_acks: RequiredAcks,
     timeout_ms: i32,
     messages: &Vec<ProduceMessage>,
     attributes: Attributes,
@@ -200,7 +202,7 @@ pub async fn produce(
     }
 
     broker_conn.send_request(&produce_request).await?;
-    if required_acks > 0 {
+    if required_acks.requires_response() {
         let response = ProduceResponse::try_from(broker_conn.receive_response().await?.freeze())?;
         Ok(Some(response))
     } else {
