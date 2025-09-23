@@ -1,4 +1,6 @@
-use crate::prelude::{protocol, BrokerConnection, Result};
+use crate::prelude::BrokerConnection;
+use crate::prelude::Result;
+use crate::prelude::protocol;
 use std::collections::HashMap;
 
 /// Create a topic in the cluster.
@@ -48,4 +50,28 @@ pub async fn delete_topics(
     let delete_topics_response = conn.receive_response().await?;
 
     protocol::DeleteTopicsResponse::try_from(delete_topics_response.freeze())
+}
+
+/// Describe configs for the given resources.
+///
+/// Minimal helper over the DescribeConfigs protocol request.
+pub async fn describe_configs(
+    mut conn: impl BrokerConnection,
+    correlation_id: i32,
+    client_id: &str,
+    resources: Vec<protocol::describe_configs::request::ConfigResource<'_>>,
+) -> Result<protocol::DescribeConfigsResponse> {
+    let mut req = protocol::DescribeConfigsRequest::new(correlation_id, client_id);
+    for resource in resources {
+        // resource_type uses protocol numeric values (e.g., 4 broker, 2 topic)
+        req.resources
+            .push(protocol::describe_configs::request::Resource {
+                resource_type: resource.resource_type(),
+                resource_name: resource.resource_name().to_string(),
+                config_names: resource.config_names(),
+            });
+    }
+    conn.send_request(&req).await?;
+    let resp = conn.receive_response().await?;
+    protocol::DescribeConfigsResponse::try_from(resp.freeze())
 }

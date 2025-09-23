@@ -659,7 +659,7 @@ pub mod prelude {
     //! while (output_stream.next().await).is_some() {}
     //! ```
     //!
-    pub use crate::admin::{create_topics, delete_topics};
+    pub use crate::admin::{create_topics, delete_topics, describe_configs};
     pub use crate::assignor::ROUND_ROBIN_PROTOCOL;
     pub use crate::consumer::{
         commit_offset, fetch, ConsumeMessage, Consumer, PartitionOffsets, TopicPartitions,
