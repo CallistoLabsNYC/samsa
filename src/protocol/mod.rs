@@ -13,6 +13,7 @@
 pub mod commit_offset;
 pub mod create_topics;
 pub mod delete_topics;
+pub mod describe_configs;
 pub mod fetch;
 pub mod find_coordinator;
 pub mod heartbeat;
@@ -35,6 +36,7 @@ pub use self::{
     commit_offset::{request::OffsetCommitRequest, response::OffsetCommitResponse},
     create_topics::{request::CreateTopicsRequest, response::CreateTopicsResponse},
     delete_topics::{request::DeleteTopicsRequest, response::DeleteTopicsResponse},
+    describe_configs::{request::DescribeConfigsRequest, response::DescribeConfigsResponse},
     fetch::{request::FetchRequest, response::FetchResponse},
     find_coordinator::{request::FindCoordinatorRequest, response::FindCoordinatorResponse},
     heartbeat::{request::HeartbeatRequest, response::HeartbeatResponse},
