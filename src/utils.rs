@@ -61,28 +61,22 @@ pub fn uncompress_lz4(src: &[u8]) -> Result<Vec<u8>> {
     })
 }
 
-pub fn compress_zstd(src: &[u8]) -> Result<Vec<u8>> {
-    use ruzstd::encoding::{compress_to_vec, CompressionLevel};
+/// Zstd level for produced batches: zrip's fast level 1.
+const ZSTD_LEVEL: i32 = 1;
 
-    let compressed = compress_to_vec(src, CompressionLevel::Fastest);
-    Ok(compressed)
+pub fn compress_zstd(src: &[u8]) -> Result<Vec<u8>> {
+    zrip::compress(src, ZSTD_LEVEL).map_err(|e| {
+        tracing::error!("Error compressing Zstd: {:?}", e);
+        Error::IoError(std::io::ErrorKind::Other)
+    })
 }
 
+/// Decodes all zstd frames in `src` (any level, skippable frames ignored).
 pub fn uncompress_zstd(src: &[u8]) -> Result<Vec<u8>> {
-    use ruzstd::decoding::StreamingDecoder;
-    use std::io::Read;
-
-    let mut decoder = StreamingDecoder::new(src).map_err(|e| {
-        tracing::error!("Error creating Zstd decoder: {:?}", e);
-        Error::IoError(std::io::ErrorKind::Other)
-    })?;
-
-    let mut result = Vec::new();
-    decoder.read_to_end(&mut result).map_err(|e| {
+    zrip::decompress(src).map_err(|e| {
         tracing::error!("Error decompressing Zstd: {:?}", e);
         Error::IoError(std::io::ErrorKind::Other)
-    })?;
-    Ok(result)
+    })
 }
 
 #[test]
@@ -130,6 +124,14 @@ fn test_compress_zstd() {
     let compressed = compress_zstd(data).unwrap();
     let decompressed = uncompress_zstd(&compressed).unwrap();
     assert_eq!(data, decompressed.as_slice());
+}
+
+#[test]
+fn test_uncompress_zstd_multi_frame() {
+    let mut frames = compress_zstd(b"first frame, ").unwrap();
+    frames.extend(compress_zstd(b"second frame").unwrap());
+    let decompressed = uncompress_zstd(&frames).unwrap();
+    assert_eq!(b"first frame, second frame", decompressed.as_slice());
 }
 
 #[test]

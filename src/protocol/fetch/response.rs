@@ -406,3 +406,31 @@ fn parse_header(s: NomBytes) -> IResult<NomBytes, Header> {
         },
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protocol::produce::request::{Message, RecordBatch as ProduceBatch};
+
+    #[test]
+    fn zstd_record_batch_roundtrip() {
+        let mut batch = ProduceBatch::new(Attributes::new(Some(Compression::Zstd)));
+        for i in 0..50 {
+            let key = Bytes::from(format!("key-{i}"));
+            let value = Bytes::from(format!("{{\"id\":{i},\"event\":\"click\"}}"));
+            batch.add(Message::new(Some(key), Some(value), vec![]));
+        }
+        let mut wire = Vec::new();
+        batch._encode_to_buf(&mut wire).unwrap();
+
+        let (rest, parsed) = parse_record_batch(NomBytes::new(Bytes::from(wire))).unwrap();
+        assert!(rest.to_bytes().is_empty());
+        assert_eq!(parsed.attributes.compression, Some(Compression::Zstd));
+        assert_eq!(parsed.records.len(), 50);
+        assert_eq!(parsed.records[7].key, Bytes::from("key-7"));
+        assert_eq!(
+            parsed.records[7].value,
+            Bytes::from("{\"id\":7,\"event\":\"click\"}")
+        );
+    }
+}
