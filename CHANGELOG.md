@@ -6,6 +6,7 @@
 - [#89] Added benchmark for Consumer and Producer
 
 ### Changed
+- zstd record batches use zrip instead of ruzstd. Produce encoding is 3.3-4.0x faster and batches are about 30% smaller (zrip level 1 instead of ruzstd's Fastest); fetch decoding is 1.1-1.4x faster.
 - Altered API for consumers to return Iterators
 - Updated Integration tests
 - Updated documentation and examples
